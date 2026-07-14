@@ -1,11 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { extractTextFromPDF } from '@/lib/form16/extractor';
 import { parseForm16Text } from '@/lib/form16/parser';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
 import { Form16Data } from '@/lib/types';
+
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  Box,
+  Card,
+  CardContent,
+  Button,
+  IconButton,
+  TextField,
+  Alert,
+  AlertTitle,
+  CircularProgress,
+  Paper,
+  Tooltip,
+  InputAdornment,
+  Grid,
+} from '@mui/material';
+
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import CodeIcon from '@mui/icons-material/Code';
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -13,6 +44,41 @@ export default function Home() {
   const [rawText, setRawText] = useState<string>('');
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setMode(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: {
+            main: mode === 'dark' ? '#90caf9' : '#1976d2',
+          },
+          secondary: {
+            main: mode === 'dark' ? '#ce93d8' : '#9c27b0',
+          },
+          background: {
+            default: mode === 'dark' ? '#121212' : '#f8f9fa',
+            paper: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+          },
+        },
+        typography: {
+          fontFamily: 'inherit',
+        },
+      }),
+    [mode]
+  );
+
+  const toggleTheme = () => {
+    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -36,169 +102,395 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Form-16 to ITR JSON Parser</h1>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ flexGrow: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+        {/* Top Navbar */}
+        <AppBar position="static" color="primary" elevation={1} sx={{ mb: 4 }}>
+          <Toolbar>
+            <ReceiptLongIcon sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }} />
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+              Form-16 to ITR JSON Parser
+            </Typography>
+            <Tooltip title={`Toggle ${mode === 'light' ? 'Dark' : 'Light'} Mode`}>
+              <IconButton onClick={toggleTheme} color="inherit" aria-label="toggle color mode">
+                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+              </IconButton>
+            </Tooltip>
+          </Toolbar>
+        </AppBar>
 
-      {/* Upload Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-        <label htmlFor="file-upload" className="block text-xl font-semibold mb-4 text-gray-700">1. Upload Form-16 PDF</label>
-        <input
-          id="file-upload"
-          type="file"
-          accept=".pdf"
-          onChange={handleFileUpload}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-        />
-        {loading && <p className="mt-4 text-blue-600 animate-pulse">Extracting data... Please wait.</p>}
-      </div>
-
-      {extractedData && (
-        <>
-          {/* Validation Errors */}
-          {errors.length > 0 && (
-            <div className="bg-red-50 p-4 rounded-lg mb-8 border border-red-200">
-              <h3 className="text-red-700 font-bold mb-2">Validation Warnings:</h3>
-              <ul className="list-disc ml-5 text-red-600 text-sm">
-                {errors.map((err, i) => <li key={i}>{err}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {/* Review & Edit Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-            <h2 className="text-xl font-semibold mb-6 text-gray-700">2. Review & Edit Extracted Information</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic Details */}
-              <div className="space-y-4">
-                <h3 className="font-bold border-b pb-2 text-gray-800">Assessee Details</h3>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Employee PAN</label>
-                  <input
-                    type="text"
-                    value={extractedData.employee.pan}
-                    onChange={(e) => setExtractedData({...extractedData, employee: {...extractedData.employee, pan: e.target.value}})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">First Name</label>
-                  <input
-                    type="text"
-                    value={extractedData.employee.name.firstName}
-                    onChange={(e) => setExtractedData({...extractedData, employee: {...extractedData.employee, name: {...extractedData.employee.name, firstName: e.target.value}}})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Last Name</label>
-                  <input
-                    type="text"
-                    value={extractedData.employee.name.lastName}
-                    onChange={(e) => setExtractedData({...extractedData, employee: {...extractedData.employee, name: {...extractedData.employee.name, lastName: e.target.value}}})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                  />
-                </div>
-              </div>
-
-              {/* Salary Details */}
-              <div className="space-y-4">
-                <h3 className="font-bold border-b pb-2 text-gray-800">Salary Income (₹)</h3>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Gross Salary</label>
-                  <input
-                    type="number"
-                    value={extractedData.salary.grossSalary}
-                    onChange={(e) => setExtractedData({...extractedData, salary: {...extractedData.salary, grossSalary: parseFloat(e.target.value) || 0}})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Standard Deduction (u/s 16ia)</label>
-                  <input
-                    type="number"
-                    value={extractedData.salary.standardDeduction16ia}
-                    onChange={(e) => setExtractedData({...extractedData, salary: {...extractedData.salary, standardDeduction16ia: parseFloat(e.target.value) || 0}})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                  />
-                </div>
-              </div>
-
-              {/* Deductions Section */}
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="font-bold border-b pb-2 text-gray-800">Chapter VI-A Deductions (₹)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Section 80C</label>
-                    <input
-                      type="number"
-                      value={extractedData.deductions80C}
-                      onChange={(e) => setExtractedData({...extractedData, deductions80C: parseFloat(e.target.value) || 0})}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Section 80D</label>
-                    <input
-                      type="number"
-                      value={extractedData.deductions80D}
-                      onChange={(e) => setExtractedData({...extractedData, deductions80D: parseFloat(e.target.value) || 0})}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600">Section 80TTA</label>
-                    <input
-                      type="number"
-                      value={extractedData.deductions80TTA}
-                      onChange={(e) => setExtractedData({...extractedData, deductions80TTA: parseFloat(e.target.value) || 0})}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 p-2"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end gap-4">
-              <button
-                onClick={() => setErrors(validateForm16Data(extractedData))}
-                className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition shadow-sm font-medium"
+        {/* Main Application Area */}
+        <Container maxWidth="md" sx={{ flexGrow: 1, pb: 6 }}>
+          {/* Upload Section */}
+          <Card variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <CardContent>
+              <Typography
+                id="file-upload-label"
+                variant="h6"
+                component="label"
+                htmlFor="file-upload"
+                sx={{ cursor: 'pointer', mb: 2, display: 'block', fontWeight: 'bold' }}
               >
-                Re-validate Data
-              </button>
-              <button
-                onClick={() => {
-                  const itrJson = mapForm16ToITR1(extractedData);
-                  const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `ITR1_${extractedData.employee.pan || 'data'}.json`;
-                  a.click();
+                1. Upload Form-16 PDF
+              </Typography>
+              <input
+                id="file-upload"
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+                aria-labelledby="file-upload-label"
+              />
+              <Box
+                component="label"
+                htmlFor="file-upload"
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px dashed',
+                  borderColor: 'primary.main',
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                  bgcolor: mode === 'dark' ? 'rgba(144, 202, 249, 0.04)' : 'rgba(25, 118, 210, 0.04)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: mode === 'dark' ? 'rgba(144, 202, 249, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                  },
                 }}
-                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition shadow-sm font-medium"
               >
-                Download ITR JSON
-              </button>
-            </div>
-          </div>
+                <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+                <Typography variant="body1" sx={{ fontWeight: 'medium', mb: 0.5 }}>
+                  {file ? file.name : 'Select or drag and drop Form-16 PDF'}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Supports PDF format files only
+                </Typography>
+              </Box>
 
-          {/* Debug Information */}
-          <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-4 text-gray-600">3. Debug Information (For Verification)</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-xs">
-                <h4 className="font-bold mb-2 border-b border-gray-700 pb-1">Raw Extracted Text</h4>
-                <pre className="whitespace-pre-wrap">{rawText}</pre>
-              </div>
-              <div className="bg-gray-900 text-blue-400 p-4 rounded-lg overflow-auto max-h-96 text-xs">
-                <h4 className="font-bold mb-2 border-b border-gray-700 pb-1">Intermediate Form16Data Object</h4>
-                <pre>{JSON.stringify(extractedData, null, 2)}</pre>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+              {loading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                  <CircularProgress size={24} color="primary" />
+                  <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium', animation: 'pulse 1.5s infinite' }}>
+                    Extracting data... Please wait.
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          {extractedData && (
+            <>
+              {/* Validation Warnings */}
+              {errors.length > 0 && (
+                <Alert severity="warning" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Validation Warnings:</AlertTitle>
+                  <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+                    {errors.map((err, i) => (
+                      <li key={i}>
+                        <Typography variant="body2">{err}</Typography>
+                      </li>
+                    ))}
+                  </ul>
+                </Alert>
+              )}
+
+              {/* Review & Edit Section */}
+              <Card variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
+                    2. Review & Edit Extracted Information
+                  </Typography>
+
+                  <Grid container spacing={3}>
+                    {/* Assessee Details */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 1, mb: 2 }}>
+                        Assessee Details
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                          fullWidth
+                          label="Employee PAN"
+                          value={extractedData.employee.pan}
+                          onChange={(e) =>
+                            setExtractedData({
+                              ...extractedData,
+                              employee: { ...extractedData.employee, pan: e.target.value },
+                            })
+                          }
+                          variant="outlined"
+                          slotProps={{
+                            htmlInput: { style: { fontFamily: 'monospace', textTransform: 'uppercase' } }
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="First Name"
+                          value={extractedData.employee.name.firstName}
+                          onChange={(e) =>
+                            setExtractedData({
+                              ...extractedData,
+                              employee: {
+                                ...extractedData.employee,
+                                name: { ...extractedData.employee.name, firstName: e.target.value },
+                              },
+                            })
+                          }
+                          variant="outlined"
+                        />
+                        <TextField
+                          fullWidth
+                          label="Last Name"
+                          value={extractedData.employee.name.lastName}
+                          onChange={(e) =>
+                            setExtractedData({
+                              ...extractedData,
+                              employee: {
+                                ...extractedData.employee,
+                                name: { ...extractedData.employee.name, lastName: e.target.value },
+                              },
+                            })
+                          }
+                          variant="outlined"
+                        />
+                      </Box>
+                    </Grid>
+
+                    {/* Salary Details */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 1, mb: 2 }}>
+                        Salary Income (₹)
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                          fullWidth
+                          label="Gross Salary"
+                          type="number"
+                          value={extractedData.salary.grossSalary}
+                          onChange={(e) =>
+                            setExtractedData({
+                              ...extractedData,
+                              salary: { ...extractedData.salary, grossSalary: parseFloat(e.target.value) || 0 },
+                            })
+                          }
+                          variant="outlined"
+                          slotProps={{
+                            input: {
+                              startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                            }
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Standard Deduction (u/s 16ia)"
+                          type="number"
+                          value={extractedData.salary.standardDeduction16ia}
+                          onChange={(e) =>
+                            setExtractedData({
+                              ...extractedData,
+                              salary: { ...extractedData.salary, standardDeduction16ia: parseFloat(e.target.value) || 0 },
+                            })
+                          }
+                          variant="outlined"
+                          slotProps={{
+                            input: {
+                              startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                            }
+                          }}
+                        />
+                      </Box>
+                    </Grid>
+
+                    {/* Deductions Section */}
+                    <Grid size={{ xs: 12 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 1, mb: 2 }}>
+                        Chapter VI-A Deductions (₹)
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80C"
+                            type="number"
+                            value={extractedData.deductions80C}
+                            onChange={(e) =>
+                              setExtractedData({
+                                ...extractedData,
+                                deductions80C: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80D"
+                            type="number"
+                            value={extractedData.deductions80D}
+                            onChange={(e) =>
+                              setExtractedData({
+                                ...extractedData,
+                                deductions80D: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80TTA"
+                            type="number"
+                            value={extractedData.deductions80TTA}
+                            onChange={(e) =>
+                              setExtractedData({
+                                ...extractedData,
+                                deductions80TTA: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => setErrors(validateForm16Data(extractedData))}
+                      size="large"
+                    >
+                      Re-validate Data
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => {
+                        const itrJson = mapForm16ToITR1(extractedData);
+                        const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `ITR1_${extractedData.employee.pan || 'data'}.json`;
+                        a.click();
+                      }}
+                      size="large"
+                    >
+                      Download ITR JSON
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Debug Information */}
+              <Box sx={{ mt: 6 }}>
+                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                  <BugReportIcon /> 3. Debug Information (For Verification)
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.900',
+                        color: '#10b981',
+                        borderRadius: 2,
+                        height: 384,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: 'grey.400',
+                          pb: 1,
+                          mb: 1.5,
+                          borderBottom: '1px solid',
+                          borderColor: 'grey.800',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <CodeIcon sx={{ fontSize: 16 }} /> Raw Extracted Text
+                      </Typography>
+                      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '11px', fontFamily: 'monospace' }}>
+                          {rawText}
+                        </pre>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.900',
+                        color: '#60a5fa',
+                        borderRadius: 2,
+                        height: 384,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: 'grey.400',
+                          pb: 1,
+                          mb: 1.5,
+                          borderBottom: '1px solid',
+                          borderColor: 'grey.800',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <CodeIcon sx={{ fontSize: 16 }} /> Intermediate Form16Data Object
+                      </Typography>
+                      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                        <pre style={{ margin: 0, whiteSpace: 'pre', fontSize: '11px', fontFamily: 'monospace' }}>
+                          {JSON.stringify(extractedData, null, 2)}
+                        </pre>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Box>
+            </>
+          )}
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 }

@@ -23,5 +23,39 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
+	},
+	"env": {
+		"staging": {
+			"name": "aykar-staging",
+			"assets": {
+				"directory": ".open-next/assets",
+				"binding": "ASSETS"
+			},
+			"services": [
+				{
+					"binding": "WORKER_SELF_REFERENCE",
+					"service": "aykar-staging"
+				}
+			],
+			"images": {
+				"binding": "IMAGES"
+			}
+		},
+		"prod": {
+			"name": "aykar",
+			"assets": {
+				"directory": ".open-next/assets",
+				"binding": "ASSETS"
+			},
+			"services": [
+				{
+					"binding": "WORKER_SELF_REFERENCE",
+					"service": "aykar"
+				}
+			],
+			"images": {
+				"binding": "IMAGES"
+			}
+		}
 	}
 }

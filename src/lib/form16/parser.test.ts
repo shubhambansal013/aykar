@@ -174,7 +174,7 @@ describe('parseForm16Text', () => {
     const mockText = `
       Salary as per section 17(1) 1,000,000.00
       Value of perquisites u/s 17(2) 50,000.00
-      Propits in lieu of salary u/s 17(3) 10,000.00
+      Profits in lieu of salary u/s 17(3) 10,000.00
     `;
     const result = parseForm16Text(mockText);
     expect(result.salary.grossSalary).toBe(1060000);
@@ -187,5 +187,110 @@ describe('parseForm16Text', () => {
       `;
       const result = parseForm16Text(mockText);
       expect(result.salary.grossSalary).toBe(999999);
+  });
+
+  it('should test and cover all branches for full coverage requirements', () => {
+    // 1. Employee Verification / Declaration Matching
+    const textDecl = `I, SHUBHAM BANSAL, son of Suresh Bansal...`;
+    const resDecl = parseForm16Text(textDecl);
+    expect(resDecl.employee.name.firstName).toBe('SHUBHAM');
+    expect(resDecl.employee.name.lastName).toBe('BANSAL');
+
+    // 2. Single Employee Name
+    const textSingle = `Name and address of the Employee: Solo\n123 Street`;
+    const resSingle = parseForm16Text(textSingle);
+    expect(resSingle.employee.name.lastName).toBe('Solo');
+
+    // 3. Form 12BA Employer matching
+    const textForm12baEmployer = `Name and address of the employer: Google IT Services Pvt Ltd\n11th-12th Floor`;
+    const resForm12baEmployer = parseForm16Text(textForm12baEmployer);
+    expect(resForm12baEmployer.employer.name).toBe('Google IT Services Pvt Ltd');
+
+    // 4. Form 12BA Employee matching
+    const textForm12baEmployee = `Name, designation and Permanent Account Number or Aadhaar Number of employee: SHUBHAM BANSAL, Software Engineer, CESPB7152N`;
+    const resForm12baEmployee = parseForm16Text(textForm12baEmployee);
+    expect(resForm12baEmployee.employee.name.firstName).toBe('SHUBHAM');
+    expect(resForm12baEmployee.employee.name.lastName).toBe('BANSAL');
+
+    // 5. Form 12BB Employee matching
+    const textForm12bbEmployee = `Name and address of the employee : SHUBHAM BANSAL\nPermanent Account Number`;
+    const resForm12bbEmployee = parseForm16Text(textForm12bbEmployee);
+    expect(resForm12bbEmployee.employee.name.firstName).toBe('SHUBHAM');
+    expect(resForm12bbEmployee.employee.name.lastName).toBe('BANSAL');
+
+    // 6. Tax Payable fallbacks
+    const textTax1 = `tax payable 25,000.00`;
+    const resTax1 = parseForm16Text(textTax1);
+    expect(resTax1.taxPayable).toBe(25000);
+
+    const textTax2 = `Net tax payable 12,345.00`;
+    const resTax2 = parseForm16Text(textTax2);
+    expect(resTax2.taxPayable).toBe(12345);
+
+    // 7. Extract Amount coverages with undefined / no match
+    const textNoMatch = `random stuff here`;
+    const resNoMatch = parseForm16Text(textNoMatch);
+    expect(resNoMatch.salary.salaryAsPer17_1).toBe(0);
+
+    // 8. Employer block with fallback split (not matching corporate legal suffixes)
+    const textEmployerFallback = `Name and address of the Employer: MyShop\nCorner street, 12345\nName and address of the Employee: John Doe`;
+    const resEmployerFallback = parseForm16Text(textEmployerFallback);
+    expect(resEmployerFallback.employer.name).toBe('MyShop');
+    expect(resEmployerFallback.employer.address).toBe('Corner street, 12345');
+
+    // 9. Employee address not starting with name
+    const textEmployeeNoPrefix = `Name and address of the Employee: John Doe\nMain Street 44`;
+    const resEmployeeNoPrefix = parseForm16Text(textEmployeeNoPrefix);
+    expect(resEmployeeNoPrefix.employee.name.firstName).toBe('John');
+    expect(resEmployeeNoPrefix.employee.name.lastName).toBe('Doe');
+    expect(resEmployeeNoPrefix.employee.address).toBe('Main Street 44');
+
+    // 10. Fallback index "Gross Salary" matching in Gross Salary block
+    const textGsBlockFallback = `Some Header\nGross Salary\n(a) 1234.56\n(b) 5678.90\n(c) 0.00\n(d) Total 6913.46`;
+    const resGsBlockFallback = parseForm16Text(textGsBlockFallback);
+    expect(resGsBlockFallback.salary.salaryAsPer17_1).toBe(1234.56);
+    expect(resGsBlockFallback.salary.perquisites17_2).toBe(5678.9);
+    expect(resGsBlockFallback.salary.grossSalary).toBe(6913.46);
+
+    // 11. Allowances exempt u/s 10 with direct match on Total Exempt Allowances
+    const textAllowancesTotal = `Allowances to the extent exempt u/s 10\nExempt Allowance 10(13A) 5000.00\nTotal Exempt Allowances 5000.00`;
+    const resAllowancesTotal = parseForm16Text(textAllowancesTotal);
+    expect(resAllowancesTotal.salary.totalExemptAllowances).toBe(5000);
+  });
+
+  it('should parse the user reported incorrect form-16 values with high precision', () => {
+    const userReportedText = `
+      Name and address of the Employer/Specified Bank  GOOGLE IT SERVICES INDIA PRIVATE LIMITED 11th-12th Floor, Carina-West tower, Bagmane constellation, Business park, BANGALORE - 560048 Karnataka +(91)91-9063835619 apac-psp-ops@google.com  Name and address of the Employee/Specified senior citizen  SHUBHAM BANSAL T2-703 Pareena Coban, Dhankot Sector 99A, Dhankot(49), Gurgaon - 122505 Haryana  PAN of the Deductor  AAICG1919K  TAN of the Deductor  BLRG25952D  PAN of the Employee/Specified senior citizen  CESPB7152N  Assessment Year  2026-27  CIT (TDS)  The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032  Period with the Employer To  31-Mar-2026  From  01-Apr-2025
+
+      1. Gross Salary
+      Salary as per provisions contained in section 17(1) (a)   4712762.00
+      Value of perquisites under section 17(2) (as per Form No. 12BA, wherever applicable) (b) 4011738.00
+      Total Gross Salary 8724500.00
+
+      Standard deduction under section 16(ia) (a) 75000.00
+      Net tax payable 2488029.00
+    `;
+
+    const res = parseForm16Text(userReportedText);
+
+    expect(res.employer.name).toBe('GOOGLE IT SERVICES INDIA PRIVATE LIMITED');
+    expect(res.employer.address).toBe('11th-12th Floor, Carina-West tower, Bagmane constellation, Business park, BANGALORE - 560048 Karnataka +(91)91-9063835619 apac-psp-ops@google.com');
+    expect(res.employer.tan).toBe('BLRG25952D');
+    expect(res.employer.pan).toBe('AAICG1919K');
+
+    expect(res.employee.pan).toBe('CESPB7152N');
+    expect(res.employee.name.firstName).toBe('SHUBHAM');
+    expect(res.employee.name.lastName).toBe('BANSAL');
+    expect(res.employee.address).toBe('T2-703 Pareena Coban, Dhankot Sector 99A, Dhankot(49), Gurgaon - 122505 Haryana');
+
+    expect(res.assessmentYear).toBe('2026');
+    expect(res.period.from).toBe('01-Apr-2025');
+    expect(res.period.to).toBe('31-Mar-2026');
+
+    expect(res.salary.salaryAsPer17_1).toBe(4712762);
+    expect(res.salary.perquisites17_2).toBe(4011738);
+    expect(res.salary.grossSalary).toBe(8724500);
+    expect(res.salary.standardDeduction16ia).toBe(75000);
+    expect(res.taxPayable).toBe(2488029);
   });
 });

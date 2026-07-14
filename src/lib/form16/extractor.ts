@@ -10,8 +10,6 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
 
     const loadingTask = pdfjs.getDocument({
       data,
-      useWorkerFetch: true,
-      isEvalSupported: false,
     });
 
     const pdf = await loadingTask.promise;

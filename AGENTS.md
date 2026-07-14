@@ -1,6 +1,7 @@
 # Agent Instructions for Aykar
 
-This project is a Next.js application designed to run on Cloudflare Workers using the OpenNext adapter.
+This project is a Next.js application designed to run on Cloudflare Workers using the OpenNext adapter. Refer ARCHITECTURE.md on the high level architecture and the working of this app.
+
 
 ## Tech Stack
 

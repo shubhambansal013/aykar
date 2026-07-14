@@ -4,11 +4,40 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
+  ci:
+    runs-on: ubuntu-latest
+    name: CI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
+    needs: ci
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +52,7 @@ jobs:
         run: npm install
 
       - name: Deploy
-        run: npx opennextjs-cloudflare deploy
+        run: npm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

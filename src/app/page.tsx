@@ -41,8 +41,9 @@ export default function Home() {
 
       {/* Upload Section */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">1. Upload Form-16 PDF</h2>
+        <label htmlFor="file-upload" className="block text-xl font-semibold mb-4 text-gray-700">1. Upload Form-16 PDF</label>
         <input
+          id="file-upload"
           type="file"
           accept=".pdf"
           onChange={handleFileUpload}

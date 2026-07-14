@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
   ci:
@@ -50,7 +51,7 @@ jobs:
         run: npm install
 
       - name: Deploy
-        run: npm run deploy
+        run: npm run ${{ github.ref_name == 'main' && 'deploy:prod' || 'deploy:staging' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

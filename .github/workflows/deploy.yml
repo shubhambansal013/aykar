@@ -35,8 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     needs: ci
-    environment:
-      name: prod
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

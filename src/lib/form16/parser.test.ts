@@ -159,4 +159,33 @@ describe('parseForm16Text', () => {
     expect(result2.employee.name.firstName).toBe('John');
     expect(result2.employee.name.lastName).toBe('Doe');
   });
+
+  it('should handle fallback to second PAN if first belongs to employer', () => {
+    const mockText = `
+      TAN OF THE DEDUCTOR ABCD12345E
+      PAN OF THE DEDUCTOR ABCDE1234F
+      Random PANs: ABCDE1234F, GHIJK1234L
+    `;
+    const result = parseForm16Text(mockText);
+    expect(result.employee.pan).toBe('GHIJK1234L');
+  });
+
+  it('should calculate gross salary if total labels are missing', () => {
+    const mockText = `
+      Salary as per section 17(1) 1,000,000.00
+      Value of perquisites u/s 17(2) 50,000.00
+      Propits in lieu of salary u/s 17(3) 10,000.00
+    `;
+    const result = parseForm16Text(mockText);
+    expect(result.salary.grossSalary).toBe(1060000);
+    expect(result.salary.profitsInLieu17_3).toBe(10000);
+  });
+
+  it('should extract Gross Salary correctly without Total prefix', () => {
+      const mockText = `
+        Gross Salary 999,999.00
+      `;
+      const result = parseForm16Text(mockText);
+      expect(result.salary.grossSalary).toBe(999999);
+  });
 });

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { expect, test, vi, beforeEach } from 'vitest';
+import { expect, test, vi, beforeEach, describe } from 'vitest';
 import Home from './page';
 import * as extractor from '@/lib/form16/extractor';
 import * as parser from '@/lib/form16/parser';
@@ -20,6 +20,14 @@ describe('Home Page', () => {
   test('renders Form-16 parser title', () => {
     render(<Home />);
     expect(screen.getByText(/Form-16 to ITR JSON Parser/i)).toBeDefined();
+  });
+
+  test('toggles color mode between light and dark', () => {
+    render(<Home />);
+    const toggleButton = screen.getByLabelText(/toggle color mode/i);
+    expect(toggleButton).toBeDefined();
+    fireEvent.click(toggleButton);
+    fireEvent.click(toggleButton);
   });
 
   test('handles file upload and displays data', async () => {

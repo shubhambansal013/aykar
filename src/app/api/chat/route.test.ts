@@ -27,7 +27,7 @@ describe('AI Chat Route API Handler', () => {
     const response = await POST(mockReq);
     expect(response.status).toBe(200);
 
-    const json = await response.json();
+    const json = (await response.json()) as any;
     expect(json.role).toBe('assistant');
     expect(json.content).toContain('Gemini AI Assistant is not available because the GEMINI_API_KEY is not configured.');
   });
@@ -66,13 +66,13 @@ describe('AI Chat Route API Handler', () => {
     const response = await POST(mockReq);
     expect(response.status).toBe(200);
 
-    const json = await response.json();
+    const json = (await response.json()) as any;
     expect(json.role).toBe('assistant');
     expect(json.content).toBe('This is standard output from Gemini');
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [calledUrl, calledInit] = mockFetch.mock.calls[0];
-    expect(calledUrl).toContain('gemini-2.5-flash');
+    expect(calledUrl).toContain('gemini-1.5-flash');
     expect(calledUrl).toContain('key=MOCK_KEY');
 
     const bodyObj = JSON.parse(calledInit.body);
@@ -81,6 +81,42 @@ describe('AI Chat Route API Handler', () => {
     expect(bodyObj.contents[0].parts[1].inlineData.mimeType).toBe('image/png');
     expect(bodyObj.systemInstruction.parts[0].text).toContain('ABCDE1234F');
     expect(bodyObj.systemInstruction.parts[0].text).toContain('Extracted raw form-16 text');
+  });
+
+  test('respects custom model name requested in body', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'MOCK_KEY');
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'This is output using requested model' }]
+            }
+          }
+        ]
+      })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const mockReq = new NextRequest('http://localhost/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'hello' }],
+        model: 'gemini-2.0-flash',
+      }),
+    });
+
+    const response = await POST(mockReq);
+    expect(response.status).toBe(200);
+
+    const json = (await response.json()) as any;
+    expect(json.content).toBe('This is output using requested model');
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [calledUrl] = mockFetch.mock.calls[0];
+    expect(calledUrl).toContain('gemini-2.0-flash');
   });
 
   test('returns error code if Gemini API fails', async () => {
@@ -104,7 +140,7 @@ describe('AI Chat Route API Handler', () => {
     const response = await POST(mockReq);
     expect(response.status).toBe(400);
 
-    const json = await response.json();
+    const json = (await response.json()) as any;
     expect(json.error).toContain('Gemini API reported an error');
   });
 });

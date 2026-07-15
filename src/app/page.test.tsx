@@ -30,9 +30,11 @@ describe('Home Page', () => {
     });
   });
 
-  test('renders Form-16 parser title', () => {
+  test('renders Form-16 parser title and AI Chat elements', () => {
     render(<Home />);
     expect(screen.getByText(/Form-16 to ITR JSON Parser/i)).toBeDefined();
+    expect(screen.getByLabelText('open ai chat')).toBeDefined();
+    expect(screen.getByLabelText('open ai chat window')).toBeDefined();
   });
 
   test('toggles color mode between light and dark', () => {
@@ -43,7 +45,48 @@ describe('Home Page', () => {
     fireEvent.click(toggleButton);
   });
 
-  test('handles file upload and displays data', async () => {
+  test('opens AI Chat Drawer when requested', async () => {
+    render(<Home />);
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    expect(screen.getByText(/AI Tax Assistant/i)).toBeDefined();
+    expect(screen.getByText(/Ask me anything about your taxes!/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/Ask your tax question.../i)).toBeDefined();
+  });
+
+  test('handles AI Chat submission successfully', async () => {
+    const mockResponse = {
+      role: 'assistant',
+      content: 'Here is simulated assistance advice.'
+    };
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    const input = screen.getByPlaceholderText(/Ask your tax question.../i);
+    fireEvent.change(input, { target: { value: 'How can I save tax?' } });
+
+    const sendBtn = screen.getByLabelText(/send message/i);
+    fireEvent.click(sendBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('How can I save tax?')).toBeDefined();
+      expect(screen.getByText('Here is simulated assistance advice.')).toBeDefined();
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+  });
+
+  test('handles file upload and displays data plus AI Review', async () => {
     const mockText = 'Raw PDF text';
     const mockData = {
       employee: {
@@ -62,6 +105,12 @@ describe('Home Page', () => {
     vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
     vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
     vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'AI Review Complete!' })
+    });
+    vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);
 
@@ -83,6 +132,17 @@ describe('Home Page', () => {
     expect(screen.getByDisplayValue('John')).toBeDefined();
     expect(screen.getByDisplayValue('Doe')).toBeDefined();
     expect(screen.getByDisplayValue('1000000')).toBeDefined();
+
+    // Trigger AI Review
+    const reviewBtn = screen.getByText('AI Review');
+    expect(reviewBtn).toBeDefined();
+    fireEvent.click(reviewBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('AI Review Complete!')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
   });
 
   test('handles validation errors', async () => {

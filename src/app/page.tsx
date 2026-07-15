@@ -49,6 +49,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
 
 interface Attachment {
   name: string;
@@ -62,9 +65,510 @@ interface Message {
   attachments?: Attachment[];
 }
 
+export interface FieldCue {
+  status: 'success' | 'warning' | 'error';
+  message: string;
+}
+
+const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const TAN_REGEX = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
+
+export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
+  if (!data) {
+    return { status: 'success', message: 'No data' };
+  }
+
+  const parts = path.split('.');
+
+  // Helper to get nested value
+  const getValue = (obj: any, keys: string[]): any => {
+    let current = obj;
+    for (const key of keys) {
+      if (current === undefined || current === null) return undefined;
+      current = current[key];
+    }
+    return current;
+  };
+
+  const val = getValue(data, parts);
+
+  // General check for emptyness/negatives
+  const isNum = typeof val === 'number';
+  const isStr = typeof val === 'string';
+
+  switch (path) {
+    // Employer Details
+    case 'employer.name':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Employer name is missing.' };
+      }
+      return { status: 'success', message: 'Employer name is verified.' };
+    case 'employer.pan':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Employer PAN is missing.' };
+      }
+      if (!PAN_REGEX.test(val.trim().toUpperCase())) {
+        return { status: 'error', message: 'Invalid Employer PAN format (Expected format: ABCDE1234F).' };
+      }
+      return { status: 'success', message: 'Employer PAN format is valid.' };
+    case 'employer.tan':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Employer TAN is missing.' };
+      }
+      if (!TAN_REGEX.test(val.trim().toUpperCase())) {
+        return { status: 'error', message: 'Invalid Employer TAN format (Expected format: ABCD12345E).' };
+      }
+      return { status: 'success', message: 'Employer TAN format is valid.' };
+    case 'employer.address':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Employer address is missing.' };
+      }
+      return { status: 'success', message: 'Employer address is verified.' };
+
+    // Employee Details
+    case 'employee.name.firstName':
+      if (!val || val.trim() === '') {
+        return { status: 'error', message: 'Employee First Name is required.' };
+      }
+      return { status: 'success', message: 'Employee First Name is verified.' };
+    case 'employee.name.middleName':
+      return { status: 'success', message: 'Optional field verified.' };
+    case 'employee.name.lastName':
+      if (!val || val.trim() === '') {
+        return { status: 'error', message: 'Employee Last Name is required.' };
+      }
+      return { status: 'success', message: 'Employee Last Name is verified.' };
+    case 'employee.pan':
+      if (!val || val.trim() === '') {
+        return { status: 'error', message: 'Employee PAN is required.' };
+      }
+      if (!PAN_REGEX.test(val.trim().toUpperCase())) {
+        return { status: 'error', message: 'Invalid Employee PAN format (Expected format: ABCDE1234F).' };
+      }
+      return { status: 'success', message: 'Employee PAN format is valid.' };
+    case 'employee.address':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Employee address is missing.' };
+      }
+      return { status: 'success', message: 'Employee address is verified.' };
+
+    // General Assessment details
+    case 'assessmentYear':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Assessment Year is missing.' };
+      }
+      if (!/^\d{4}-\d{2}$/.test(val.trim()) && !/^\d{4}-\d{4}$/.test(val.trim())) {
+        return { status: 'warning', message: 'Expected Assessment Year format (e.g. 2026-27 or 2025-2026).' };
+      }
+      return { status: 'success', message: 'Assessment Year format is valid.' };
+    case 'period.from':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Period From date is missing.' };
+      }
+      return { status: 'success', message: 'Period From is verified.' };
+    case 'period.to':
+      if (!val || val.trim() === '') {
+        return { status: 'warning', message: 'Period To date is missing.' };
+      }
+      return { status: 'success', message: 'Period To is verified.' };
+
+    // Salary Details
+    case 'salary.grossSalary': {
+      const calcGross = (data.salary?.salaryAsPer17_1 || 0) + (data.salary?.perquisites17_2 || 0) + (data.salary?.profitsInLieu17_3 || 0);
+      if (Math.abs((val || 0) - calcGross) > 1) {
+        return { status: 'error', message: `Gross Salary (₹${val}) must equal standard components sum 17(1) + 17(2) + 17(3) = ₹${calcGross}.` };
+      }
+      return { status: 'success', message: 'Gross Salary matches components sum.' };
+    }
+    case 'salary.salaryAsPer17_1':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'salary.perquisites17_2':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'salary.profitsInLieu17_3':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'salary.totalExemptAllowances': {
+      const sumAlw = (data.salary?.exemptAllowancesUs10 || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+      if (Math.abs((val || 0) - sumAlw) > 1) {
+        return { status: 'warning', message: `Total Exempt Allowances (₹${val}) does not match sum of individual allowances (₹${sumAlw}).` };
+      }
+      return { status: 'success', message: 'Total Exempt Allowances is verified.' };
+    }
+    case 'salary.netSalary': {
+      const calcNet = (data.salary?.grossSalary || 0) - (data.salary?.totalExemptAllowances || 0);
+      if (Math.abs((val || 0) - calcNet) > 1) {
+        return { status: 'error', message: `Net Salary (₹${val}) must equal Gross Salary (₹${data.salary?.grossSalary || 0}) minus Exempt Allowances (₹${data.salary?.totalExemptAllowances || 0}) = ₹${calcNet}.` };
+      }
+      return { status: 'success', message: 'Net Salary calculation is consistent.' };
+    }
+    case 'salary.standardDeduction16ia':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      if (val > 75000) {
+        return { status: 'error', message: 'Standard deduction (u/s 16ia) cannot exceed ₹75,000 for AY 2026-27.' };
+      }
+      return { status: 'success', message: 'Standard deduction value is within limits.' };
+    case 'salary.entertainmentAllowance16ii':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'salary.professionalTax16iii':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'salary.totalDeductionsUs16': {
+      const calcDeductions = (data.salary?.standardDeduction16ia || 0) + (data.salary?.entertainmentAllowance16ii || 0) + (data.salary?.professionalTax16iii || 0);
+      if (Math.abs((val || 0) - calcDeductions) > 1) {
+        return { status: 'error', message: `Total deductions u/s 16 (₹${val}) must equal sum of SD (u/s 16ia) + EA (16ii) + PT (16iii) = ₹${calcDeductions}.` };
+      }
+      return { status: 'success', message: 'Total deductions u/s 16 are consistent.' };
+    }
+    case 'salary.incomeChargeableUnderHeadSalaries': {
+      const calcChargeable = (data.salary?.netSalary || 0) - (data.salary?.totalDeductionsUs16 || 0);
+      if (Math.abs((val || 0) - calcChargeable) > 1) {
+        return { status: 'error', message: `Income chargeable under head Salaries (₹${val}) must equal Net Salary (₹${data.salary?.netSalary || 0}) minus Total Deductions u/s 16 (₹${data.salary?.totalDeductionsUs16 || 0}) = ₹${calcChargeable}.` };
+      }
+      return { status: 'success', message: 'Income Chargeable under head Salaries calculation is consistent.' };
+    }
+
+    // Other Income
+    case 'otherIncome.houseProperty':
+      return { status: 'success', message: 'Verified.' };
+    case 'otherIncome.totalOtherSources': {
+      const sumOS = (data.otherIncome?.otherSources || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+      if (Math.abs((val || 0) - sumOS) > 1) {
+        return { status: 'warning', message: `Total other sources (₹${val}) does not match individual item sum (₹${sumOS}).` };
+      }
+      return { status: 'success', message: 'Verified.' };
+    }
+
+    // Gross Total Income
+    case 'grossTotalIncome': {
+      const calcGTI = (data.salary?.incomeChargeableUnderHeadSalaries || 0) + (data.otherIncome?.houseProperty || 0) + (data.otherIncome?.totalOtherSources || 0);
+      if (Math.abs((val || 0) - calcGTI) > 1) {
+        return { status: 'error', message: `Gross Total Income (₹${val}) must equal Salaries (₹${data.salary?.incomeChargeableUnderHeadSalaries || 0}) + HP (₹${data.otherIncome?.houseProperty || 0}) + Other Sources (₹${data.otherIncome?.totalOtherSources || 0}) = ₹${calcGTI}.` };
+      }
+      return { status: 'success', message: 'Gross Total Income calculation is consistent.' };
+    }
+
+    // Chapter VI-A Deductions
+    case 'deductions80C':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      if (val > 150000) {
+        return { status: 'error', message: 'Section 80C deduction cannot exceed ₹1,50,000.' };
+      }
+      return { status: 'success', message: 'Section 80C is within limits.' };
+    case 'deductions80CCC':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80CCD1':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80CCD1B':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      if (val > 50000) {
+        return { status: 'error', message: 'Section 80CCD(1B) deduction cannot exceed ₹50,000.' };
+      }
+      return { status: 'success', message: 'Section 80CCD(1B) is within limits.' };
+    case 'deductions80CCD2':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80D':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80E':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80G':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+    case 'deductions80TTA':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      if (val > 10000) {
+        return { status: 'error', message: 'Section 80TTA deduction cannot exceed ₹10,000.' };
+      }
+      return { status: 'success', message: 'Section 80TTA is within limits.' };
+    case 'totalChapterVIADeductions': {
+      const calcDeductionsSum =
+        (data.deductions80C || 0) +
+        (data.deductions80CCC || 0) +
+        (data.deductions80CCD1 || 0) +
+        (data.deductions80CCD1B || 0) +
+        (data.deductions80CCD2 || 0) +
+        (data.deductions80D || 0) +
+        (data.deductions80E || 0) +
+        (data.deductions80G || 0) +
+        (data.deductions80TTA || 0);
+      if (Math.abs((val || 0) - calcDeductionsSum) > 1) {
+        return { status: 'error', message: `Total Chapter VI-A Deductions (₹${val}) must equal sum of individual sections (80C, 80D, etc.) = ₹${calcDeductionsSum}.` };
+      }
+      return { status: 'success', message: 'Total Chapter VI-A Deductions matches individual items.' };
+    }
+
+    // Tax Summary
+    case 'totalIncome': {
+      const calcTI = Math.max(0, (data.grossTotalIncome || 0) - (data.totalChapterVIADeductions || 0));
+      if (Math.abs((val || 0) - calcTI) > 1) {
+        return { status: 'error', message: `Total Income (₹${val}) must equal Gross Total Income minus Chapter VI-A Deductions = ₹${calcTI}.` };
+      }
+      return { status: 'success', message: 'Total Income matches calculation.' };
+    }
+    case 'taxPayable':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Verified.' };
+
+    default:
+      if (isNum && val < 0) {
+        return { status: 'error', message: 'Value cannot be negative.' };
+      }
+      return { status: 'success', message: 'Verified.' };
+  }
+}
+
+interface CueTextFieldProps {
+  label: string;
+  path: string;
+  type?: 'text' | 'number';
+  isMonospace?: boolean;
+  uppercase?: boolean;
+  startAdornment?: React.ReactNode;
+  data: Form16Data;
+  onChange: (value: any) => void;
+}
+
+export function CueTextField({
+  label,
+  path,
+  type = 'text',
+  isMonospace = false,
+  uppercase = false,
+  startAdornment,
+  data,
+  onChange,
+}: CueTextFieldProps) {
+  const getNestedValue = (obj: any, keyPath: string): any => {
+    const keys = keyPath.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current === undefined || current === null) return '';
+      current = current[key];
+    }
+    return current ?? '';
+  };
+
+  const val = getNestedValue(data, path);
+  const cue = getFieldCue(path, data);
+
+  let color = '#2e7d32'; // success (green)
+  let Icon = CheckCircleIcon;
+  if (cue.status === 'warning') {
+    color = '#ed6c02'; // warning (orange)
+    Icon = WarningIcon;
+  } else if (cue.status === 'error') {
+    color = '#d32f2f'; // error (red)
+    Icon = ErrorIcon;
+  }
+
+  return (
+    <Tooltip title={cue.message} arrow>
+      <TextField
+        fullWidth
+        label={label}
+        type={type}
+        value={val}
+        onChange={(e) => {
+          let v: any = e.target.value;
+          if (type === 'number') {
+            v = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+          }
+          onChange(v);
+        }}
+        variant="outlined"
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': { borderColor: `${color} !important` },
+            '&:hover fieldset': { borderColor: `${color} !important` },
+            '&.Mui-focused fieldset': { borderColor: `${color} !important` },
+          },
+          '& .MuiInputLabel-root': {
+            color: `${color} !important`,
+          },
+        }}
+        slotProps={{
+          input: {
+            startAdornment: startAdornment,
+            endAdornment: (
+              <InputAdornment position="end" sx={{ color: color }}>
+                <Icon sx={{ fontSize: 18 }} />
+              </InputAdornment>
+            ),
+            style: {
+              fontFamily: isMonospace ? 'monospace' : 'inherit',
+              textTransform: uppercase ? 'uppercase' : 'none',
+            },
+          },
+        }}
+      />
+    </Tooltip>
+  );
+}
+
+interface AssistantMessageProps {
+  content: string;
+  msgIdx: number;
+  acceptedMessages: Record<number, boolean>;
+  rejectedMessages: Record<number, boolean>;
+  onAccept: (msgIdx: number, data: any) => void;
+  onReject: (msgIdx: number) => void;
+}
+
+export function AssistantMessage({
+  content,
+  msgIdx,
+  acceptedMessages,
+  rejectedMessages,
+  onAccept,
+  onReject,
+}: AssistantMessageProps) {
+  const parsed = useMemo(() => {
+    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+    const match = content.match(jsonRegex);
+    if (match) {
+      try {
+        const json = JSON.parse(match[1].trim());
+        const textOutside = content.replace(jsonRegex, '').trim();
+        return { json, textOutside };
+      } catch (e) {
+        // failed parsing
+      }
+    }
+    return { json: null, textOutside: content };
+  }, [content]);
+
+  const isAccepted = acceptedMessages[msgIdx];
+  const isRejected = rejectedMessages[msgIdx];
+
+  if (!parsed.json) {
+    return (
+      <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
+        {content}
+      </Typography>
+    );
+  }
+
+  const { json, textOutside } = parsed;
+  const recommendations = Array.isArray(json.recommendations) ? json.recommendations : [];
+  const updatedData = json.updatedForm16Data;
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      {textOutside && (
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
+          {textOutside}
+        </Typography>
+      )}
+
+      {/* Recommendations Cards */}
+      {recommendations.map((rec: any, rIdx: number) => {
+        let severity: 'error' | 'warning' | 'info' | 'success' = 'info';
+        if (rec.type === 'error') severity = 'error';
+        else if (rec.type === 'warning') severity = 'warning';
+        else if (rec.type === 'info') severity = 'info';
+
+        return (
+          <Alert key={rIdx} severity={severity} variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }}>
+            <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>
+              {rec.field ? `Field: ${rec.field}` : 'Recommendation'}
+            </AlertTitle>
+            <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
+              {rec.message}
+            </Typography>
+            {rec.suggestion && (
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
+                Suggestion: {rec.suggestion}
+              </Typography>
+            )}
+          </Alert>
+        );
+      })}
+
+      {/* Proposed Updated Data Action Card */}
+      {updatedData && (
+        <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed' }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SmartToyIcon sx={{ fontSize: 16 }} /> AI Suggested Updates
+            </Typography>
+            <Typography variant="body2" sx={{ my: 1, fontSize: '0.775rem' }}>
+              The AI assistant has detected discrepancies and proposed corrections to your tax details. Would you like to override your existing form details with these suggested corrections?
+            </Typography>
+
+            {!isAccepted && !isRejected ? (
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="success"
+                  onClick={() => onAccept(msgIdx, updatedData)}
+                >
+                  Accept & Apply
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => onReject(msgIdx)}
+                >
+                  Reject
+                </Button>
+              </Box>
+            ) : isAccepted ? (
+              <Alert severity="success" variant="filled" sx={{ py: 0, px: 1, borderRadius: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Applied Successfully!</Typography>
+              </Alert>
+            ) : (
+              <Typography variant="caption" color="error" sx={{ fontWeight: 'bold' }}>
+                Updates Rejected
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+}
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
+
+  const updateNestedValue = (path: string, val: any) => {
+    setExtractedData((prev) => {
+      if (!prev) return prev;
+      const next = JSON.parse(JSON.stringify(prev));
+      const parts = path.split('.');
+      let current = next;
+      for (let i = 0; i < parts.length - 1; i++) {
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = val;
+
+      if (path.startsWith('deductions') || path === 'totalChapterVIADeductions') {
+        if (path !== 'totalChapterVIADeductions') {
+          next.totalChapterVIADeductions =
+            (next.deductions80C || 0) +
+            (next.deductions80CCC || 0) +
+            (next.deductions80CCD1 || 0) +
+            (next.deductions80CCD1B || 0) +
+            (next.deductions80CCD2 || 0) +
+            (next.deductions80D || 0) +
+            (next.deductions80E || 0) +
+            (next.deductions80G || 0) +
+            (next.deductions80TTA || 0);
+        }
+      }
+      return next;
+    });
+  };
   const [rawText, setRawText] = useState<string>('');
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,6 +582,19 @@ export default function Home() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
   const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
+
+  const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
+  const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
+
+  const handleAcceptProposal = (msgIdx: number, updatedData: any) => {
+    setAcceptedMessages((prev) => ({ ...prev, [msgIdx]: true }));
+    setExtractedData(updatedData);
+    setErrors(validateForm16Data(updatedData));
+  };
+
+  const handleRejectProposal = (msgIdx: number) => {
+    setRejectedMessages((prev) => ({ ...prev, [msgIdx]: true }));
+  };
 
   const geminiModels = useMemo(() => {
     const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
@@ -503,370 +1020,161 @@ export default function Home() {
                       </Box>
 
                       <Grid container spacing={2}>
-                        {/* Assessee Details */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5 }}>
-                            Assessee Details
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                            <TextField
-                              fullWidth
-                              label="Employee PAN"
-                              value={extractedData.employee.pan}
-                              onChange={(e) =>
-                                setExtractedData((prev) => {
-                                  if (!prev) return prev;
-                                  const next = JSON.parse(JSON.stringify(prev));
-                                  next.employee.pan = e.target.value;
-                                  return next;
-                                })
-                              }
-                              variant="outlined"
-                              slotProps={{
-                                htmlInput: { style: { fontFamily: 'monospace', textTransform: 'uppercase' } }
-                              }}
-                            />
-                            <TextField
-                              fullWidth
-                              label="First Name"
-                              value={extractedData.employee.name.firstName}
-                              onChange={(e) =>
-                                setExtractedData((prev) => {
-                                  if (!prev) return prev;
-                                  const next = JSON.parse(JSON.stringify(prev));
-                                  next.employee.name.firstName = e.target.value;
-                                  return next;
-                                })
-                              }
-                              variant="outlined"
-                            />
-                            <TextField
-                              fullWidth
-                              label="Last Name"
-                              value={extractedData.employee.name.lastName}
-                              onChange={(e) =>
-                                setExtractedData((prev) => {
-                                  if (!prev) return prev;
-                                  const next = JSON.parse(JSON.stringify(prev));
-                                  next.employee.name.lastName = e.target.value;
-                                  return next;
-                                })
-                              }
-                              variant="outlined"
-                            />
-                          </Box>
-                        </Grid>
-
-                        {/* Salary Details */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5 }}>
-                            Salary Income (₹)
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                            <TextField
-                              fullWidth
-                              label="Gross Salary"
-                              type="number"
-                              value={extractedData.salary.grossSalary}
-                              onChange={(e) =>
-                                setExtractedData((prev) => {
-                                  if (!prev) return prev;
-                                  const next = JSON.parse(JSON.stringify(prev));
-                                  next.salary.grossSalary = parseFloat(e.target.value) || 0;
-                                  return next;
-                                })
-                              }
-                              variant="outlined"
-                              slotProps={{
-                                input: {
-                                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                }
-                              }}
-                            />
-                            <TextField
-                              fullWidth
-                              label="Standard Deduction (u/s 16ia)"
-                              type="number"
-                              value={extractedData.salary.standardDeduction16ia}
-                              onChange={(e) =>
-                                setExtractedData((prev) => {
-                                  if (!prev) return prev;
-                                  const next = JSON.parse(JSON.stringify(prev));
-                                  next.salary.standardDeduction16ia = parseFloat(e.target.value) || 0;
-                                  return next;
-                                })
-                              }
-                              variant="outlined"
-                              slotProps={{
-                                input: {
-                                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                }
-                              }}
-                            />
-                          </Box>
-                        </Grid>
-
-                        {/* Deductions Section */}
+                        {/* 1. General & Filer Information */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                            General & Filer Information
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Assessment Year" path="assessmentYear" data={extractedData} onChange={(v) => updateNestedValue('assessmentYear', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Period From (YYYY-MM-DD)" path="period.from" data={extractedData} onChange={(v) => updateNestedValue('period.from', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Period To (YYYY-MM-DD)" path="period.to" data={extractedData} onChange={(v) => updateNestedValue('period.to', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employer Name" path="employer.name" data={extractedData} onChange={(v) => updateNestedValue('employer.name', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employer PAN" path="employer.pan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employer.pan', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employer TAN" path="employer.tan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employer.tan', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                              <CueTextField label="Employer Address" path="employer.address" data={extractedData} onChange={(v) => updateNestedValue('employer.address', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employee First Name" path="employee.name.firstName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.firstName', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employee Middle Name" path="employee.name.middleName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.middleName', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employee Last Name" path="employee.name.lastName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.lastName', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Employee PAN" path="employee.pan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employee.pan', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 8 }}>
+                              <CueTextField label="Employee Address" path="employee.address" data={extractedData} onChange={(v) => updateNestedValue('employee.address', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* 2. Detailed Salary & Deductions u/s 16 */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                            Salary Income Details (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Perquisites u/s 17(2)" type="number" path="salary.perquisites17_2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.perquisites17_2', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Profits in lieu u/s 17(3)" type="number" path="salary.profitsInLieu17_3" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.profitsInLieu17_3', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Gross Salary" type="number" path="salary.grossSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.grossSalary', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Total Exempt Allowances u/s 10" type="number" path="salary.totalExemptAllowances" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.totalExemptAllowances', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Net Salary" type="number" path="salary.netSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.netSalary', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Standard Deduction (u/s 16ia)" type="number" path="salary.standardDeduction16ia" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.standardDeduction16ia', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Entertainment Allowance (16ii)" type="number" path="salary.entertainmentAllowance16ii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.entertainmentAllowance16ii', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Professional Tax (16iii)" type="number" path="salary.professionalTax16iii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.professionalTax16iii', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Total Deductions u/s 16" type="number" path="salary.totalDeductionsUs16" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.totalDeductionsUs16', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Income Chargeable under head Salaries" type="number" path="salary.incomeChargeableUnderHeadSalaries" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.incomeChargeableUnderHeadSalaries', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* 3. Other Income */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                            Other Income Details (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="House Property Income" type="number" path="otherIncome.houseProperty" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('otherIncome.houseProperty', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* 4. Chapter VI-A Deductions */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
                             Chapter VI-A Deductions (₹)
                           </Typography>
-                          <Grid container spacing={1.5}>
+                          <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80C"
-                                type="number"
-                                value={extractedData.deductions80C}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80C = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80C" type="number" path="deductions80C" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80C', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80CCC"
-                                type="number"
-                                value={extractedData.deductions80CCC}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80CCC = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80CCC" type="number" path="deductions80CCC" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCC', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80CCD(1)"
-                                type="number"
-                                value={extractedData.deductions80CCD1}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80CCD1 = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80CCD(1)" type="number" path="deductions80CCD1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD1', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80CCD(1B)"
-                                type="number"
-                                value={extractedData.deductions80CCD1B}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80CCD1B = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80CCD(1B)" type="number" path="deductions80CCD1B" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD1B', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80CCD(2)"
-                                type="number"
-                                value={extractedData.deductions80CCD2}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80CCD2 = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80CCD(2)" type="number" path="deductions80CCD2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD2', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80D"
-                                type="number"
-                                value={extractedData.deductions80D}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80D = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80D" type="number" path="deductions80D" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80D', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80E"
-                                type="number"
-                                value={extractedData.deductions80E}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80E = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80E" type="number" path="deductions80E" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80E', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80G"
-                                type="number"
-                                value={extractedData.deductions80G}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80G = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80G" type="number" path="deductions80G" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80G', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80TTA"
-                                type="number"
-                                value={extractedData.deductions80TTA}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80TTA = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Section 80TTA" type="number" path="deductions80TTA" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80TTA', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                              <CueTextField label="Total Chapter VI-A Deductions" type="number" path="totalChapterVIADeductions" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('totalChapterVIADeductions', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* 5. Summary */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                            Tax Computation Summary (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Gross Total Income" type="number" path="grossTotalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('grossTotalIncome', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Total Chapter VI-A Deductions"
-                                type="number"
-                                value={extractedData.totalChapterVIADeductions}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.totalChapterVIADeductions = parseFloat(e.target.value) || 0;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
+                              <CueTextField label="Total Taxable Income" type="number" path="totalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('totalIncome', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="Tax Payable" type="number" path="taxPayable" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxPayable', v)} />
                             </Grid>
                           </Grid>
                         </Grid>
@@ -1081,18 +1389,29 @@ export default function Home() {
                       boxShadow: 'none',
                     }}
                   >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        margin: 0,
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: 'inherit',
-                        fontSize: '0.825rem',
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {msg.content}
-                    </Typography>
+                    {msg.role === 'user' ? (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          margin: 0,
+                          whiteSpace: 'pre-wrap',
+                          fontFamily: 'inherit',
+                          fontSize: '0.825rem',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {msg.content}
+                      </Typography>
+                    ) : (
+                      <AssistantMessage
+                        content={msg.content}
+                        msgIdx={idx}
+                        acceptedMessages={acceptedMessages}
+                        rejectedMessages={rejectedMessages}
+                        onAccept={handleAcceptProposal}
+                        onReject={handleRejectProposal}
+                      />
+                    )}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>Attached Documents:</Typography>

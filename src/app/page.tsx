@@ -881,15 +881,15 @@ export default function Home() {
           onClose={() => setChatOpen(false)}
           slotProps={{
             backdrop: { style: { backgroundColor: 'transparent' } },
-          }}
-          PaperProps={{
-            sx: {
-              width: { xs: '100%', sm: 450 },
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: 8,
-            },
+            paper: {
+              sx: {
+                width: { xs: '100%', sm: 450 },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: 8,
+              },
+            }
           }}
         >
           {/* Drawer Header */}

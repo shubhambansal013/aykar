@@ -1,7 +1,21 @@
-import { Form16Data, ITR1_JSON } from '../types';
+import { Form16Data, ITR1_JSON, ReconciledTaxData } from '../types';
 
 export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
   const now = new Date().toISOString().split('T')[0];
+  const recon = data as ReconciledTaxData;
+
+  const credits = recon.taxCredits || {
+    tdsSalary: 0,
+    tdsOther: 0,
+    tcs: 0,
+    advanceTax: 0,
+    selfAssessmentTax: 0,
+  };
+
+  const totalTDS = credits.tdsSalary + credits.tdsOther;
+  const totalTaxesPaid = credits.advanceTax + totalTDS + credits.tcs + credits.selfAssessmentTax;
+  const balTaxPayable = Math.max(0, data.taxPayable - totalTaxesPaid);
+  const refundDue = Math.max(0, totalTaxesPaid - data.taxPayable);
 
   return {
     ITR: {
@@ -103,16 +117,16 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
         },
         TaxPaid: {
           TaxesPaid: {
-            AdvanceTax: 0,
-            TDS: 0,
-            TCS: 0,
-            SelfAssessmentTax: 0,
-            TotalTaxesPaid: 0,
+            AdvanceTax: credits.advanceTax,
+            TDS: totalTDS,
+            TCS: credits.tcs,
+            SelfAssessmentTax: credits.selfAssessmentTax,
+            TotalTaxesPaid: totalTaxesPaid,
           },
-          BalTaxPayable: 0,
+          BalTaxPayable: balTaxPayable,
         },
         Refund: {
-          RefundDue: 0,
+          RefundDue: refundDue,
           BankAccountDtls: {
             AddtnlBankDetails: [{
               IFSCCode: 'ABCD0123456',

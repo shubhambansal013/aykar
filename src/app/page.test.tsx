@@ -11,6 +11,15 @@ vi.mock('@/lib/form16/extractor');
 vi.mock('@/lib/form16/parser');
 vi.mock('@/lib/itr/validator');
 vi.mock('@/lib/itr/mapper');
+vi.mock('@/lib/ais/parser', () => ({
+  parseAISText: vi.fn().mockReturnValue({ interestSavings: 1000 })
+}));
+vi.mock('@/lib/tis/parser', () => ({
+  parseTISText: vi.fn().mockReturnValue({ interestSavings: 1000 })
+}));
+vi.mock('@/lib/form26as/parser', () => ({
+  parseForm26ASText: vi.fn().mockReturnValue({ tdsSalary: [] })
+}));
 
 import { getFieldCue } from './page';
 
@@ -1188,4 +1197,144 @@ describe('Home Page', () => {
 
     vi.restoreAllMocks();
   });
+
+  test('correctly renders markdown elements using parseMarkdown and renderInlineMarkdown', () => {
+    const markdownContent = `# Header 1\n## Header 2\n* Bullet item\n1. Ordered item\n> Blockquote text\nSome **bold** and *italic* and \`inline code\` and a [link](https://example.com) here.`;
+
+    render(
+      <AssistantMessage
+        content={markdownContent}
+        msgIdx={10}
+        acceptedMessages={{}}
+        rejectedMessages={{}}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+      />
+    );
+
+    // Verify headers
+    expect(screen.getByText('Header 1')).toBeDefined();
+    expect(screen.getByText('Header 2')).toBeDefined();
+
+    // Verify list items
+    expect(screen.getByText('Bullet item')).toBeDefined();
+    expect(screen.getByText('Ordered item')).toBeDefined();
+
+    // Verify blockquote
+    expect(screen.getByText('Blockquote text')).toBeDefined();
+
+    // Verify inline markdown content exists
+    expect(screen.getByText('bold')).toBeDefined();
+    expect(screen.getByText('italic')).toBeDefined();
+    expect(screen.getByText('inline code')).toBeDefined();
+    expect(screen.getByText('link')).toBeDefined();
+    expect((screen.getByText('link') as HTMLAnchorElement).href).toBe('https://example.com/');
+  });
+
+  test('displays AIS, TIS, and 26AS attachment badges in chat panel context area and allows independent removal', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: { pan: 'ABCDE1234F', name: { firstName: 'John', lastName: 'Doe' } },
+      salary: { grossSalary: 1000000, standardDeduction16ia: 50000 },
+      deductions80C: 150000, deductions80D: 25000, deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const { container } = render(<Home />);
+
+    // Open chat
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    // Initially, no badges
+    expect(screen.queryByTestId('form16-badge')).toBeNull();
+    expect(screen.queryByTestId('ais-badge')).toBeNull();
+    expect(screen.queryByTestId('tis-badge')).toBeNull();
+    expect(screen.queryByTestId('form26as-badge')).toBeNull();
+
+    // Upload Form-16 PDF
+    const file = new File(['dummy'], 'form16.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const fileInput = container.querySelector('#file-upload');
+    expect(fileInput).not.toBeNull();
+    fireEvent.change(fileInput!, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('form16-badge')).toBeDefined();
+    });
+
+    // Upload AIS PDF
+    const aisFile = new File(['dummy ais'], 'ais.pdf', { type: 'application/pdf' });
+    Object.defineProperty(aisFile, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const aisInput = container.querySelector('#ais-upload');
+    expect(aisInput).not.toBeNull();
+    fireEvent.change(aisInput!, { target: { files: [aisFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ais-badge')).toBeDefined();
+    });
+
+    // Upload TIS PDF
+    const tisFile = new File(['dummy tis'], 'tis.pdf', { type: 'application/pdf' });
+    Object.defineProperty(tisFile, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const tisInput = container.querySelector('#tis-upload');
+    expect(tisInput).not.toBeNull();
+    fireEvent.change(tisInput!, { target: { files: [tisFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tis-badge')).toBeDefined();
+    });
+
+    // Upload Form 26AS PDF
+    const f26asFile = new File(['dummy 26as'], 'form26as.pdf', { type: 'application/pdf' });
+    Object.defineProperty(f26asFile, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const f26asInput = container.querySelector('#f26as-upload');
+    expect(f26asInput).not.toBeNull();
+    fireEvent.change(f26asInput!, { target: { files: [f26asFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('form26as-badge')).toBeDefined();
+    });
+
+    // Verify all four badges are displayed
+    expect(screen.getByTestId('form16-badge')).toBeDefined();
+    expect(screen.getByTestId('ais-badge')).toBeDefined();
+    expect(screen.getByTestId('tis-badge')).toBeDefined();
+    expect(screen.getByTestId('form26as-badge')).toBeDefined();
+
+    // Remove TIS badge and verify it is removed independently
+    const removeTisBtn = screen.getByLabelText('remove tis context');
+    fireEvent.click(removeTisBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('tis-badge')).toBeNull();
+    });
+    expect(screen.getByTestId('form16-badge')).toBeDefined();
+    expect(screen.getByTestId('ais-badge')).toBeDefined();
+    expect(screen.getByTestId('form26as-badge')).toBeDefined();
+
+    // Remove AIS badge and verify it is removed independently
+    const removeAisBtn = screen.getByLabelText('remove ais context');
+    fireEvent.click(removeAisBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('ais-badge')).toBeNull();
+    });
+    expect(screen.getByTestId('form16-badge')).toBeDefined();
+    expect(screen.getByTestId('form26as-badge')).toBeDefined();
+
+    // Remove Form 26AS badge and verify it is removed independently
+    const remove26asBtn = screen.getByLabelText('remove form26as context');
+    fireEvent.click(remove26asBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('form26as-badge')).toBeNull();
+    });
+    expect(screen.getByTestId('form16-badge')).toBeDefined();
+
+    vi.restoreAllMocks();
+  }, 20000);
 });

@@ -835,8 +835,16 @@ describe('Home Page', () => {
       expect(screen.getByText('test.png')).toBeDefined();
     });
 
-    const removeBtn = screen.getByLabelText('remove attachment');
-    fireEvent.click(removeBtn);
+    // Also attach a text file to test readFileAsText and raise function coverage
+    const txtFile = new File(['plain text content'], 'test.txt', { type: 'text/plain' });
+    fireEvent.change(attachInput!, { target: { files: [txtFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText('test.txt')).toBeDefined();
+    });
+
+    const removeBtn = screen.getAllByLabelText('remove attachment');
+    fireEvent.click(removeBtn[0]);
 
     await waitFor(() => {
       expect(screen.queryByText('test.png')).toBeNull();

@@ -7,109 +7,168 @@ function extractNumbersNoSpace(line: string): number[] {
   return matches.map(m => parseFloat(m.replace(/[\s,]/g, '')) || 0);
 }
 
-export function parseAISText(text: string): AISData {
-  const data: AISData = {
-    interestSavings: 0,
-    interestDeposit: 0,
-    dividendIncome: 0,
-    tdsDetails: [],
+function findNameInWindow(lines: string[], centerIdx: number, targetTan: string): string {
+  const start = Math.max(0, centerIdx - 2);
+  const end = Math.min(lines.length - 1, centerIdx + 2);
+
+  const nameKeywords = [/Deductor\s*Name/i, /Name\s*of\s*Deductor/i, /Name\s*of\s*the\s*Deductor/i];
+
+  for (let j = start; j <= end; j++) {
+    const line = lines[j];
+    for (const kw of nameKeywords) {
+      if (kw.test(line)) {
+        const match = line.match(new RegExp(`${kw.source}\\s*[:\\-]?\\s*(.*)`, 'i'));
+        if (match && match[1]) {
+          let name = match[1].trim();
+          name = name.replace(new RegExp(targetTan, 'gi'), '');
+          name = name.replace(/\s+/g, ' ').trim();
+          if (name.length > 2) return name;
+        }
+      }
+    }
+  }
+
+  const cleanLine = (line: string): string => {
+    let s = line.replace(new RegExp(targetTan, 'gi'), '');
+    s = s.replace(/\b(19\d[A-Z]*|206[A-Z]*)\b/gi, '');
+    s = s.replace(/\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, '');
+    s = s.replace(/-?\s*\d[\d,]*\.\d{2}/g, '');
+    s = s.replace(/\b[FUO]\b/g, '');
+    s = s.replace(/\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi, '');
+    s = s.replace(/\b(PART\s+[A-Z])\b/gi, '');
+    s = s.replace(/[^A-Za-z\s&.,()]/g, '');
+    return s.replace(/\s+/g, ' ').trim();
   };
 
+  const tanLineCleaned = cleanLine(lines[centerIdx]);
+  if (tanLineCleaned.length > 2) {
+    return tanLineCleaned;
+  }
+
+  const indicesToCheck = [centerIdx - 1, centerIdx + 1, centerIdx - 2, centerIdx + 2];
+  for (const idx of indicesToCheck) {
+    if (idx >= 0 && idx < lines.length) {
+      const lineText = lines[idx];
+      if (/PART\s+[A-Z]/i.test(lineText) || /Annual\s+Tax\s+Statement/i.test(lineText)) {
+        continue;
+      }
+      const cleaned = cleanLine(lineText);
+      if (cleaned.length > 2) {
+        return cleaned;
+      }
+    }
+  }
+
+  return 'Unknown Deductor';
+}
+
+function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
+  let maxValue = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let matched = false;
+    for (const pat of patterns) {
+      if (pat.test(line)) {
+        matched = true;
+        break;
+      }
+    }
+
+    if (matched) {
+      const currentLineNumbers = extractNumbersNoSpace(line);
+      let foundNumbers: number[] = [];
+      if (currentLineNumbers.length > 0) {
+        foundNumbers = currentLineNumbers;
+      } else {
+        const end = Math.min(lines.length - 1, i + 3);
+        for (let j = i + 1; j <= end; j++) {
+          const subLine = lines[j];
+          if (/Interest\s+from\s+savings/i.test(subLine) ||
+              /Interest\s+on\s+deposit/i.test(subLine) ||
+              /Dividend/i.test(subLine) ||
+              /Salary/i.test(subLine)) {
+            break;
+          }
+          const nums = extractNumbersNoSpace(subLine);
+          if (nums.length > 0) {
+            foundNumbers.push(...nums);
+          }
+        }
+      }
+
+      if (foundNumbers.length > 0) {
+        const val = foundNumbers[foundNumbers.length - 1];
+        if (val > maxValue) {
+          maxValue = val;
+        }
+      }
+    }
+  }
+
+  return maxValue;
+}
+
+export function parseAISText(text: string): AISData {
   const lines = text.split('\n');
 
-  // Regex patterns to find Savings Bank Interest, Deposit Interest, Dividend
   const savingsPatterns = [
-    /Interest\s+from\s+savings\s+bank\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Savings\s+bank\s+interest\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Interest\s+from\s+Savings\s+Bank\b/i,
+    /Interest\s+from\s+savings\s+bank/i,
+    /Savings\s+bank\s+interest/i,
   ];
 
   const depositPatterns = [
-    /Interest\s+on\s+deposit\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Deposit\s+interest\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Interest\s+on\s+time\s+deposit\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Interest\s+from\s+deposits\b/i,
+    /Interest\s+on\s+deposit/i,
+    /Deposit\s+interest/i,
+    /Interest\s+on\s+time\s+deposit/i,
+    /Interest\s+from\s+deposits/i,
   ];
 
   const dividendPatterns = [
-    /Dividend\s+Income\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Dividend\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
+    /Dividend\s+Income/i,
     /\bDividend\b/i,
   ];
 
-  // Try to find the values
-  for (const line of lines) {
-    // Interest from savings bank
-    for (const pat of savingsPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.interestSavings = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          // Positional
-          const numbers = extractNumbersNoSpace(line);
-          if (numbers.length > 0) {
-            data.interestSavings = numbers[numbers.length - 1];
-          }
-        }
-        break;
-      }
+  const interestSavings = findValueForPatterns(lines, savingsPatterns);
+  const interestDeposit = findValueForPatterns(lines, depositPatterns);
+  const dividendIncome = findValueForPatterns(lines, dividendPatterns);
+
+  const tdsDetailsMap = new Map<string, { tan: string; deductorName: string; section: string; amount: number }>();
+  let currentTan: string | null = null;
+  let currentDeductorName: string | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const tanMatch = line.match(/\b([A-Z]{4}[0-9]{5}[A-Z])\b/i);
+    if (tanMatch) {
+      const tan = tanMatch[1].toUpperCase();
+      currentTan = tan;
+      currentDeductorName = findNameInWindow(lines, i, tan);
     }
 
-    // Interest on deposit
-    for (const pat of depositPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.interestDeposit = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = extractNumbersNoSpace(line);
-          if (numbers.length > 0) {
-            data.interestDeposit = numbers[numbers.length - 1];
+    if (currentTan && !/total/i.test(line) && !/summary/i.test(line)) {
+      const sectionMatch = line.match(/\b(19\d[A-Z]*|206[A-Z]*)\b/i);
+      if (sectionMatch) {
+        const section = sectionMatch[1].toUpperCase();
+        const numbers = extractNumbersNoSpace(line);
+        if (numbers.length > 0) {
+          const amount = numbers[numbers.length - 1];
+          const key = `${currentTan}_${section}`;
+          const existing = tdsDetailsMap.get(key);
+          if (existing) {
+            existing.amount += amount;
+          } else {
+            tdsDetailsMap.set(key, { tan: currentTan, deductorName: currentDeductorName || '', section, amount });
           }
         }
-        break;
-      }
-    }
-
-    // Dividend
-    for (const pat of dividendPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.dividendIncome = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = extractNumbersNoSpace(line);
-          if (numbers.length > 0) {
-            data.dividendIncome = numbers[numbers.length - 1];
-          }
-        }
-        break;
       }
     }
   }
 
-  // Parse TDS Details in AIS: Look for TDS rows
-  // Example TDS pattern: "TDS on..." or "TDS u/s" or "Tax Deducted at Source"
-  // Format: [TAN] [Deductor Name] [Section] [Amount]
-  for (const line of lines) {
-    const matches = [...line.matchAll(/\b([A-Z]{4}[0-9]{5}[A-Z])\s+([A-Za-z0-9\s.,()&]{3,40}?)\s+\b(19[2-9][A-Z]*|206[A-Z]*|194[A-Z]*)\b/gi)];
-    for (const match of matches) {
-      const tan = match[1];
-      const name = match[2].trim();
-      const section = match[3];
-      const numbers = extractNumbersNoSpace(line);
-      if (numbers.length > 0) {
-        const amount = numbers[numbers.length - 1];
-        data.tdsDetails.push({
-          tan,
-          deductorName: name,
-          section,
-          amount,
-        });
-      }
-    }
-  }
-
-  return data;
+  return {
+    interestSavings,
+    interestDeposit,
+    dividendIncome,
+    tdsDetails: Array.from(tdsDetailsMap.values()),
+  };
 }

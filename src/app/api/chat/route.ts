@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       try {
         const cfContext = getCloudflareContext();
-        if (cfContext?.env?.GEMINI_API_KEY) {
-          apiKey = cfContext.env.GEMINI_API_KEY as string;
+        const cfEnv = cfContext?.env as any;
+        if (cfEnv?.GEMINI_API_KEY) {
+          apiKey = cfEnv.GEMINI_API_KEY as string;
         }
       } catch (e) {
         // Silently catch errors if getCloudflareContext is called outside Cloudflare (e.g. tests or local dev without context)

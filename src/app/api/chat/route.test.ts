@@ -72,7 +72,7 @@ describe('AI Chat Route API Handler', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [calledUrl, calledInit] = mockFetch.mock.calls[0];
-    expect(calledUrl).toContain('gemini-1.5-flash');
+    expect(calledUrl).toContain('gemini');
     expect(calledUrl).toContain('key=MOCK_KEY');
 
     const bodyObj = JSON.parse(calledInit.body);

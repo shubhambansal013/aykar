@@ -17,7 +17,17 @@ interface ChatMessage {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, itrData, rawText, isReview, model: requestedModel } = (await req.json()) as any;
+    const {
+      messages,
+      itrData,
+      itrJson,
+      rawText,
+      aisRawText,
+      tisRawText,
+      form26asRawText,
+      isReview,
+      model: requestedModel
+    } = (await req.json()) as any;
 
     let apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -46,10 +56,22 @@ export async function POST(req: NextRequest) {
     // Build system instruction
     let contextPrompt = systemPrompt;
     if (itrData) {
-      contextPrompt += `\n\nHere is the current Income Tax Return (ITR) data under review:\n\`\`\`json\n${JSON.stringify(itrData, null, 2)}\n\`\`\``;
+      contextPrompt += `\n\nHere is the current parsed Form-16 data under review:\n\`\`\`json\n${JSON.stringify(itrData, null, 2)}\n\`\`\``;
+    }
+    if (itrJson) {
+      contextPrompt += `\n\nHere is the parsed ITR-1 Output JSON under review:\n\`\`\`json\n${JSON.stringify(itrJson, null, 2)}\n\`\`\``;
     }
     if (rawText) {
       contextPrompt += `\n\nHere is the raw extracted text from the Form-16 PDF:\n${rawText.substring(0, 10000)}`; // Keep within reasonable limits
+    }
+    if (aisRawText) {
+      contextPrompt += `\n\nHere is the raw extracted text from the AIS PDF:\n${aisRawText.substring(0, 10000)}`;
+    }
+    if (tisRawText) {
+      contextPrompt += `\n\nHere is the raw extracted text from the TIS PDF:\n${tisRawText.substring(0, 10000)}`;
+    }
+    if (form26asRawText) {
+      contextPrompt += `\n\nHere is the raw extracted text from the Form 26AS PDF:\n${form26asRawText.substring(0, 10000)}`;
     }
 
     if (isReview) {
@@ -69,12 +91,25 @@ export async function POST(req: NextRequest) {
       // Handle file attachments if any
       if (msg.attachments && Array.isArray(msg.attachments)) {
         for (const attach of msg.attachments) {
-          parts.push({
-            inlineData: {
-              mimeType: attach.mimeType,
-              data: attach.data, // Base64 without headers
+          if (attach.mimeType === 'text/plain' || attach.mimeType.startsWith('text/')) {
+            try {
+              const decodedText = Buffer.from(attach.data, 'base64').toString('utf-8');
+              parts.push({
+                text: `\n\n[Attached File: ${attach.name}]\n${decodedText}`
+              });
+            } catch (e) {
+              parts.push({
+                text: `\n\n[Attached File: ${attach.name}] (Base64 data)\n${attach.data}`
+              });
             }
-          });
+          } else {
+            parts.push({
+              inlineData: {
+                mimeType: attach.mimeType,
+                data: attach.data, // Base64 without headers
+              }
+            });
+          }
         }
       }
 

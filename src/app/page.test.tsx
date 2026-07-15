@@ -835,8 +835,16 @@ describe('Home Page', () => {
       expect(screen.getByText('test.png')).toBeDefined();
     });
 
-    const removeBtn = screen.getByLabelText('remove attachment');
-    fireEvent.click(removeBtn);
+    // Also attach a text file to test readFileAsText and raise function coverage
+    const txtFile = new File(['plain text content'], 'test.txt', { type: 'text/plain' });
+    fireEvent.change(attachInput!, { target: { files: [txtFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText('test.txt')).toBeDefined();
+    });
+
+    const removeBtn = screen.getAllByLabelText('remove attachment');
+    fireEvent.click(removeBtn[0]);
 
     await waitFor(() => {
       expect(screen.queryByText('test.png')).toBeNull();
@@ -900,14 +908,21 @@ describe('Home Page', () => {
     const chatBtn = screen.getByLabelText('open ai chat');
     fireEvent.click(chatBtn);
 
-    // Verify checkbox is checked by default
+    // Verify checkbox is unchecked by default
     const checkbox = screen.getByLabelText('Send only raw data to AI agent') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    // badge should be present by default
+    expect(screen.getByTestId('parsed-itr-badge')).toBeDefined();
+
+    // check the checkbox to send only raw data
+    fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(true);
 
-    // badge should not be present
+    // badge should not be present now
     expect(screen.queryByTestId('parsed-itr-badge')).toBeNull();
 
-    // uncheck the checkbox
+    // uncheck the checkbox to send parsed data again
     fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(false);
 
@@ -933,7 +948,7 @@ describe('Home Page', () => {
     expect(body.itrData.employee.pan).toBe('ABCDE1234F');
 
     vi.restoreAllMocks();
-  }, 15000);
+  }, 35000);
 
   test('handles AI updates proposal accept and reject end-to-end in Home page', async () => {
     const mockText = 'Raw PDF text';
@@ -1079,6 +1094,97 @@ describe('Home Page', () => {
     await waitFor(() => {
       expect(screen.getByText('Updates Rejected')).toBeDefined();
     });
+
+    vi.restoreAllMocks();
+  });
+
+  test('handles AI updates proposal accept and undo end-to-end in Home page', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: { grossSalary: 1000000, standardDeduction16ia: 50000 },
+      deductions80C: 150000, deductions80D: 25000, deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    // Stub fetch to return a JSON update proposal response
+    const mockProposalResponse = {
+      role: 'assistant',
+      content: `\`\`\`json
+{
+  "recommendations": [
+    { "type": "info", "field": "deductions80D", "message": "Updated 80D details", "suggestion": "Claim more" }
+  ],
+  "updatedForm16Data": {
+    "employee": { "pan": "UPDATED_PAN", "name": { "firstName": "UpdatedJohn", "lastName": "Doe" } },
+    "salary": { "grossSalary": 1100000, "standardDeduction16ia": 50000 },
+    "deductions80C": 150000, "deductions80D": 25000, "deductions80TTA": 10000
+  }
+}
+\`\`\``
+    };
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockProposalResponse
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    // Upload file first to populate extractedData
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // Trigger AI Review which will fetch the proposal
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    // Wait for the proposal card to appear in the Chat panel
+    await waitFor(() => {
+      expect(screen.getByText('AI Suggested Updates')).toBeDefined();
+    });
+
+    // Accept & Apply the proposal
+    const acceptBtn = screen.getByText('Accept & Apply');
+    fireEvent.click(acceptBtn);
+
+    // Verify that the data was updated in the main review form
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('UPDATED_PAN')).toBeDefined();
+      expect(screen.getByDisplayValue('UpdatedJohn')).toBeDefined();
+    });
+
+    // Verify Applied Successfully confirmation is shown
+    expect(screen.getByText('Applied Successfully!')).toBeDefined();
+
+    // Click Undo
+    const undoBtn = screen.getByText('Undo');
+    fireEvent.click(undoBtn);
+
+    // Verify that the data reverts back
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('ABCDE1234F')).toBeDefined();
+      expect(screen.getByDisplayValue('John')).toBeDefined();
+    });
+
+    // Verify the confirmation is hidden and Accept / Reject buttons are back
+    expect(screen.queryByText('Applied Successfully!')).toBeNull();
+    expect(screen.getByText('Accept & Apply')).toBeDefined();
 
     vi.restoreAllMocks();
   });

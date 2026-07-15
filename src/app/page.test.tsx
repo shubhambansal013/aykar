@@ -30,11 +30,75 @@ describe('Home Page', () => {
     });
   });
 
-  test('renders Form-16 parser title and AI Chat elements', () => {
+  test('renders Form-16 parser title and AI Chat elements with correct default model', () => {
     render(<Home />);
     expect(screen.getByText(/Form-16 to ITR JSON Parser/i)).toBeDefined();
     expect(screen.getByLabelText('open ai chat')).toBeDefined();
     expect(screen.getByLabelText('open ai chat window')).toBeDefined();
+
+    // Open chat to inspect default model
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    // Default model selector should display gemini-3.1-flash-lite
+    expect(screen.getAllByText('gemini-3.1-flash-lite').length).toBeGreaterThan(0);
+  });
+
+  test('displays Form-16 context in chat above input and removes it on close click', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    render(<Home />);
+
+    // Open AI Chat first
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    // Context list should initially not contain any Form-16 file representation
+    expect(screen.queryByLabelText('remove form16 context')).toBeNull();
+
+    // Upload file
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test-form16-file.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // Check that context displays the file name in the chat section (it will be present in both main upload view and chat context view)
+    expect(screen.getAllByText('test-form16-file.pdf').length).toBe(2);
+    const removeBtn = screen.getByLabelText('remove form16 context');
+    expect(removeBtn).toBeDefined();
+
+    // Remove form16 context
+    fireEvent.click(removeBtn);
+
+    // Verify it is gone from both areas
+    expect(screen.queryByText('test-form16-file.pdf')).toBeNull();
+    expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
+
+    vi.restoreAllMocks();
   });
 
   test('toggles color mode between light and dark', () => {

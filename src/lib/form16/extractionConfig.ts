@@ -192,17 +192,19 @@ export const extractionConfig: ExtractionConfig = {
       numericTokenIndex: -1
     },
     exemptAllowancesBlock: {
-      start: /Allowances to the extent exempt u\/s 10/is,
-      end: /Total Exempt Allowances/is
+      start: /Allowances to the extent exempt (?:u\/s|under section) 10/is,
+      end: /(?:Total Exempt Allowances|Total amount of exemption claimed under section 10)/is
     },
     exemptAllowancesLines: /Exempt\s+Allowance\s+([0-9a-zA-Z()]+)\s*(-?\s*\d+(?:,\s*\d+)*\.\d{2})/gi,
     totalExemptAllowances: {
       lineRegexes: [
         /Total\s+Exempt\s+Allowances/i,
-        /Total\s+allowances\s+to\s+the\s+extent\s+exempt/i
+        /Total\s+allowances\s+to\s+the\s+extent\s+exempt/i,
+        /Total\s+amount\s+of\s+exemption\s+claimed\s+under\s+section\s+10/i
       ],
       fallbackRegexes: [
-        /Total\s+Exempt\s+Allowances\s*(-?\s*\d+(?:,\s*\d+)*\.\d{2})/i
+        /Total\s+Exempt\s+Allowances\s*(-?\s*\d+(?:,\s*\d+)*\.\d{2})/i,
+        /Total\s+amount\s+of\s+exemption\s+claimed\s+under\s+section\s+10\s*(?:[^\d-]*)(-?\s*\d+(?:,\s*\d+)*\.\d{2})/i
       ],
       numericTokenIndex: -1
     },
@@ -355,10 +357,12 @@ export const extractionConfig: ExtractionConfig = {
     totalChapterVIADeductions: {
       lineRegexes: [
         /Total\s+Chapter\s+VI-A\s+Deductions/i,
-        /Total\s+deductions\s+under\s+Chapter\s+VI-A/i
+        /Total\s+deductions\s+under\s+Chapter\s+VI-A/i,
+        /Aggregate\s+of\s+deductible\s+amount\s+under\s+Chapter\s+VI-A/i
       ],
       fallbackRegexes: [
-        /Total Chapter VI-A Deductions\s+([\d,.-]+\.\d{2})/i
+        /Total Chapter VI-A Deductions\s+([\d,.-]+\.\d{2})/i,
+        /Aggregate\s+of\s+deductible\s+amount\s+under\s+Chapter\s+VI-A\s*(?:[^\d-]*)(-?\s*\d+(?:,\s*\d+)*\.\d{2})/i
       ],
       numericTokenIndex: -1
     }
@@ -375,11 +379,11 @@ export const extractionConfig: ExtractionConfig = {
     },
     totalIncome: {
       lineRegexes: [
-        /(?<!Gross\s+)Total\s+Income/i,
-        /(?:^|[^s])\s+Total\s+Income/i
+        /(?<!Gross\s+|on\s+)Total\s+(?:taxable\s+)?Income/i,
+        /(?:^|[^so])\s+Total\s+(?:taxable\s+)?Income/i
       ],
       fallbackRegexes: [
-        /(?:^|[^s])\s+Total\s+Income\s+([\d,.-]+\.\d{2})/i
+        /(?<!on\s+)Total\s+(?:taxable\s+)?Income\s+([\d,.-]+\.\d{2})/i
       ],
       numericTokenIndex: -1
     },

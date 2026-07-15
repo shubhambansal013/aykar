@@ -50,20 +50,123 @@ export class BasicInfoParser {
   public static parse(text: string, data: Form16Data): void {
     const config = extractionConfig.basicInfo;
 
-    // 1. PAN / TAN Extraction using line/fallback regexes from configuration
-    const employeePanMatch = text.match(config.employeePan.fallbackRegexes[0]);
-    if (employeePanMatch) {
-      data.employee.pan = employeePanMatch[1].toUpperCase();
+    // 1. Double-spaced PAN/TAN line: Employer PAN, Employer TAN, Employee PAN
+    const panTanLineMatch = text.match(/^\s*([A-Z]{5}\d{4}[A-Z])\s{2,}([A-Z]{4}\d{5}[A-Z])\s{2,}([A-Z]{5}\d{4}[A-Z])\b/mi);
+    if (panTanLineMatch) {
+      data.employer.pan = panTanLineMatch[1].toUpperCase();
+      data.employer.tan = panTanLineMatch[2].toUpperCase();
+      data.employee.pan = panTanLineMatch[3].toUpperCase();
     }
 
-    const employerTanMatch = text.match(config.employerTan.fallbackRegexes[0]);
-    if (employerTanMatch) {
-      data.employer.tan = employerTanMatch[1].toUpperCase();
+    // 2. Double-spaced Assessment Year / Period line
+    const ayPeriodMatch = text.match(/\s{2,}(\d{4}-\d{2,4})\s{2,}(\d{1,2}-[A-Za-z]{3}-\d{4})\s{2,}(\d{1,2}-[A-Za-z]{3}-\d{4})(?:\s|$)/i);
+    if (ayPeriodMatch) {
+      data.assessmentYear = ayPeriodMatch[1];
+      data.period.from = ayPeriodMatch[2];
+      data.period.to = ayPeriodMatch[3];
     }
 
-    const employerPanMatch = text.match(config.employerPan.fallbackRegexes[0]);
-    if (employerPanMatch) {
-      data.employer.pan = employerPanMatch[1].toUpperCase();
+    // 3. Side-by-side Employer / Employee Name and Address block
+    const sideBySideMatch = text.match(/Name\s+and\s+address\s+of\s+the\s+Employer\/Specified\s+Bank\s{2,}Name\s+and\s+address\s+of\s+the\s+Employee\/Specified\s+senior\s+citizen/i);
+    if (sideBySideMatch) {
+      const startIndex = sideBySideMatch.index! + sideBySideMatch[0].length;
+      const subText = text.substring(startIndex);
+      const lines = subText.split(/[\r\n]+/);
+      const employerLines: string[] = [];
+      const employeeLines: string[] = [];
+      let foundEmployeeName = false;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        // Stop if we hit the PAN/TAN section or other major section
+        if (/PAN\s+of\s+the/i.test(trimmed) || /PART\s+[A-B]/i.test(trimmed) || /Annexure/i.test(trimmed)) {
+          break;
+        }
+
+        // Split by 2 or more spaces
+        const parts = trimmed.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+        if (parts.length >= 2) {
+          employerLines.push(parts[0]);
+          employeeLines.push(parts[1]);
+          foundEmployeeName = true;
+        } else if (parts.length === 1) {
+          if (!foundEmployeeName) {
+            employerLines.push(parts[0]);
+          } else {
+            // Check if it looks like employer email or phone
+            if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0]) || /^[a-z_]+@uhg\.com/i.test(parts[0])) {
+              employerLines.push(parts[0]);
+            } else {
+              employerLines.push(parts[0]);
+            }
+          }
+        }
+      }
+
+      // Reconstruct Employer Name and Address
+      if (employerLines.length > 0) {
+        data.employer.name = employerLines[0];
+        const addressParts = employerLines.slice(1).filter(l => {
+          const clean = l.trim();
+          if (/@/i.test(clean) || /\+\(?\d+/.test(clean) || /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(clean)) {
+            return false;
+          }
+          return true;
+        });
+
+        let address = addressParts
+          .map(l => l.trim())
+          .filter(l => l.length > 0)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .replace(/,\s*,/g, ',')
+          .trim();
+
+        // Add comma between pincode and state (e.g. 500081 Telangana -> 500081, Telangana)
+        address = address.replace(/(\d{6})\s+(Telangana|Karnataka|Haryana|Delhi|Maharashtra|Tamil\s*Nadu|Gujarat|Uttar\s*Pradesh|West\s*Bengal|Rajasthan)/gi, '$1, $2');
+        data.employer.address = address;
+      }
+
+      // Reconstruct Employee Name and Address
+      if (employeeLines.length > 0) {
+        const employeeName = employeeLines[0];
+        const nameParts = employeeName.split(/\s+/).filter(p => p.length > 0);
+        if (nameParts.length === 1) {
+          data.employee.name.lastName = nameParts[0];
+        } else if (nameParts.length === 2) {
+          data.employee.name.firstName = nameParts[0];
+          data.employee.name.lastName = nameParts[1];
+        } else if (nameParts.length > 2) {
+          data.employee.name.firstName = nameParts[0];
+          data.employee.name.middleName = nameParts.slice(1, -1).join(' ');
+          data.employee.name.lastName = nameParts[nameParts.length - 1];
+        }
+
+        const addressParts = employeeLines.slice(1);
+        data.employee.address = addressParts.join(', ').replace(/^[\s,]+|[\s,]+$/g, '').trim();
+      }
+    }
+
+    // 4. Fallbacks for PANs and TANs
+    if (!data.employee.pan) {
+      const employeePanMatch = text.match(config.employeePan.fallbackRegexes[0]);
+      if (employeePanMatch) {
+        data.employee.pan = employeePanMatch[1].toUpperCase();
+      }
+    }
+    if (!data.employer.tan) {
+      const employerTanMatch = text.match(config.employerTan.fallbackRegexes[0]);
+      if (employerTanMatch) {
+        data.employer.tan = employerTanMatch[1].toUpperCase();
+      }
+    }
+    if (!data.employer.pan) {
+      const employerPanMatch = text.match(config.employerPan.fallbackRegexes[0]);
+      if (employerPanMatch) {
+        data.employer.pan = employerPanMatch[1].toUpperCase();
+      }
     }
 
     // Robust PAN extraction fallback
@@ -80,53 +183,54 @@ export class BasicInfoParser {
       }
     }
 
-    // 2. Assessment Year
-    const ayMatch = text.match(config.assessmentYear.fallbackRegexes[0]);
-    if (ayMatch) {
-      data.assessmentYear = ayMatch[1];
+    // 5. Fallback for AY
+    if (!data.assessmentYear) {
+      const ayMatch = text.match(config.assessmentYear.fallbackRegexes[0]);
+      if (ayMatch) {
+        data.assessmentYear = ayMatch[1];
+      }
     }
 
-    // 3. Employer Name and Address
-    const employerMatch = text.match(new RegExp(`${config.employerBlock.start.source}(.*?)${config.employerBlock.end.source}`, 'is'));
-    if (employerMatch) {
-      const employerBlock = this.cleanLabels(employerMatch[1]);
+    // 6. Fallback for Employer Name and Address
+    if (!data.employer.name) {
+      const employerMatch = text.match(new RegExp(`${config.employerBlock.start.source}(.*?)${config.employerBlock.end.source}`, 'is'));
+      if (employerMatch) {
+        const employerBlock = this.cleanLabels(employerMatch[1]);
+        const corporateSuffixes = [
+          /\bPRIVATE LIMITED\b/i,
+          /\bPVT\.?\s*LTD\.?\b/i,
+          /\bLIMITED\b/i,
+          /\bLTD\.?\b/i,
+          /\bCO\b/i,
+          /\bCORP\b/i,
+          /\bCORPORATION\b/i,
+          /\bTRUST\b/i,
+          /\bBANK\b/i,
+          /\bSERVICES\b/i,
+        ];
 
-      // Let's look for a corporate legal suffix to split name and address
-      const corporateSuffixes = [
-        /\bPRIVATE LIMITED\b/i,
-        /\bPVT\.?\s*LTD\.?\b/i,
-        /\bLIMITED\b/i,
-        /\bLTD\.?\b/i,
-        /\bCO\b/i,
-        /\bCORP\b/i,
-        /\bCORPORATION\b/i,
-        /\bTRUST\b/i,
-        /\bBANK\b/i,
-        /\bSERVICES\b/i,
-      ];
+        let foundSuffixIndex = -1;
+        let matchedSuffixLen = 0;
 
-      let foundSuffixIndex = -1;
-      let matchedSuffixLen = 0;
-
-      for (const suffixRegex of corporateSuffixes) {
-        const match = suffixRegex.exec(employerBlock);
-        if (match) {
-          foundSuffixIndex = match.index;
-          matchedSuffixLen = match[0].length;
-          break;
+        for (const suffixRegex of corporateSuffixes) {
+          const match = suffixRegex.exec(employerBlock);
+          if (match) {
+            foundSuffixIndex = match.index;
+            matchedSuffixLen = match[0].length;
+            break;
+          }
         }
-      }
 
-      if (foundSuffixIndex !== -1) {
-        data.employer.name = employerBlock.substring(0, foundSuffixIndex + matchedSuffixLen).trim();
-        data.employer.address = employerBlock.substring(foundSuffixIndex + matchedSuffixLen).trim()
-          .replace(/^[\s,]+|[\s,]+$/g, ''); // Clean leading/trailing commas and spaces
-      } else {
-        // Fallback to splitting by comma or newline
-        const employerLines = employerBlock.split(/[\n,]+/).map(l => l.trim()).filter(l => l.length > 0);
-        if (employerLines.length > 0) {
-          data.employer.name = employerLines[0];
-          data.employer.address = employerLines.slice(1).join(', ').trim();
+        if (foundSuffixIndex !== -1) {
+          data.employer.name = employerBlock.substring(0, foundSuffixIndex + matchedSuffixLen).trim();
+          data.employer.address = employerBlock.substring(foundSuffixIndex + matchedSuffixLen).trim()
+            .replace(/^[\s,]+|[\s,]+$/g, '');
+        } else {
+          const employerLines = employerBlock.split(/[\n,]+/).map(l => l.trim()).filter(l => l.length > 0);
+          if (employerLines.length > 0) {
+            data.employer.name = employerLines[0];
+            data.employer.address = employerLines.slice(1).join(', ').trim();
+          }
         }
       }
     }
@@ -136,79 +240,98 @@ export class BasicInfoParser {
       const form12baEmployerMatch = text.match(/Name and address of the employer:\s*(.*?)(?=\s*\d+\.\s*TAN|$)/is);
       if (form12baEmployerMatch) {
         const employerBlock = form12baEmployerMatch[1].trim();
-        const lines = employerBlock.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length > 0) {
+        const lines = employerBlock.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 0);
+        let nameLines: string[] = [];
+        let addressLines: string[] = [];
+        let addressStarted = false;
+
+        for (const line of lines) {
+          if (addressStarted) {
+            addressLines.push(line);
+            continue;
+          }
+          const cleanLine = line.replace(/[,;:\-\s]+$/, '').replace(/^[,;:\-\s]+/, '');
+          const isAddressKeyword = /^(Sector|Phase|Flat|House|Room|Plot|Lane|Road|H\.?No|Floor|Block|Building|Bld|Apt|Apartment|Near|Opposite|Opp|Behind|Ward|Street|Nagar|Colony|Society|Vihar|Enclave|Gali|City|Dist|District|State|Pin|PinCode|Haryana|Karnataka|Delhi|Mumbai|Gurgaon|Gurugram|Bangalore|Bengaluru|\d+TH|\d+RD|\d+ND|\d+ST)/i.test(cleanLine.replace(/[^a-zA-Z]/g, ''));
+          const hasDigits = /\d/.test(cleanLine);
+          if (isAddressKeyword || hasDigits) {
+            addressStarted = true;
+            addressLines.push(line);
+          } else {
+            nameLines.push(line);
+          }
+        }
+
+        if (nameLines.length > 0) {
+          data.employer.name = nameLines.join(' ').trim();
+          data.employer.address = addressLines.join(', ').trim();
+        } else if (lines.length > 0) {
           data.employer.name = lines[0];
           data.employer.address = lines.slice(1).join(', ').trim();
         }
       }
     }
 
-    // 4. Employee Name and Address
-    let employeeName = '';
-
-    // Walk through configured employee declaration name regexes
-    for (const declRegex of config.employeeDeclarations) {
-      if (declRegex.global) {
-        const declMatches = [...text.matchAll(declRegex)];
-        for (const match of declMatches) {
-          const candidate = match[1].trim();
-          const isDeductor = text.toLowerCase().includes(`${candidate.toLowerCase()}...working in the capacity of`) ||
-                             text.toLowerCase().includes(`${candidate.toLowerCase()} working as finance`) ||
-                             candidate.toLowerCase().includes('sumit jain');
-          if (!isDeductor && candidate.length > 3) {
-            employeeName = candidate;
-            break;
+    // 7. Fallback for Employee Name and Address
+    if (!data.employee.name.lastName && !data.employee.name.firstName) {
+      let employeeName = '';
+      for (const declRegex of config.employeeDeclarations) {
+        if (declRegex.global) {
+          const declMatches = [...text.matchAll(declRegex)];
+          for (const match of declMatches) {
+            const candidate = match[1].trim();
+            const isDeductor = text.toLowerCase().includes(`${candidate.toLowerCase()}...working in the capacity of`) ||
+                               text.toLowerCase().includes(`${candidate.toLowerCase()} working as finance`) ||
+                               candidate.toLowerCase().includes('sumit jain');
+            if (!isDeductor && candidate.length > 3) {
+              employeeName = candidate;
+              break;
+            }
           }
-        }
-      } else {
-        const match = text.match(declRegex);
-        if (match) {
-          const candidate = match[1].trim();
-          if (candidate.length > 3) {
-            employeeName = candidate;
-            break;
-          }
-        }
-      }
-      if (employeeName) break;
-    }
-
-    const employeeMatch = text.match(new RegExp(`${config.employeeBlock.start.source}(.*?)${config.employeeBlock.end.source}`, 'is'));
-    let employeeBlock = '';
-    if (employeeMatch) {
-      employeeBlock = this.cleanLabels(employeeMatch[1]);
-    }
-
-    // Source D: Tokenized capital words from employeeBlock (highest reliability fallback)
-    if (!employeeName && employeeBlock) {
-      employeeName = this.extractNameFromBlock(employeeBlock);
-    }
-
-    // Parse employeeName into first, middle, last names
-    if (employeeName) {
-      const nameParts = employeeName.split(/\s+/).filter(p => p.length > 0);
-      if (nameParts.length === 1) {
-        data.employee.name.lastName = nameParts[0];
-      } else if (nameParts.length === 2) {
-        data.employee.name.firstName = nameParts[0];
-        data.employee.name.lastName = nameParts[1];
-      } else if (nameParts.length > 2) {
-        data.employee.name.firstName = nameParts[0];
-        data.employee.name.middleName = nameParts.slice(1, -1).join(' ');
-        data.employee.name.lastName = nameParts[nameParts.length - 1];
-      }
-
-      if (employeeBlock) {
-        // Clean the address by stripping the employee name from the beginning of employeeBlock
-        let addressStr = employeeBlock;
-        if (employeeBlock.startsWith(employeeName)) {
-          addressStr = employeeBlock.substring(employeeName.length).trim();
         } else {
-          // Robust removal
-          addressStr = employeeBlock.replace(new RegExp(`^\\s*${employeeName}\\s*[,\\s]*`, 'i'), '').trim();
+          const match = text.match(declRegex);
+          if (match) {
+            const candidate = match[1].trim();
+            if (candidate.length > 3) {
+              employeeName = candidate;
+              break;
+            }
+          }
         }
-        data.employee.address = addressStr.replace(/^[\s,]+|[\s,]+$/g, '');
+        if (employeeName) break;
+      }
+
+      const employeeMatch = text.match(new RegExp(`${config.employeeBlock.start.source}(.*?)${config.employeeBlock.end.source}`, 'is'));
+      let employeeBlock = '';
+      if (employeeMatch) {
+        employeeBlock = this.cleanLabels(employeeMatch[1]);
+      }
+
+      if (!employeeName && employeeBlock) {
+        employeeName = this.extractNameFromBlock(employeeBlock);
+      }
+
+      if (employeeName) {
+        const nameParts = employeeName.split(/\s+/).filter(p => p.length > 0);
+        if (nameParts.length === 1) {
+          data.employee.name.lastName = nameParts[0];
+        } else if (nameParts.length === 2) {
+          data.employee.name.firstName = nameParts[0];
+          data.employee.name.lastName = nameParts[1];
+        } else if (nameParts.length > 2) {
+          data.employee.name.firstName = nameParts[0];
+          data.employee.name.middleName = nameParts.slice(1, -1).join(' ');
+          data.employee.name.lastName = nameParts[nameParts.length - 1];
+        }
+
+        if (employeeBlock) {
+          let addressStr = employeeBlock;
+          if (employeeBlock.startsWith(employeeName)) {
+            addressStr = employeeBlock.substring(employeeName.length).trim();
+          } else {
+            addressStr = employeeBlock.replace(new RegExp(`^\\s*${employeeName}\\s*[,\\s]*`, 'i'), '').trim();
+          }
+          data.employee.address = addressStr.replace(/^[\s,]+|[\s,]+$/g, '');
+        }
       }
     }
 

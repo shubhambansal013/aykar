@@ -282,7 +282,7 @@ export default function Home() {
         throw new Error('AI Chat encountered an error. Please try again.');
       }
 
-      const reply = await response.json();
+      const reply = (await response.json()) as Message;
       setMessages((prev) => [...prev, reply]);
     } catch (err: any) {
       console.error('Chat error:', err);

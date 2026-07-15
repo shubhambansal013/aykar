@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiConfig } from '@/lib/ai/config';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 interface Part {
   text?: string;
@@ -18,12 +19,25 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, itrData, rawText, isReview } = await req.json();
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      // Return a simulated response when API key is not configured (e.g. in development/tests)
-      // to make testing/development seamless.
-      console.warn('GEMINI_API_KEY environment variable is not defined. Using mock response mode.');
-      return mockAIResponse(isReview, messages, itrData);
+      try {
+        const cfContext = getCloudflareContext();
+        const cfEnv = cfContext?.env as any;
+        if (cfEnv?.GEMINI_API_KEY) {
+          apiKey = cfEnv.GEMINI_API_KEY as string;
+        }
+      } catch (e) {
+        // Silently catch errors if getCloudflareContext is called outside Cloudflare (e.g. tests or local dev without context)
+      }
+    }
+
+    if (!apiKey) {
+      console.warn('GEMINI_API_KEY environment variable is not defined.');
+      return NextResponse.json({
+        role: 'assistant',
+        content: 'Gemini AI Assistant is not available because the GEMINI_API_KEY is not configured.',
+      });
     }
 
     const { modelName, systemPrompt, reviewPrompt } = aiConfig;
@@ -115,69 +129,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Simulated mock response when GEMINI_API_KEY is not configured, aiding tests and preview
-function mockAIResponse(isReview: boolean, messages: any[], itrData: any) {
-  if (isReview) {
-    const grossSalary = itrData?.salary?.grossSalary || 0;
-    const stdDeduction = itrData?.salary?.standardDeduction16ia || 0;
-    const deductions80C = itrData?.deductions80C || 0;
-    const deductions80D = itrData?.deductions80D || 0;
-
-    const recommendations = [];
-    if (deductions80C < 150000) {
-      recommendations.push({
-        section: "80C",
-        recommendation: `You have claimed ₹${deductions80C.toLocaleString('en-IN')}. You can claim up to ₹1,50,000 under Section 80C by investing in ELSS, PPF, or NPS.`,
-        potentialSavings: (150000 - deductions80C) * 0.2 // Estimated 20% bracket
-      });
-    }
-    if (deductions80D === 0) {
-      recommendations.push({
-        section: "80D",
-        recommendation: "Consider claiming medical insurance premiums under Section 80D (up to ₹25,000 for self/family, and an additional ₹50,000 for senior citizen parents).",
-        potentialSavings: 5000
-      });
-    }
-
-    const reviewResult = {
-      status: "SUCCESS_WITH_RECOMMENDATIONS",
-      summary: "We have reviewed your Form-16 context. The ITR is overall accurate, with some recommendations for maximizing your tax savings.",
-      itrDataOverview: {
-        pan: itrData?.employee?.pan || "Not Provided",
-        grossSalary,
-        totalChapterVIADeductions: itrData?.totalChapterVIADeductions || 0,
-        taxPayable: itrData?.taxPayable || 0
-      },
-      recommendations,
-      errors: stdDeduction !== 50000 && grossSalary > 0
-        ? ["Standard Deduction under section 16(ia) should be exactly ₹50,000."]
-        : []
-    };
-
-    return NextResponse.json({
-      role: 'assistant',
-      content: JSON.stringify(reviewResult, null, 2),
-    });
-  }
-
-  // General Chat simulation
-  const lastMessage = messages?.[messages.length - 1]?.content || '';
-  let reply = "Hello! I am your AI tax assistant. How can I help you with your ITR today?";
-
-  if (lastMessage.toLowerCase().includes('hello') || lastMessage.toLowerCase().includes('hi')) {
-    reply = "Hello there! I've loaded your Form-16 / ITR details. Feel free to ask me anything about your tax deductions, salary computation, or schedules.";
-  } else if (lastMessage.toLowerCase().includes('pan')) {
-    reply = `Your current PAN is configured as: ${itrData?.employee?.pan || 'Not provided in the form yet'}.`;
-  } else if (lastMessage.toLowerCase().includes('salary')) {
-    reply = `Your gross salary is reported as ₹${itrData?.salary?.grossSalary?.toLocaleString('en-IN') || '0'}. Standard deduction claimed is ₹${itrData?.salary?.standardDeduction16ia?.toLocaleString('en-IN') || '0'}.`;
-  } else if (lastMessage.toLowerCase().includes('saving') || lastMessage.toLowerCase().includes('deduction')) {
-    reply = "You can save additional taxes under Chapter VI-A sections, including 80C (PPF, ELSS, Insurance), 80D (Health Insurance), 80CCD(1B) (NPS), or 80TTA/80TTB (Savings interest deduction). Let me know if you want to know about a specific section!";
-  } else {
-    reply = `I've analyzed your question: "${lastMessage}". Based on your ITR data (PAN: ${itrData?.employee?.pan || 'N/A'}, Gross Salary: ₹${itrData?.salary?.grossSalary || 0}), I suggest reviewing your Chapter VI-A deductions. If you attach extra documents, I'll review those too!`;
-  }
-
-  return NextResponse.json({
-    role: 'assistant',
-    content: reply,
-  });
-}

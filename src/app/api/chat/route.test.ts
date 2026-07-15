@@ -8,7 +8,7 @@ describe('AI Chat Route API Handler', () => {
     vi.restoreAllMocks();
   });
 
-  test('returns simulated responses when GEMINI_API_KEY is not defined (review mode)', async () => {
+  test('returns Gemini not available when GEMINI_API_KEY is not defined', async () => {
     const mockReq = new NextRequest('http://localhost/api/chat', {
       method: 'POST',
       body: JSON.stringify({
@@ -29,68 +29,7 @@ describe('AI Chat Route API Handler', () => {
 
     const json = await response.json();
     expect(json.role).toBe('assistant');
-
-    // Parse simulated JSON content
-    const reviewResult = JSON.parse(json.content);
-    expect(reviewResult.status).toBe('SUCCESS_WITH_RECOMMENDATIONS');
-    expect(reviewResult.itrDataOverview.pan).toBe('ABCDE1234F');
-    expect(reviewResult.recommendations.length).toBeGreaterThan(0);
-    // Standard deduction correct, so no errors
-    expect(reviewResult.errors).toEqual([]);
-  });
-
-  test('returns simulated error if standard deduction is wrong (review mode)', async () => {
-    const mockReq = new NextRequest('http://localhost/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({
-        messages: [],
-        itrData: {
-          employee: { pan: 'ABCDE1234F' },
-          salary: { grossSalary: 1000000, standardDeduction16ia: 40000 },
-        },
-        isReview: true,
-      }),
-    });
-
-    const response = await POST(mockReq);
-    const json = await response.json();
-    const reviewResult = JSON.parse(json.content);
-    expect(reviewResult.errors).toContain('Standard Deduction under section 16(ia) should be exactly ₹50,000.');
-  });
-
-  test('returns simulated chat responses when GEMINI_API_KEY is not defined', async () => {
-    const mockReq = new NextRequest('http://localhost/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'hello' }],
-        itrData: { employee: { pan: 'ABCDE1234F' }, salary: { grossSalary: 500000 } },
-        isReview: false,
-      }),
-    });
-
-    const response = await POST(mockReq);
-    expect(response.status).toBe(200);
-
-    const json = await response.json();
-    expect(json.role).toBe('assistant');
-    expect(json.content).toContain('Hello there!');
-  });
-
-  test('handles general chat triggers based on message content', async () => {
-    const triggers = ['hello', 'pan', 'salary', 'saving', 'other_unhandled_query'];
-    for (const trigger of triggers) {
-      const mockReq = new NextRequest('http://localhost/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: trigger }],
-          itrData: { employee: { pan: 'ABCDE1234F' }, salary: { grossSalary: 500000 } },
-          isReview: false,
-        }),
-      });
-      const response = await POST(mockReq);
-      const json = await response.json();
-      expect(json.content).toBeDefined();
-    }
+    expect(json.content).toContain('Gemini AI Assistant is not available because the GEMINI_API_KEY is not configured.');
   });
 
   test('correctly maps and sends request to Gemini API when key is present', async () => {

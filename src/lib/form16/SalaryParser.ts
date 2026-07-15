@@ -90,6 +90,9 @@ export class SalaryParser {
           code = '10';
         }
 
+        // Strip subsection prefixes like (a), (e) from the start of nature
+        nature = nature.replace(/^\s*\([a-z]\)\s*/i, '').trim();
+
         // To support old literal "Exempt Allowance <codeMatch>" vs full description "House rent allowance under section 10(13A)"
         // If nature starts with "Exempt Allowance" and has code, let's keep it as is
         // Otherwise, if the text has "House rent allowance under section 10(13A)", use that exactly!
@@ -97,11 +100,13 @@ export class SalaryParser {
           nature = `Exempt Allowance ${code}`;
         }
 
-        data.salary.exemptAllowancesUs10.push({
-          code,
-          nature,
-          amount
-        });
+        if (amount > 0) {
+          data.salary.exemptAllowancesUs10.push({
+            code,
+            nature,
+            amount
+          });
+        }
       }
     }
 

@@ -48,7 +48,20 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
         // Within each row, sort items by X-coordinate ascending
         const reconstructedLines = rows.map(row => {
           row.items.sort((a, b) => a.x - b.x);
-          return row.items.map(item => item.str).join(' ');
+          let lineStr = '';
+          for (let idx = 0; idx < row.items.length; idx++) {
+            const cur = row.items[idx];
+            if (idx > 0) {
+              const prev = row.items[idx - 1];
+              if (cur.x - prev.x > 120 || (prev.x < 280 && cur.x >= 280)) {
+                lineStr += '  ';
+              } else {
+                lineStr += ' ';
+              }
+            }
+            lineStr += cur.str;
+          }
+          return lineStr;
         });
 
         fullText += reconstructedLines.join('\n') + '\n';

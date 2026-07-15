@@ -21,7 +21,8 @@ export const providersConfig: ProviderConfig[] = [
   {
     provider: 'gemini',
     models: [
-      { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash', isDefault: true },
+      { value: 'gemini-3.1-flash-lite', label: 'gemini-3.1-flash-lite', isDefault: true },
+      { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
       { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash' },
       { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro' },
       { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash (404)' }

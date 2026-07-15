@@ -77,12 +77,22 @@ export default function Home() {
   const [chatLoading, setChatLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
 
+  // Get the available Gemini models list dynamically
   const geminiModels = useMemo(() => {
     const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
     return geminiProvider ? geminiProvider.models : [];
   }, []);
+
+  // Dynamically resolve the default selected model from config on mount
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    if (aiConfig.modelName) {
+      return aiConfig.modelName;
+    }
+    // Fallback if aiConfig.modelName is not resolved
+    const defaultOption = geminiModels.find(m => m.isDefault);
+    return defaultOption?.value || geminiModels[0]?.value || '';
+  });
 
   // Chat resizing states
   const [chatWidth, setChatWidth] = useState(400);
@@ -768,458 +778,187 @@ export default function Home() {
                                 }}
                               />
                             </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80E"
-                                type="number"
-                                value={extractedData.deductions80E}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80E = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80G"
-                                type="number"
-                                value={extractedData.deductions80G}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80G = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Section 80TTA"
-                                type="number"
-                                value={extractedData.deductions80TTA}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.deductions80TTA = parseFloat(e.target.value) || 0;
-                                    next.totalChapterVIADeductions =
-                                      next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
-                                      next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
-                                      next.deductions80E + next.deductions80G + next.deductions80TTA;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <TextField
-                                fullWidth
-                                label="Total Chapter VI-A Deductions"
-                                type="number"
-                                value={extractedData.totalChapterVIADeductions}
-                                onChange={(e) =>
-                                  setExtractedData((prev) => {
-                                    if (!prev) return prev;
-                                    const next = JSON.parse(JSON.stringify(prev));
-                                    next.totalChapterVIADeductions = parseFloat(e.target.value) || 0;
-                                    return next;
-                                  })
-                                }
-                                variant="outlined"
-                                slotProps={{
-                                  input: {
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                  }
-                                }}
-                              />
-                            </Grid>
                           </Grid>
                         </Grid>
                       </Grid>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
-                        <Button
-                          variant="outlined"
-                          color="secondary"
-                          startIcon={<RefreshIcon fontSize="small" />}
-                          onClick={() => setErrors(validateForm16Data(extractedData))}
-                          size="small"
-                        >
-                          Re-validate Data
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          startIcon={<DownloadIcon fontSize="small" />}
-                          onClick={() => {
-                            const itrJson = mapForm16ToITR1(extractedData);
-                            const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `ITR1_${extractedData.employee.pan || 'data'}.json`;
-                            a.click();
-                          }}
-                          size="small"
-                        >
-                          Download ITR JSON
-                        </Button>
-                      </Box>
                     </CardContent>
                   </Card>
-
-                  {/* Debug Information */}
-                  <Box sx={{ mt: 4, pb: 4 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 'bold' }}>
-                      <BugReportIcon sx={{ fontSize: 18 }} /> 3. Debug Information (For Verification)
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900',
-                            color: '#10b981',
-                            borderRadius: 1.5,
-                            height: 280,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              color: 'grey.400',
-                              pb: 0.5,
-                              mb: 1,
-                              borderBottom: '1px solid',
-                              borderColor: 'grey.800',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
-                            <CodeIcon sx={{ fontSize: 14 }} /> Raw Extracted Text
-                          </Typography>
-                          <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '10px', fontFamily: 'monospace' }}>
-                              {rawText}
-                            </pre>
-                          </Box>
-                        </Paper>
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 6 }}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900',
-                            color: '#60a5fa',
-                            borderRadius: 1.5,
-                            height: 280,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              color: 'grey.400',
-                              pb: 0.5,
-                              mb: 1,
-                              borderBottom: '1px solid',
-                              borderColor: 'grey.800',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
-                            <CodeIcon sx={{ fontSize: 14 }} /> Intermediate Form16Data Object
-                          </Typography>
-                          <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                            <pre style={{ margin: 0, whiteSpace: 'pre', fontSize: '10px', fontFamily: 'monospace' }}>
-                              {JSON.stringify(extractedData, null, 2)}
-                            </pre>
-                          </Box>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-                  </Box>
                 </>
               )}
             </Container>
           </Box>
 
-          {/* Draggable Divider / Resizer */}
+          {/* Right Panel: Resizable Chat Panel */}
           {chatOpen && (
-            <Box
-              onMouseDown={startResize}
-              data-testid="resizer"
-              sx={{
-                width: '4px',
-                cursor: 'col-resize',
-                bgcolor: isDragging ? 'primary.main' : 'divider',
-                transition: 'background-color 0.2s, width 0.2s',
-                '&:hover': { bgcolor: 'primary.main', width: '6px' },
+            <>
+              {/* Draggable Resizing Slat */}
+              <Box
+                onMouseDown={startResize}
+                sx={{
+                  width: '6px',
+                  cursor: 'col-resize',
+                  bgcolor: isDragging ? 'primary.main' : 'divider',
+                  transition: 'background-color 0.15s ease',
+                  '&:hover': { bgcolor: 'primary.main' },
+                  zIndex: 10,
+                  height: '100%',
+                }}
+              />
+              
+              {/* Chat Viewport Area */}
+              <Box sx={{
+                width: { xs: '100%', md: `${chatWidth}px` },
+                position: { xs: 'absolute', md: 'relative' },
+                right: 0,
+                top: 0,
                 height: '100%',
-                zIndex: 10,
-                display: { xs: 'none', md: 'block' }
-              }}
-            />
-          )}
+                zIndex: 5,
+                bgcolor: 'background.paper',
+                borderLeft: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <SmartToyIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle1">Tax Expert AI</Typography>
+                  </Box>
 
-          {/* Right Panel: Chat Window */}
-          <Box sx={{
-            width: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
-            minWidth: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            borderLeft: chatOpen ? '1px solid' : 'none',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            transition: isDragging ? 'none' : 'width 0.3s ease-in-out, min-width 0.3s ease-in-out',
-            height: '100%',
-            zIndex: 5,
-          }}>
-            {/* Chat Header */}
-            <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SmartToyIcon color="primary" sx={{ fontSize: 20 }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>AI Tax Assistant</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <FormControl size="small" variant="standard" sx={{ minWidth: 140 }}>
-                  <Select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    sx={{ fontSize: '0.75rem', py: 0 }}
-                    aria-label="select gemini model"
-                  >
-                    {geminiModels.map((m) => (
-                      <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>
-                        {m.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close chat">
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-
-            {/* Chat Messages List */}
-            <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
-              {messages.length === 0 && (
-                <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
-                  <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
-                    I have full context of your Form-16 / ITR details. You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
-                  </Typography>
-                </Box>
-              )}
-
-              {messages.map((msg, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '85%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.25,
-                  }}
-                >
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 1.25,
-                      borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                      bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
-                      color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                      borderColor: msg.role === 'user' ? 'primary.main' : 'divider',
-                      boxShadow: 'none',
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        margin: 0,
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: 'inherit',
-                        fontSize: '0.825rem',
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {msg.content}
-                    </Typography>
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>Attached Documents:</Typography>
-                        {msg.attachments.map((att, attIdx) => (
-                          <Typography key={attIdx} variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, opacity: 0.9, fontSize: '0.7rem' }}>
-                            <AttachFileIcon sx={{ fontSize: 10 }} /> {att.name}
-                          </Typography>
-                        ))}
-                      </Box>
-                    )}
-                  </Paper>
-                  <Typography variant="caption" color="textSecondary" sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', px: 0.5, fontSize: '0.7rem' }}>
-                    {msg.role === 'user' ? 'You' : 'AI Assistant'}
-                  </Typography>
-                </Box>
-              ))}
-
-              {chatLoading && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: 'flex-start' }}>
-                  <CircularProgress size={12} />
-                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>AI is generating response...</Typography>
-                </Box>
-              )}
-              <div ref={messagesEndRef} />
-            </Box>
-
-            <Divider />
-
-            {/* Chat Input / Actions */}
-            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
-              {/* Selected attachments */}
-              {attachments.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {attachments.map((att, idx) => (
-                    <Paper
-                      key={idx}
+                  {/* Model Picker Selector */}
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <Select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      displayEmpty
                       variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
+                      sx={{ fontSize: '0.75rem', height: '30px' }}
                     >
-                      <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                      <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
-                        {att.name}
-                      </Typography>
-                      <IconButton size="small" onClick={() => removeAttachment(idx)} aria-label="remove attachment">
-                        <DeleteIcon sx={{ fontSize: 12 }} />
-                      </IconButton>
-                    </Paper>
-                  ))}
-                </Box>
-              )}
+                      {geminiModels.map((model) => (
+                        <MenuItem key={model.value} value={model.value} sx={{ fontSize: '0.75rem' }}>
+                          {model.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {/* Attachment Upload Input */}
-                <input
-                  id="chat-attachment-upload"
-                  type="file"
-                  onChange={handleAttachmentUpload}
-                  style={{ display: 'none' }}
-                />
-                <Tooltip title="Attach supplementary document (PDF, Text, or Image)">
-                  <span>
+                  <IconButton onClick={() => setChatOpen(false)} size="small" aria-label="close chat">
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+
+                {/* Message Log */}
+                <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {messages.length === 0 ? (
+                    <Box sx={{ m: 'auto', textAlign: 'center', color: 'text.secondary', px: 2 }}>
+                      <ChatIcon sx={{ fontSize: 40, color: 'divider', mb: 1 }} />
+                      <Typography variant="body2">
+                        Ask calculations, seek tax-saving recommendations, or click <strong>AI Review</strong> above to get automated assistance.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    messages.map((m, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                          maxWidth: '85%',
+                          bgcolor: m.role === 'user' ? 'primary.main' : 'action.selected',
+                          color: m.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                          borderRadius: 1.5,
+                          p: 1.25,
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {m.content}
+                        </Typography>
+                      </Box>
+                    ))
+                  )}
+                  {chatLoading && (
+                    <Box sx={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
+                      <CircularProgress size={14} />
+                      <Typography variant="caption" color="textSecondary">AI is thinking...</Typography>
+                    </Box>
+                  )}
+                  <div ref={messagesEndRef} />
+                </Box>
+
+                {/* Input and Attachments Actions */}
+                <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                  {attachments.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                      {attachments.map((att, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            bgcolor: 'action.hover',
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography variant="caption" noWrap sx={{ maxWidth: 120 }}>
+                            {att.name}
+                          </Typography>
+                          <IconButton size="small" onClick={() => removeAttachment(index)} sx={{ p: 0.2 }}>
+                            <DeleteIcon sx={{ fontSize: 12 }} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <input
+                      type="file"
+                      id="chat-attach-input"
+                      onChange={handleAttachmentUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <Tooltip title="Attach raw document">
+                      <IconButton
+                        component="label"
+                        htmlFor="chat-attach-input"
+                        disabled={attachingFile}
+                        size="small"
+                      >
+                        <AttachFileIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      placeholder="Ask the tax expert AI..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
                     <IconButton
-                      component="label"
-                      htmlFor="chat-attachment-upload"
                       color="primary"
-                      disabled={attachingFile}
-                      aria-label="attach document"
+                      onClick={() => handleSendMessage()}
+                      disabled={!inputMessage.trim() && attachments.length === 0}
                       size="small"
                     >
-                      {attachingFile ? <CircularProgress size={20} /> : <AttachFileIcon fontSize="small" />}
+                      <SendIcon fontSize="small" />
                     </IconButton>
-                  </span>
-                </Tooltip>
-
-                <TextField
-                  fullWidth
-                  placeholder="Ask your tax question..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSendMessage(false);
-                    }
-                  }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => handleSendMessage(false)}
-                            color="primary"
-                            disabled={chatLoading || (!inputMessage.trim() && attachments.length === 0)}
-                            aria-label="send message"
-                            size="small"
-                          >
-                            <SendIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }
-                  }}
-                />
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-          </Box>
+            </>
+          )}
         </Box>
-
-        {/* Floating Action Chat Button */}
-        {!chatOpen && (
-          <Fab
-            color="primary"
-            aria-label="open ai chat window"
-            sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }}
-            onClick={() => setChatOpen(true)}
-          >
-            <ChatIcon />
-          </Fab>
-        )}
       </Box>
     </ThemeProvider>
   );

@@ -6,7 +6,7 @@ import { parseForm16Text } from '@/lib/form16/parser';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
 import { Form16Data } from '@/lib/types';
-import { aiConfig } from '@/lib/ai/config';
+import { aiConfig, providersConfig } from '@/lib/ai/config';
 
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -30,6 +30,9 @@ import {
   Grid,
   Divider,
   Fab,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -74,6 +77,12 @@ export default function Home() {
   const [chatLoading, setChatLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+
+  const geminiModels = useMemo(() => {
+    const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
+    return geminiProvider ? geminiProvider.models : [];
+  }, []);
 
   // Chat resizing states
   const [chatWidth, setChatWidth] = useState(400);
@@ -275,6 +284,7 @@ export default function Home() {
           itrData: extractedData,
           rawText: rawText,
           isReview: isReviewRequest,
+          model: selectedModel,
         }),
       });
 
@@ -1016,9 +1026,25 @@ export default function Home() {
                 <SmartToyIcon color="primary" sx={{ fontSize: 20 }} />
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>AI Tax Assistant</Typography>
               </Box>
-              <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close chat">
-                <CloseIcon fontSize="small" />
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FormControl size="small" variant="standard" sx={{ minWidth: 140 }}>
+                  <Select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    sx={{ fontSize: '0.75rem', py: 0 }}
+                    aria-label="select gemini model"
+                  >
+                    {geminiModels.map((m) => (
+                      <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>
+                        {m.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close chat">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
 
             {/* Chat Messages List */}

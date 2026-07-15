@@ -17,7 +17,7 @@ interface ChatMessage {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, itrData, rawText, isReview } = (await req.json()) as any;
+    const { messages, itrData, rawText, isReview, model: requestedModel } = (await req.json()) as any;
 
     let apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const { modelName, systemPrompt, reviewPrompt } = aiConfig;
+    const { modelName: configModelName, systemPrompt, reviewPrompt } = aiConfig;
+    const modelName = requestedModel || configModelName;
 
     // Build system instruction
     let contextPrompt = systemPrompt;

@@ -72,7 +72,7 @@ interface Message {
 }
 
 export interface FieldCue {
-  status: 'success' | 'warning' | 'error';
+  status: 'success' | 'warning' | 'error' | 'none';
   message: string;
 }
 
@@ -81,7 +81,7 @@ const TAN_REGEX = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
 
 export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
   if (!data) {
-    return { status: 'success', message: 'No data' };
+    return { status: 'none', message: 'No data' };
   }
 
   const parts = path.split('.');
@@ -138,7 +138,7 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
       }
       return { status: 'success', message: 'Employee First Name is verified.' };
     case 'employee.name.middleName':
-      return { status: 'success', message: 'Optional field verified.' };
+      return { status: 'none', message: '' };
     case 'employee.name.lastName':
       if (!val || val.trim() === '') {
         return { status: 'error', message: 'Employee Last Name is required.' };
@@ -188,13 +188,13 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
     }
     case 'salary.salaryAsPer17_1':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'salary.perquisites17_2':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'salary.profitsInLieu17_3':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'salary.totalExemptAllowances': {
       const sumAlw = (data.salary?.exemptAllowancesUs10 || []).reduce((sum, item) => sum + (item.amount || 0), 0);
       if (Math.abs((val || 0) - sumAlw) > 1) {
@@ -217,10 +217,10 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
       return { status: 'success', message: 'Standard deduction value is within limits.' };
     case 'salary.entertainmentAllowance16ii':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'salary.professionalTax16iii':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'salary.totalDeductionsUs16': {
       const calcDeductions = (data.salary?.standardDeduction16ia || 0) + (data.salary?.entertainmentAllowance16ii || 0) + (data.salary?.professionalTax16iii || 0);
       if (Math.abs((val || 0) - calcDeductions) > 1) {
@@ -238,7 +238,8 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
 
     // Other Income
     case 'otherIncome.houseProperty':
-      return { status: 'success', message: 'Verified.' };
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'none', message: '' };
     case 'otherIncome.totalOtherSources': {
       const sumOS = (data.otherIncome?.otherSources || []).reduce((sum, item) => sum + (item.amount || 0), 0);
       if (Math.abs((val || 0) - sumOS) > 1) {
@@ -265,10 +266,10 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
       return { status: 'success', message: 'Section 80C is within limits.' };
     case 'deductions80CCC':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80CCD1':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80CCD1B':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
       if (val > 50000) {
@@ -277,16 +278,16 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
       return { status: 'success', message: 'Section 80CCD(1B) is within limits.' };
     case 'deductions80CCD2':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80D':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80E':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80G':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
     case 'deductions80TTA':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
       if (val > 10000) {
@@ -320,7 +321,7 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
     }
     case 'taxPayable':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
 
     case 'taxCredits.tdsSalary': {
       const form16Tds = data.taxPayable;
@@ -332,22 +333,22 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
     }
     case 'taxCredits.tdsOther':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'TDS from other sources is verified.' };
+      return { status: 'none', message: '' };
     case 'taxCredits.tcs':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'TCS is verified.' };
+      return { status: 'none', message: '' };
     case 'taxCredits.advanceTax':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Advance Tax is verified.' };
+      return { status: 'none', message: '' };
     case 'taxCredits.selfAssessmentTax':
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'success', message: 'Self-Assessment Tax is verified.' };
+      return { status: 'none', message: '' };
 
     default:
       if (isNum && val < 0) {
         return { status: 'error', message: 'Value cannot be negative.' };
       }
-      return { status: 'success', message: 'Verified.' };
+      return { status: 'none', message: '' };
   }
 }
 
@@ -385,6 +386,8 @@ export function CueTextField({
   const val = getNestedValue(data, path);
   const cue = getFieldCue(path, data);
 
+  const isNone = cue.status === 'none';
+
   let color = '#2e7d32'; // success (green)
   let Icon = CheckCircleIcon;
   if (cue.status === 'warning') {
@@ -395,48 +398,60 @@ export function CueTextField({
     Icon = ErrorIcon;
   }
 
-  return (
-    <Tooltip title={cue.message} arrow>
-      <TextField
-        fullWidth
-        label={label}
-        type={type}
-        value={val}
-        onChange={(e) => {
-          let v: any = e.target.value;
-          if (type === 'number') {
-            v = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-          }
-          onChange(v);
-        }}
-        variant="outlined"
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            '& fieldset': { borderColor: `${color} !important` },
-            '&:hover fieldset': { borderColor: `${color} !important` },
-            '&.Mui-focused fieldset': { borderColor: `${color} !important` },
+  const customSx: any = isNone
+    ? {}
+    : {
+        '& .MuiOutlinedInput-root': {
+          '& fieldset': { borderColor: `${color} !important` },
+          '&:hover fieldset': { borderColor: `${color} !important` },
+          '&.Mui-focused fieldset': { borderColor: `${color} !important` },
+        },
+        '& .MuiInputLabel-root': {
+          color: `${color} !important`,
+        },
+      };
+
+  const inputComponent = (
+    <TextField
+      fullWidth
+      label={label}
+      type={type}
+      value={val}
+      onChange={(e) => {
+        let v: any = e.target.value;
+        if (type === 'number') {
+          v = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+        }
+        onChange(v);
+      }}
+      variant="outlined"
+      sx={customSx}
+      slotProps={{
+        input: {
+          startAdornment: startAdornment,
+          endAdornment: !isNone ? (
+            <InputAdornment position="end" sx={{ color: color }}>
+              <Icon sx={{ fontSize: 18 }} />
+            </InputAdornment>
+          ) : undefined,
+          style: {
+            fontFamily: isMonospace ? 'monospace' : 'inherit',
+            textTransform: uppercase ? 'uppercase' : 'none',
           },
-          '& .MuiInputLabel-root': {
-            color: `${color} !important`,
-          },
-        }}
-        slotProps={{
-          input: {
-            startAdornment: startAdornment,
-            endAdornment: (
-              <InputAdornment position="end" sx={{ color: color }}>
-                <Icon sx={{ fontSize: 18 }} />
-              </InputAdornment>
-            ),
-            style: {
-              fontFamily: isMonospace ? 'monospace' : 'inherit',
-              textTransform: uppercase ? 'uppercase' : 'none',
-            },
-          },
-        }}
-      />
-    </Tooltip>
+        },
+      }}
+    />
   );
+
+  if (!isNone && cue.message) {
+    return (
+      <Tooltip title={cue.message} arrow>
+        {inputComponent}
+      </Tooltip>
+    );
+  }
+
+  return inputComponent;
 }
 
 export interface FieldDiff {

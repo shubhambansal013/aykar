@@ -257,7 +257,7 @@ describe('CueTextField component tests', () => {
     expect(onChangeSpy).toHaveBeenCalledWith(0);
   });
 
-  test('handles status colors correctly for warning/error/success', () => {
+  test('handles status colors correctly for warning/error/success/none', () => {
     // success status
     const { container: container1 } = render(
       <CueTextField
@@ -290,6 +290,17 @@ describe('CueTextField component tests', () => {
       />
     );
     expect(container3).toBeDefined();
+
+    // none status (no validation color outline)
+    const { container: container4 } = render(
+      <CueTextField
+        label="Optional Middle Name"
+        path="employee.name.middleName"
+        data={dummyData}
+        onChange={vi.fn()}
+      />
+    );
+    expect(container4).toBeDefined();
   });
 });
 
@@ -330,7 +341,7 @@ describe('getFieldCue helper tests', () => {
   };
 
   test('handles null data', () => {
-    expect(getFieldCue('employer.name', null).status).toBe('success');
+    expect(getFieldCue('employer.name', null).status).toBe('none');
   });
 
   test('checks employer.name', () => {
@@ -358,7 +369,7 @@ describe('getFieldCue helper tests', () => {
   test('checks employee name fields', () => {
     expect(getFieldCue('employee.name.firstName', dummyData).status).toBe('success');
     expect(getFieldCue('employee.name.firstName', { ...dummyData, employee: { ...dummyData.employee, name: { ...dummyData.employee.name, firstName: '' } } }).status).toBe('error');
-    expect(getFieldCue('employee.name.middleName', dummyData).status).toBe('success');
+    expect(getFieldCue('employee.name.middleName', dummyData).status).toBe('none');
     expect(getFieldCue('employee.name.lastName', dummyData).status).toBe('success');
     expect(getFieldCue('employee.name.lastName', { ...dummyData, employee: { ...dummyData.employee, name: { ...dummyData.employee.name, lastName: '' } } }).status).toBe('error');
   });
@@ -393,11 +404,11 @@ describe('getFieldCue helper tests', () => {
   });
 
   test('checks negatives and basic verified fields', () => {
-    expect(getFieldCue('salary.salaryAsPer17_1', dummyData).status).toBe('success');
+    expect(getFieldCue('salary.salaryAsPer17_1', dummyData).status).toBe('none');
     expect(getFieldCue('salary.salaryAsPer17_1', { ...dummyData, salary: { ...dummyData.salary, salaryAsPer17_1: -10 } }).status).toBe('error');
-    expect(getFieldCue('salary.perquisites17_2', dummyData).status).toBe('success');
+    expect(getFieldCue('salary.perquisites17_2', dummyData).status).toBe('none');
     expect(getFieldCue('salary.perquisites17_2', { ...dummyData, salary: { ...dummyData.salary, perquisites17_2: -10 } }).status).toBe('error');
-    expect(getFieldCue('salary.profitsInLieu17_3', dummyData).status).toBe('success');
+    expect(getFieldCue('salary.profitsInLieu17_3', dummyData).status).toBe('none');
     expect(getFieldCue('salary.profitsInLieu17_3', { ...dummyData, salary: { ...dummyData.salary, profitsInLieu17_3: -10 } }).status).toBe('error');
   });
 
@@ -418,9 +429,9 @@ describe('getFieldCue helper tests', () => {
   });
 
   test('checks other salary deductions', () => {
-    expect(getFieldCue('salary.entertainmentAllowance16ii', dummyData).status).toBe('success');
+    expect(getFieldCue('salary.entertainmentAllowance16ii', dummyData).status).toBe('none');
     expect(getFieldCue('salary.entertainmentAllowance16ii', { ...dummyData, salary: { ...dummyData.salary, entertainmentAllowance16ii: -5 } }).status).toBe('error');
-    expect(getFieldCue('salary.professionalTax16iii', dummyData).status).toBe('success');
+    expect(getFieldCue('salary.professionalTax16iii', dummyData).status).toBe('none');
     expect(getFieldCue('salary.professionalTax16iii', { ...dummyData, salary: { ...dummyData.salary, professionalTax16iii: -5 } }).status).toBe('error');
   });
 
@@ -435,7 +446,8 @@ describe('getFieldCue helper tests', () => {
   });
 
   test('checks otherIncome HP & totalOtherSources', () => {
-    expect(getFieldCue('otherIncome.houseProperty', dummyData).status).toBe('success');
+    expect(getFieldCue('otherIncome.houseProperty', dummyData).status).toBe('none');
+    expect(getFieldCue('otherIncome.houseProperty', { ...dummyData, otherIncome: { ...dummyData.otherIncome, houseProperty: -10 } }).status).toBe('error');
     expect(getFieldCue('otherIncome.totalOtherSources', dummyData).status).toBe('success');
     expect(getFieldCue('otherIncome.totalOtherSources', { ...dummyData, otherIncome: { ...dummyData.otherIncome, totalOtherSources: 50000 } }).status).toBe('warning');
   });
@@ -450,26 +462,26 @@ describe('getFieldCue helper tests', () => {
     expect(getFieldCue('deductions80C', { ...dummyData, deductions80C: -5 }).status).toBe('error');
     expect(getFieldCue('deductions80C', { ...dummyData, deductions80C: 200000 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80CCC', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80CCC', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80CCC', { ...dummyData, deductions80CCC: -5 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80CCD1', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80CCD1', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80CCD1', { ...dummyData, deductions80CCD1: -5 }).status).toBe('error');
 
     expect(getFieldCue('deductions80CCD1B', dummyData).status).toBe('success');
     expect(getFieldCue('deductions80CCD1B', { ...dummyData, deductions80CCD1B: -5 }).status).toBe('error');
     expect(getFieldCue('deductions80CCD1B', { ...dummyData, deductions80CCD1B: 60000 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80CCD2', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80CCD2', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80CCD2', { ...dummyData, deductions80CCD2: -5 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80D', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80D', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80D', { ...dummyData, deductions80D: -5 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80E', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80E', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80E', { ...dummyData, deductions80E: -5 }).status).toBe('error');
 
-    expect(getFieldCue('deductions80G', dummyData).status).toBe('success');
+    expect(getFieldCue('deductions80G', dummyData).status).toBe('none');
     expect(getFieldCue('deductions80G', { ...dummyData, deductions80G: -5 }).status).toBe('error');
 
     expect(getFieldCue('deductions80TTA', dummyData).status).toBe('success');
@@ -486,10 +498,10 @@ describe('getFieldCue helper tests', () => {
     expect(getFieldCue('totalIncome', dummyData).status).toBe('success');
     expect(getFieldCue('totalIncome', { ...dummyData, totalIncome: 50000 }).status).toBe('error');
 
-    expect(getFieldCue('taxPayable', dummyData).status).toBe('success');
+    expect(getFieldCue('taxPayable', dummyData).status).toBe('none');
     expect(getFieldCue('taxPayable', { ...dummyData, taxPayable: -5 }).status).toBe('error');
 
-    expect(getFieldCue('invalidField', dummyData).status).toBe('success');
+    expect(getFieldCue('invalidField', dummyData).status).toBe('none');
     expect(getFieldCue('invalidField', { ...dummyData, invalidField: -5 } as any).status).toBe('error');
   });
 });

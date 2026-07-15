@@ -1,11 +1,11 @@
 
 > temp-app@0.1.0 dev
-> next dev -p 3000
+> next dev
 
 ▲ Next.js 16.2.10 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 561ms
+✓ Ready in 604ms
 Attention: Next.js now collects completely anonymous telemetry regarding usage.
 This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
@@ -13,6 +13,207 @@ https://nextjs.org/telemetry
 
 
 ○ Compiling / ...
- GET / 200 in 9.7s (next.js: 8.8s, application-code: 926ms)
+ GET / 200 in 10.4s (next.js: 9.6s, application-code: 782ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Box sx={{height:"100vh", ...}}>
+      <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{height:"100vh", ...}}>
+        <Insertion>
+        <div className="MuiBox-roo...">
+          <AppBar>
+          <Box sx={{display:"flex", ...}}>
+            <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{display:"flex", ...}}>
+              <Insertion>
+              <div className="MuiBox-roo...">
+                ...
+                  <Card variant="outlined" sx={{mb:2.5}}>
+                    <MuiCard-root className="MuiCard-root" elevation={undefined} ref={null} ...>
+                      <Insertion>
+                      <Paper className="MuiCard-ro..." elevation={undefined} variant="outlined">
+                        <MuiPaper-root as="div" ownerState={{...}} className="MuiPaper-r..." ref={null} style={{}}>
+                          <Insertion>
+                          <div className="MuiPaper-r..." style={{}}>
+                            <CardContent sx={{p:2, ...}}>
+                              <MuiCardContent-root as="div" className="MuiCardCon..." ownerState={{sx:{p:2, ...}, ...}} ...>
+                                <Insertion>
+                                <div className="MuiCardCon...">
+                                  <Typography>
+                                  <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={function handleFileUpload}
++                                   style={{display:"none"}}
+-                                   style={{display:"none",caret-color:"transparent"}}
+                                    aria-labelledby="file-upload-label"
+                                  >
+                                  ...
+                <Box sx={{width:"0px", ...}}>
+                  <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{width:"0px", ...}}>
+                    <Insertion>
+                    <div className="MuiBox-roo...">
+                      ...
+                        <div onClick={function handleClick} className="MuiInputBa...">
+                          <MuiInput-input aria-invalid={false} aria-describedby={undefined} aria-label="select gem..." ...>
+                            <Insertion>
+                            <SelectInput aria-invalid={false} aria-describedby={undefined} aria-label="select gem..." ...>
+                              <MuiSelect-select>
+                              <MuiSelect-nativeInput aria-invalid={false} value="gemini-1.5..." name={undefined} ...>
+                                <Insertion>
+                                <input
+                                  aria-invalid={false}
+                                  value="gemini-1.5-flash"
+                                  name={undefined}
+                                  aria-hidden={true}
+                                  onChange={function handleChange}
+                                  tabIndex={-1}
+                                  disabled={false}
+                                  readOnly={undefined}
+                                  className="MuiSelect-nativeInput css-j0riat-MuiSelect-nativeInput"
+                                  autoFocus={undefined}
+                                  required={false}
+                                  autoComplete={undefined}
+                                  id="_R_2al6kdqlclrlbH1_"
+                                  onAnimationStart={function handleAutoFill}
+                                  placeholder={undefined}
+                                  rows={undefined}
+                                  onKeyUp={undefined}
+                                  ref={{current:null}}
+-                                 style={{caret-color:"transparent"}}
+                                >
+                              ...
+                      <Box>
+                      <Divider>
+                      <Box sx={{p:1.5, ...}}>
+                        <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{p:1.5, ...}}>
+                          <Insertion>
+                          <div className="MuiBox-roo...">
+                            <Box sx={{display:"flex", ...}}>
+                              <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} ...>
+                                <Insertion>
+                                <div className="MuiBox-roo...">
+                                  <input
+                                    id="chat-attachment-upload"
+                                    type="file"
+                                    onChange={function handleAttachmentUpload}
++                                   style={{display:"none"}}
+-                                   style={{display:"none",caret-color:"transparent"}}
+                                  >
+                                  <Tooltip>
+                                  ...
+                                    <div onClick={function handleClick} className="MuiInputBa...">
+                                      <MuiOutlinedInput-input aria-invalid={false} aria-describedby={undefined} ...>
+                                        <Insertion>
+                                        <input
+                                          aria-invalid={false}
+                                          aria-describedby={undefined}
+                                          aria-label={undefined}
+                                          autoComplete={undefined}
+                                          autoFocus={false}
+                                          defaultValue={undefined}
+                                          disabled={false}
+                                          id="_R_el5qlclrlb_"
+                                          onAnimationStart={function handleAutoFill}
+                                          name={undefined}
+                                          placeholder="Ask your tax question..."
+                                          readOnly={undefined}
+                                          required={false}
+                                          rows={undefined}
+                                          value=""
+                                          onKeyDown={undefined}
+                                          onKeyUp={undefined}
+                                          type="text"
+                                          className="MuiInputBase-input MuiOutlinedInput-input css-13meb6w-MuiInputBas..."
+                                          onBlur={function handleBlur}
+                                          onChange={function handleChange}
+                                          onFocus={function handleFocus}
+                                          ref={function useForkRef.useMemo}
+-                                         style={{caret-color:"transparent"}}
+                                        >
+                                      ...
+          ...
+
+ GET / 200 in 135ms (next.js: 5ms, application-code: 130ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Box sx={{height:"100vh", ...}}>
+      <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{height:"100vh", ...}}>
+        <Insertion>
+        <div className="MuiBox-roo...">
+          <AppBar>
+          <Box sx={{display:"flex", ...}}>
+            <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{display:"flex", ...}}>
+              <Insertion>
+              <div className="MuiBox-roo...">
+                ...
+                  <Card variant="outlined" sx={{mb:2.5}}>
+                    <MuiCard-root className="MuiCard-root" elevation={undefined} ref={null} ...>
+                      <Insertion>
+                      <Paper className="MuiCard-ro..." elevation={undefined} variant="outlined">
+                        <MuiPaper-root as="div" ownerState={{...}} className="MuiPaper-r..." ref={null} style={{}}>
+                          <Insertion>
+                          <div className="MuiPaper-r..." style={{}}>
+                            <CardContent sx={{p:2, ...}}>
+                              <MuiCardContent-root as="div" className="MuiCardCon..." ownerState={{sx:{p:2, ...}, ...}} ...>
+                                <Insertion>
+                                <div className="MuiCardCon...">
+                                  <Typography>
+                                  <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={function handleFileUpload}
++                                   style={{display:"none"}}
+-                                   style={{display:"none",caret-color:"transparent"}}
+                                    aria-labelledby="file-upload-label"
+                                  >
+                                  ...
+                <Box sx={{width:"0px", ...}}>
+                  <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{width:"0px", ...}}>
+                    <Insertion>
+                    <div className="MuiBox-roo...">
+                      <Box>
+                      <Box>
+                      <Divider>
+                      <Box sx={{p:1.5, ...}}>
+                        <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{p:1.5, ...}}>
+                          <Insertion>
+                          <div className="MuiBox-roo...">
+                            <Box sx={{display:"flex", ...}}>
+                              <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} ...>
+                                <Insertion>
+                                <div className="MuiBox-roo...">
+                                  <input
+                                    id="chat-attachment-upload"
+                                    type="file"
+                                    onChange={function handleAttachmentUpload}
++                                   style={{display:"none"}}
+-                                   style={{display:"none"}}
+                                  >
+                                  ...
+          ...
+
 GEMINI_API_KEY environment variable is not defined.
- POST /api/chat 200 in 672ms (next.js: 647ms, application-code: 25ms)
+ POST /api/chat 200 in 569ms (next.js: 543ms, application-code: 25ms)

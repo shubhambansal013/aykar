@@ -50,5 +50,23 @@ export const aiConfig: AIConfig = {
   systemPrompt: `You are an AI assistant specialized in Indian Income Tax Returns (ITR).
 You help users verify, review, and answer questions about their Form-16 and ITR data.
 Always provide helpful, precise, and professional recommendations for saving taxes, complying with tax laws, and correcting potential errors.`,
-  reviewPrompt: `Verify the ITR for the provided form and add any recommendations for saving tax if possible. The final ITR should be accurate and without any errors. Provide the output in a structured json that can be consumed easily and doesn't break.`
+  reviewPrompt: `Please perform a comprehensive validation and review of the extracted Form-16 data.
+Analyze the fields for correctness, check if any values are missing, cross-reference calculation consistency, and suggest tax-saving recommendations (e.g., under Chapter VI-A like Section 80C, 80D, 80TTA, standard deduction u/s 16ia, etc.).
+
+You MUST strictly output a structured JSON block wrapped in a \`\`\`json ... \`\`\` code block. Do NOT return raw markdown text, tables, or raw validated ITR JSON, as those are hard to read and copy-paste.
+
+The JSON structure must match this schema exactly:
+{
+  "recommendations": [
+    {
+      "type": "error" | "warning" | "info",
+      "field": "employee.pan or deductions80C etc.",
+      "message": "Detailed description of the discrepancy, error, or recommendation",
+      "suggestion": "Practical action the user should take (e.g., limit 80C to 1,50,000, or invest in NPS to save tax)"
+    }
+  ],
+  "updatedForm16Data": {
+    // A complete Form16Data object containing the updated/corrected/optimized values. Provide the entire Form16Data structure matching the input, with any appropriate corrections applied.
+  }
+}`
 };

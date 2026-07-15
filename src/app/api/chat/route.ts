@@ -17,7 +17,7 @@ interface ChatMessage {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, itrData, rawText, isReview } = await req.json();
+    const { messages, itrData, rawText, isReview } = (await req.json()) as any;
 
     let apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     const modelTextResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     return NextResponse.json({

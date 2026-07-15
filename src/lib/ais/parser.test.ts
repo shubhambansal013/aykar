@@ -32,4 +32,16 @@ HYDQ00152F OPTUM GLOBAL 192 150,000.00
       amount: 150000,
     });
   });
+
+  it('should trigger fallback positional branches correctly', () => {
+    const text = `
+Interest from Savings Bank of amount 11,000.00
+Interest from deposits of amount 41,000.00
+Dividend of amount 7,100.00
+    `;
+    const parsed = parseAISText(text);
+    expect(parsed.interestSavings).toBe(11000);
+    expect(parsed.interestDeposit).toBe(41000);
+    expect(parsed.dividendIncome).toBe(7100);
+  });
 });

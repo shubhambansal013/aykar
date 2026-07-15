@@ -106,4 +106,45 @@ describe('validateForm16Data', () => {
     expect(errors.some(e => e.includes('Under-reporting Alert: Dividend Income'))).toBe(true);
     expect(errors.some(e => e.includes('TDS Cross-verification'))).toBe(true);
   });
+
+  it('should run .some() callbacks when other sources is non-empty but under-reports', () => {
+    const data = {
+      ...baseData,
+      otherIncome: {
+        houseProperty: 0,
+        otherSources: [
+          { nature: 'Interest from Savings Bank', amount: 5000 },
+          { nature: 'Interest on Deposits', amount: 10000 },
+          { nature: 'Dividend Income', amount: 1000 }
+        ],
+        totalOtherSources: 16000
+      },
+      aisData: {
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000,
+        tdsDetails: []
+      }
+    };
+
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('Savings Bank Interest of ₹15,000'))).toBe(true);
+  });
+
+  it('should catch missing TDS u/s 192 in Form 26AS', () => {
+    const data = {
+      ...baseData,
+      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      taxPayable: 150000,
+      form26asData: {
+        tdsSalary: [],
+        tdsOther: [],
+        tcsDetails: [],
+        advanceTax: [],
+        selfAssessmentTax: []
+      }
+    };
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('no matching TDS u/s 192 was found in Form 26AS'))).toBe(true);
+  });
 });

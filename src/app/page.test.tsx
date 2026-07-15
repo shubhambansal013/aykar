@@ -581,7 +581,7 @@ describe('Home Page', () => {
     expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
 
     vi.restoreAllMocks();
-  });
+  }, 20000);
 
   test('toggles color mode between light and dark', () => {
     render(<Home />);

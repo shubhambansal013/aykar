@@ -13,17 +13,19 @@ describe('mapForm16ToITR1', () => {
       salaryAsPer17_1: 900000,
       perquisites17_2: 100000,
       profitsInLieu17_3: 0,
-      exemptAllowancesUs10: [],
-      totalExemptAllowances: 0,
-      netSalary: 1000000,
+      exemptAllowancesUs10: [
+        { code: '10(13A)', nature: 'HRA', amount: 50000 }
+      ],
+      totalExemptAllowances: 50000,
+      netSalary: 950000,
       standardDeduction16ia: 75000,
       entertainmentAllowance16ii: 0,
       professionalTax16iii: 0,
       totalDeductionsUs16: 75000,
-      incomeChargeableUnderHeadSalaries: 925000,
+      incomeChargeableUnderHeadSalaries: 875000,
     },
     otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
-    grossTotalIncome: 925000,
+    grossTotalIncome: 875000,
     deductions80C: 150000,
     deductions80CCC: 0,
     deductions80CCD1: 0,
@@ -34,16 +36,30 @@ describe('mapForm16ToITR1', () => {
     deductions80G: 0,
     deductions80TTA: 0,
     totalChapterVIADeductions: 175000,
-    totalIncome: 750000,
-    taxPayable: 0,
+    totalIncome: 700000,
+    taxPayable: 50000,
   };
 
   it('should map Form16Data to ITR1_JSON structure correctly', () => {
-    const result = mapForm16ToITR1(mockData);
+    const dataWithCredits = {
+      ...mockData,
+      taxCredits: {
+        tdsSalary: 45000,
+        tdsOther: 1000,
+        tcs: 500,
+        advanceTax: 10000,
+        selfAssessmentTax: 2000
+      }
+    };
+    const result = mapForm16ToITR1(dataWithCredits);
     expect(result.ITR.ITR1.PersonalInfo.PAN).toBe('ABCDE1234F');
     expect(result.ITR.ITR1.ITR1_IncomeDeductions.GrossSalary).toBe(1000000);
     expect(result.ITR.ITR1.ITR1_IncomeDeductions.DeductUndChapVIA.Section80C).toBe(150000);
     expect(result.ITR.ITR1.Form_ITR1.AssessmentYear).toBe('2026');
+    expect(result.ITR.ITR1.TaxPaid.TaxesPaid.TDS).toBe(46000);
+    expect(result.ITR.ITR1.TaxPaid.TaxesPaid.AdvanceTax).toBe(10000);
+    expect(result.ITR.ITR1.TaxPaid.TaxesPaid.TotalTaxesPaid).toBe(58500);
+    expect(result.ITR.ITR1.Refund.RefundDue).toBe(8500); // 58500 total taxes paid - 50000 tax payable
   });
 
   it('should handle empty names correctly', () => {

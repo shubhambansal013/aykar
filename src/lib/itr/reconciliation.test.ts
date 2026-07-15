@@ -98,4 +98,62 @@ describe('Reconciliation Module', () => {
     expect(reconciled.discrepancies?.[0]).toContain('TDS Discrepancy');
     expect(reconciled.discrepancies?.[0]).toContain('HYDQ00152F');
   });
+
+  it('should handle pre-existing matching other sources, additional AIS TDS, and fallback default scenarios safely', () => {
+    const mockForm16WithOthers: Form16Data = {
+      ...mockForm16,
+      otherIncome: {
+        houseProperty: 0,
+        otherSources: [
+          { nature: 'Interest from Savings Bank', amount: 5000 },
+          { nature: 'Interest on Deposits', amount: 40000 } // Higher than the AIS/TIS value (35000)
+        ],
+        totalOtherSources: 45000
+      }
+    };
+
+    const mockAIS: AISData = {
+      interestSavings: 12000, // Higher than existing (5000)
+      interestDeposit: 35000, // Lower than existing (40000)
+      dividendIncome: 5000,
+      tdsDetails: [
+        { tan: 'NEWTAN1234', deductorName: 'NEW DEDUCTOR', section: '192', amount: 2500 },
+        { tan: 'ABCD12345E', deductorName: 'HDFC BANK', section: '194A', amount: 1500 }
+      ]
+    };
+
+    const mockTIS: TISData = {
+      salaryDerived: 1300000, // Salary mismatch! (1250000 vs 1300000)
+      interestSavings: 12000,
+      interestDeposit: 35000,
+      dividendIncome: 5000
+    };
+
+    // Reconcile with 26AS omitted to trigger fallback TDS salary matching
+    const reconciled = reconcileAllDocuments(mockForm16WithOthers, mockAIS, mockTIS, undefined);
+
+    // Savings updated to 12000, Deposit preserved at 40000
+    const savings = reconciled.otherIncome.otherSources.find(x => x.nature.includes('Savings'));
+    const deposit = reconciled.otherIncome.otherSources.find(x => x.nature.includes('Deposits'));
+    expect(savings?.amount).toBe(12000);
+    expect(deposit?.amount).toBe(40000);
+
+    // Extra TDS from AIS is merged (2500 + form-16 150000)
+    expect(reconciled.taxCredits?.tdsSalary).toBe(152500);
+    expect(reconciled.taxCredits?.tdsOther).toBe(1500);
+
+    // Income Discrepancy warning should be generated
+    expect(reconciled.discrepancies?.some(d => d.includes('Income Discrepancy'))).toBe(true);
+  });
+
+  it('should handle completely empty / partial form16 fields safely', () => {
+    const partialForm16 = {
+      // missing employer, employee, salary, otherIncome
+    } as any;
+
+    const reconciled = reconcileAllDocuments(partialForm16, undefined, undefined, undefined);
+    expect(reconciled.employer).toBeDefined();
+    expect(reconciled.otherIncome?.otherSources).toBeDefined();
+    expect(reconciled.salary?.grossSalary).toBe(0);
+  });
 });

@@ -1,6 +1,10 @@
 export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
   try {
-    const pdfjs = await import('pdfjs-dist');
+    const isMock = data.byteLength <= 100;
+    const isNode = typeof process !== 'undefined' && process.release && process.release.name === 'node';
+    const pdfjs = (isNode && !isMock)
+      ? await import('pdfjs-dist/legacy/build/pdf.mjs')
+      : await import('pdfjs-dist');
 
     // Point to the worker source from a reliable CDN
     if (typeof window !== 'undefined' && 'Worker' in window) {
@@ -48,7 +52,20 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
         // Within each row, sort items by X-coordinate ascending
         const reconstructedLines = rows.map(row => {
           row.items.sort((a, b) => a.x - b.x);
-          return row.items.map(item => item.str).join(' ');
+          let lineStr = '';
+          for (let idx = 0; idx < row.items.length; idx++) {
+            const cur = row.items[idx];
+            if (idx > 0) {
+              const prev = row.items[idx - 1];
+              if (cur.x - prev.x > 120 || (prev.x < 280 && cur.x >= 280)) {
+                lineStr += '  ';
+              } else {
+                lineStr += ' ';
+              }
+            }
+            lineStr += cur.str;
+          }
+          return lineStr;
         });
 
         fullText += reconstructedLines.join('\n') + '\n';

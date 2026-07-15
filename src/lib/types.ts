@@ -166,3 +166,72 @@ export interface ITR1_JSON {
     };
   };
 }
+
+export interface AISData {
+  interestSavings: number;
+  interestDeposit: number;
+  dividendIncome: number;
+  tdsDetails: Array<{
+    tan: string;
+    deductorName: string;
+    section: string;
+    amount: number;
+  }>;
+}
+
+export interface TISData {
+  salaryDerived: number;
+  interestSavings: number;
+  interestDeposit: number;
+  dividendIncome: number;
+}
+
+export interface Form26ASData {
+  tdsSalary: Array<{
+    tan: string;
+    deductorName: string;
+    amount: number;
+  }>;
+  tdsOther: Array<{
+    tan: string;
+    deductorName: string;
+    section: string;
+    amount: number;
+  }>;
+  tcsDetails: Array<{
+    collectorName: string;
+    amount: number;
+  }>;
+  advanceTax: Array<{
+    bsrCode: string;
+    date: string;
+    challanNo: string;
+    amount: number;
+  }>;
+  selfAssessmentTax: Array<{
+    bsrCode: string;
+    date: string;
+    challanNo: string;
+    amount: number;
+  }>;
+}
+
+export interface ReconciledTaxData extends Form16Data {
+  aisData?: AISData;
+  tisData?: TISData;
+  form26asData?: Form26ASData;
+  taxCredits?: {
+    tdsSalary: number;
+    tdsOther: number;
+    tcs: number;
+    advanceTax: number;
+    selfAssessmentTax: number;
+  };
+  discrepancies?: string[];
+  detectedIncomeSources?: Array<{
+    source: string;
+    category: 'interestSavings' | 'interestDeposit' | 'dividendIncome' | 'salary' | 'other';
+    amount: number;
+    confirmed: boolean;
+  }>;
+}

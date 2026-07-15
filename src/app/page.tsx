@@ -3,9 +3,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { extractTextFromPDF } from '@/lib/form16/extractor';
 import { parseForm16Text } from '@/lib/form16/parser';
+import { parseAISText } from '@/lib/ais/parser';
+import { parseTISText } from '@/lib/tis/parser';
+import { parseForm26ASText } from '@/lib/form26as/parser';
+import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
-import { Form16Data } from '@/lib/types';
+import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData } from '@/lib/types';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -316,6 +320,27 @@ export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
       if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
       return { status: 'success', message: 'Verified.' };
 
+    case 'taxCredits.tdsSalary': {
+      const form16Tds = data.taxPayable;
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      if (form16Tds > 0 && val !== form16Tds) {
+        return { status: 'warning', message: `TDS on Salary (₹${val}) does not match Form-16 TDS (₹${form16Tds}).` };
+      }
+      return { status: 'success', message: 'TDS on Salary is verified.' };
+    }
+    case 'taxCredits.tdsOther':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'TDS from other sources is verified.' };
+    case 'taxCredits.tcs':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'TCS is verified.' };
+    case 'taxCredits.advanceTax':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Advance Tax is verified.' };
+    case 'taxCredits.selfAssessmentTax':
+      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
+      return { status: 'success', message: 'Self-Assessment Tax is verified.' };
+
     default:
       if (isNum && val < 0) {
         return { status: 'error', message: 'Value cannot be negative.' };
@@ -541,6 +566,18 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
 
+  const [aisFile, setAisFile] = useState<File | null>(null);
+  const [tisFile, setTisFile] = useState<File | null>(null);
+  const [form26asFile, setForm26asFile] = useState<File | null>(null);
+
+  const [aisData, setAisData] = useState<AISData | null>(null);
+  const [tisData, setTisData] = useState<TISData | null>(null);
+  const [form26asData, setForm26asData] = useState<Form26ASData | null>(null);
+
+  const [aisLoading, setAisLoading] = useState(false);
+  const [tisLoading, setTisLoading] = useState(false);
+  const [form26asLoading, setForm26asLoading] = useState(false);
+
   const updateNestedValue = (path: string, val: any) => {
     setExtractedData((prev) => {
       if (!prev) return prev;
@@ -548,6 +585,9 @@ export default function Home() {
       const parts = path.split('.');
       let current = next;
       for (let i = 0; i < parts.length - 1; i++) {
+        if (current[parts[i]] === undefined || current[parts[i]] === null) {
+          current[parts[i]] = {};
+        }
         current = current[parts[i]];
       }
       current[parts[parts.length - 1]] = val;
@@ -745,13 +785,89 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setRawText(text);
       const parsed = parseForm16Text(text);
-      setExtractedData(parsed);
-      setErrors(validateForm16Data(parsed));
+      const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, form26asData || undefined);
+      setExtractedData(reconciled);
+      setErrors(validateForm16Data(reconciled));
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAISUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    setAisFile(selectedFile);
+    setAisLoading(true);
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const text = await extractTextFromPDF(arrayBuffer);
+      const parsed = parseAISText(text);
+      setAisData(parsed);
+
+      if (extractedData) {
+        const reconciled = reconcileAllDocuments(extractedData, parsed, tisData || undefined, form26asData || undefined);
+        setExtractedData(reconciled);
+        setErrors(validateForm16Data(reconciled));
+      }
+    } catch (err) {
+      console.error('Error processing AIS PDF:', err);
+      alert('Failed to process AIS PDF.');
+    } finally {
+      setAisLoading(false);
+    }
+  };
+
+  const handleTISUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    setTisFile(selectedFile);
+    setTisLoading(true);
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const text = await extractTextFromPDF(arrayBuffer);
+      const parsed = parseTISText(text);
+      setTisData(parsed);
+
+      if (extractedData) {
+        const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, parsed, form26asData || undefined);
+        setExtractedData(reconciled);
+        setErrors(validateForm16Data(reconciled));
+      }
+    } catch (err) {
+      console.error('Error processing TIS PDF:', err);
+      alert('Failed to process TIS PDF.');
+    } finally {
+      setTisLoading(false);
+    }
+  };
+
+  const handleForm26ASUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    setForm26asFile(selectedFile);
+    setForm26asLoading(true);
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const text = await extractTextFromPDF(arrayBuffer);
+      const parsed = parseForm26ASText(text);
+      setForm26asData(parsed);
+
+      if (extractedData) {
+        const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, tisData || undefined, parsed);
+        setExtractedData(reconciled);
+        setErrors(validateForm16Data(reconciled));
+      }
+    } catch (err) {
+      console.error('Error processing Form 26AS PDF:', err);
+      alert('Failed to process Form 26AS PDF.');
+    } finally {
+      setForm26asLoading(false);
     }
   };
 
@@ -926,63 +1042,120 @@ export default function Home() {
               {/* Upload Section */}
               <Card variant="outlined" sx={{ mb: 2.5 }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Typography
-                    id="file-upload-label"
-                    variant="h6"
-                    component="label"
-                    htmlFor="file-upload"
-                    sx={{ cursor: 'pointer', mb: 1.5, display: 'block', fontWeight: 'bold' }}
-                  >
-                    1. Upload Form-16 PDF
+                  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 'bold' }}>
+                    1. Upload Financial Documents
                   </Typography>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                    aria-labelledby="file-upload-label"
-                  />
-                  <Box
-                    component="label"
-                    htmlFor="file-upload"
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px dashed',
-                      borderColor: 'primary.main',
-                      borderRadius: 1.5,
-                      p: 3,
-                      textAlign: 'center',
-                      bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.03)' : 'rgba(2, 132, 199, 0.03)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.06)' : 'rgba(2, 132, 199, 0.06)',
-                      },
-                    }}
-                  >
-                    <CloudUploadIcon sx={{ fontSize: 36, color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="body1" sx={{ fontWeight: 500, mb: 0.25 }}>
-                      {file ? file.name : 'Select or drag and drop Form-16 PDF'}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      Supports PDF format files only
-                    </Typography>
-                  </Box>
+                  <Grid container spacing={2}>
+                    {/* Form-16 */}
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                        <Typography id="file-upload-label" variant="subtitle2" component="label" htmlFor="file-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                          1. Upload Form-16 PDF
+                        </Typography>
+                        <input id="file-upload" type="file" accept=".pdf" onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
+                        <Button component="label" htmlFor="file-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                          {file ? 'Uploaded' : 'Upload'}
+                        </Button>
+                        {file && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{file.name}</Typography>}
+                        {loading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                      </Box>
+                    </Grid>
 
-                  {loading && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 2 }}>
-                      <CircularProgress size={18} color="primary" />
-                      <Typography variant="body2" color="primary" sx={{ fontWeight: 500 }}>
-                        Extracting data... Please wait.
-                      </Typography>
-                    </Box>
-                  )}
+                    {/* AIS */}
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                        <Typography id="ais-label" variant="subtitle2" component="label" htmlFor="ais-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                          AIS PDF (Annual Info)
+                        </Typography>
+                        <input id="ais-upload" type="file" accept=".pdf" onChange={handleAISUpload} style={{ display: 'none' }} aria-labelledby="ais-label" />
+                        <Button component="label" htmlFor="ais-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                          {aisFile ? 'Uploaded' : 'Upload'}
+                        </Button>
+                        {aisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{aisFile.name}</Typography>}
+                        {aisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                      </Box>
+                    </Grid>
+
+                    {/* TIS */}
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                        <Typography id="tis-label" variant="subtitle2" component="label" htmlFor="tis-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                          TIS PDF (Tax Summary)
+                        </Typography>
+                        <input id="tis-upload" type="file" accept=".pdf" onChange={handleTISUpload} style={{ display: 'none' }} aria-labelledby="tis-label" />
+                        <Button component="label" htmlFor="tis-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                          {tisFile ? 'Uploaded' : 'Upload'}
+                        </Button>
+                        {tisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{tisFile.name}</Typography>}
+                        {tisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                      </Box>
+                    </Grid>
+
+                    {/* Form 26AS */}
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                        <Typography id="f26as-label" variant="subtitle2" component="label" htmlFor="f26as-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                          Form 26AS PDF (Tax Paid)
+                        </Typography>
+                        <input id="f26as-upload" type="file" accept=".pdf" onChange={handleForm26ASUpload} style={{ display: 'none' }} aria-labelledby="f26as-label" />
+                        <Button component="label" htmlFor="f26as-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                          {form26asFile ? 'Uploaded' : 'Upload'}
+                        </Button>
+                        {form26asFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form26asFile.name}</Typography>}
+                        {form26asLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                      </Box>
+                    </Grid>
+                  </Grid>
                 </CardContent>
               </Card>
+
+              {/* Reconciliation & Discrepancy Matching Panel */}
+              {extractedData && (extractedData as ReconciledTaxData).discrepancies && ((extractedData as ReconciledTaxData).discrepancies?.length ?? 0) > 0 && (
+                <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
+                  <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
+                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
+                    {(extractedData as ReconciledTaxData).discrepancies?.map((disc, i) => (
+                      <li key={i}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
+                      </li>
+                    ))}
+                  </ul>
+                </Alert>
+              )}
+
+              {/* Detected Income Sources Confirmation Panel */}
+              {extractedData && (extractedData as ReconciledTaxData).detectedIncomeSources && ((extractedData as ReconciledTaxData).detectedIncomeSources?.length ?? 0) > 0 && (
+                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+                      <CheckCircleIcon sx={{ fontSize: 18 }} /> Detected Supplementary Income Sources (AIS/TIS)
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" sx={{ mb: 1.5, display: 'block' }}>
+                      The following additional incomes were found in the uploaded AIS/TIS documents and have been successfully merged into your other sources to prevent under-reporting:
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                      {(extractedData as ReconciledTaxData).detectedIncomeSources?.map((item, i) => {
+                        let catLabel = 'Other';
+                        if (item.category === 'interestSavings') catLabel = 'Savings bank interest';
+                        if (item.category === 'interestDeposit') catLabel = 'Interest on deposit';
+                        if (item.category === 'dividendIncome') catLabel = 'Dividend';
+
+                        return (
+                          <Paper key={i} variant="outlined" sx={{ p: 1, px: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box>
+                              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontSize: '0.675rem' }}>{catLabel} ({item.source})</Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{item.amount.toLocaleString('en-IN')}</Typography>
+                            </Box>
+                            <IconButton size="small" color="success">
+                              <CheckCircleIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Paper>
+                        );
+                      })}
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
 
               {extractedData && (
                 <>
@@ -1161,7 +1334,31 @@ export default function Home() {
                           </Grid>
                         </Grid>
 
-                        {/* 5. Summary */}
+                        {/* 5. Tax Paid & Credits */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                            Taxes Paid & Credits (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="TDS on Salary (u/s 192)" type="number" path="taxCredits.tdsSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tdsSalary', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="TDS on Other Income" type="number" path="taxCredits.tdsOther" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tdsOther', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                              <CueTextField label="TCS (Tax Collected)" type="number" path="taxCredits.tcs" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tcs', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Advance Tax Paid" type="number" path="taxCredits.advanceTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.advanceTax', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Self-Assessment Tax Paid" type="number" path="taxCredits.selfAssessmentTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.selfAssessmentTax', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* 6. Summary */}
                         <Grid size={{ xs: 12 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
                             Tax Computation Summary (₹)

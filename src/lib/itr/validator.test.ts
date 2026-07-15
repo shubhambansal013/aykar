@@ -72,4 +72,38 @@ describe('validateForm16Data', () => {
     const errors = validateForm16Data(data);
     expect(errors).toContain('Standard deduction (u/s 16ia) cannot exceed ₹75000. Found: ₹80000');
   });
+
+  it('should perform cross-verification and catch mismatches/under-reporting', () => {
+    const data = {
+      ...baseData,
+      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      taxPayable: 150000,
+      aisData: {
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000,
+        tdsDetails: []
+      },
+      tisData: {
+        salaryDerived: 110000, // Salary mismatch (100k vs 110k)
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000
+      },
+      form26asData: {
+        tdsSalary: [{ tan: 'HYDQ00152F', deductorName: 'OPTUM', amount: 140000 }], // TDS mismatch (150k vs 140k)
+        tdsOther: [],
+        tcsDetails: [],
+        advanceTax: [],
+        selfAssessmentTax: []
+      }
+    };
+
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('TIS Salary Cross-verification'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Savings Bank Interest'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Deposit Interest'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Dividend Income'))).toBe(true);
+    expect(errors.some(e => e.includes('TDS Cross-verification'))).toBe(true);
+  });
 });

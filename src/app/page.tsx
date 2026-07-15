@@ -33,6 +33,8 @@ import {
   Select,
   MenuItem,
   FormControl,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -412,6 +414,91 @@ export function CueTextField({
   );
 }
 
+export interface FieldDiff {
+  path: string;
+  label: string;
+  oldVal: any;
+  newVal: any;
+}
+
+export function getForm16Differences(current: any, updated: any): FieldDiff[] {
+  if (!updated) return [];
+  const activeCurrent = current || {};
+
+  const fieldLabels: Record<string, string> = {
+    'employer.name': 'Employer Name',
+    'employer.pan': 'Employer PAN',
+    'employer.tan': 'Employer TAN',
+    'employer.address': 'Employer Address',
+    'employee.name.firstName': 'Employee First Name',
+    'employee.name.middleName': 'Employee Middle Name',
+    'employee.name.lastName': 'Employee Last Name',
+    'employee.pan': 'Employee PAN',
+    'employee.address': 'Employee Address',
+    'assessmentYear': 'Assessment Year',
+    'period.from': 'Period From',
+    'period.to': 'Period To',
+    'salary.grossSalary': 'Gross Salary',
+    'salary.salaryAsPer17_1': 'Salary u/s 17(1)',
+    'salary.perquisites17_2': 'Perquisites u/s 17(2)',
+    'salary.profitsInLieu17_3': 'Profits in lieu u/s 17(3)',
+    'salary.totalExemptAllowances': 'Total Exempt Allowances',
+    'salary.netSalary': 'Net Salary',
+    'salary.standardDeduction16ia': 'Standard Deduction',
+    'salary.entertainmentAllowance16ii': 'Entertainment Allowance',
+    'salary.professionalTax16iii': 'Professional Tax',
+    'salary.totalDeductionsUs16': 'Total Deductions u/s 16',
+    'salary.incomeChargeableUnderHeadSalaries': 'Income from Salaries',
+    'otherIncome.houseProperty': 'House Property Income',
+    'otherIncome.totalOtherSources': 'Other Sources Income',
+    'grossTotalIncome': 'Gross Total Income',
+    'deductions80C': 'Section 80C',
+    'deductions80CCC': 'Section 80CCC',
+    'deductions80CCD1': 'Section 80CCD(1)',
+    'deductions80CCD1B': 'Section 80CCD(1B)',
+    'deductions80CCD2': 'Section 80CCD(2)',
+    'deductions80D': 'Section 80D',
+    'deductions80E': 'Section 80E',
+    'deductions80G': 'Section 80G',
+    'deductions80TTA': 'Section 80TTA',
+    'totalChapterVIADeductions': 'Total Chapter VI-A Deductions',
+    'totalIncome': 'Total Taxable Income',
+    'taxPayable': 'Tax Payable',
+  };
+
+  const getNestedValue = (obj: any, keyPath: string): any => {
+    const keys = keyPath.split('.');
+    let curr = obj;
+    for (const k of keys) {
+      if (curr === undefined || curr === null) return undefined;
+      curr = curr[k];
+    }
+    return curr;
+  };
+
+  const areValuesDifferent = (v1: any, v2: any): boolean => {
+    const empty1 = v1 === undefined || v1 === null || v1 === '';
+    const empty2 = v2 === undefined || v2 === null || v2 === '';
+    if (empty1 && empty2) return false;
+    if ((v1 === 0 && empty2) || (v2 === 0 && empty1)) return false;
+    if (typeof v1 === 'string' && typeof v2 === 'string') {
+      return v1.trim() !== v2.trim();
+    }
+    return v1 !== v2;
+  };
+
+  const diffs: FieldDiff[] = [];
+  for (const [path, label] of Object.entries(fieldLabels)) {
+    const oldVal = getNestedValue(activeCurrent, path);
+    const newVal = getNestedValue(updated, path);
+    if (areValuesDifferent(oldVal, newVal)) {
+      diffs.push({ path, label, oldVal, newVal });
+    }
+  }
+
+  return diffs;
+}
+
 interface AssistantMessageProps {
   content: string;
   msgIdx: number;
@@ -419,6 +506,7 @@ interface AssistantMessageProps {
   rejectedMessages: Record<number, boolean>;
   onAccept: (msgIdx: number, data: any) => void;
   onReject: (msgIdx: number) => void;
+  currentData: Form16Data | null;
 }
 
 export function AssistantMessage({
@@ -428,6 +516,7 @@ export function AssistantMessage({
   rejectedMessages,
   onAccept,
   onReject,
+  currentData,
 }: AssistantMessageProps) {
   const parsed = useMemo(() => {
     const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
@@ -447,6 +536,14 @@ export function AssistantMessage({
   const isAccepted = acceptedMessages[msgIdx];
   const isRejected = rejectedMessages[msgIdx];
 
+  const { json, textOutside } = parsed;
+  const recommendations = json && Array.isArray(json.recommendations) ? json.recommendations : [];
+  const updatedData = json ? json.updatedForm16Data : null;
+
+  const diffs = useMemo(() => {
+    return getForm16Differences(currentData, updatedData);
+  }, [currentData, updatedData]);
+
   if (!parsed.json) {
     return (
       <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
@@ -454,10 +551,6 @@ export function AssistantMessage({
       </Typography>
     );
   }
-
-  const { json, textOutside } = parsed;
-  const recommendations = Array.isArray(json.recommendations) ? json.recommendations : [];
-  const updatedData = json.updatedForm16Data;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -492,7 +585,7 @@ export function AssistantMessage({
       })}
 
       {/* Proposed Updated Data Action Card */}
-      {updatedData && (
+      {updatedData && (diffs.length > 0 || isAccepted || isRejected) && (
         <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed' }}>
           <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -501,6 +594,29 @@ export function AssistantMessage({
             <Typography variant="body2" sx={{ my: 1, fontSize: '0.775rem' }}>
               The AI assistant has detected discrepancies and proposed corrections to your tax details. Would you like to override your existing form details with these suggested corrections?
             </Typography>
+
+            {/* List of differences */}
+            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '0.725rem' }}>
+                Proposed Changes:
+              </Typography>
+              {diffs.map((diff, dIdx) => (
+                <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.25 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
+                    {diff.label}:
+                  </Typography>
+                  <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
+                    {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                    →
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
+                    {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
 
             {!isAccepted && !isRejected ? (
               <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
@@ -582,6 +698,7 @@ export default function Home() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
   const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
+  const [sendOnlyRawData, setSendOnlyRawData] = useState<boolean>(true);
 
   const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
   const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
@@ -798,7 +915,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           messages: updatedMessages,
-          itrData: extractedData,
+          itrData: sendOnlyRawData ? null : extractedData,
           rawText: rawText,
           isReview: isReviewRequest,
           model: selectedModel,
@@ -1329,29 +1446,49 @@ export default function Home() {
             zIndex: 5,
           }}>
             {/* Chat Header */}
-            <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SmartToyIcon color="primary" sx={{ fontSize: 20 }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>AI Tax Assistant</Typography>
+            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SmartToyIcon color="primary" sx={{ fontSize: 20 }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>AI Tax Assistant</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
+                    <Select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      sx={{ fontSize: '0.75rem', py: 0 }}
+                      aria-label="select gemini model"
+                    >
+                      {geminiModels.map((m) => (
+                        <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>
+                          {m.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close chat">
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <FormControl size="small" variant="standard" sx={{ minWidth: 140 }}>
-                  <Select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    sx={{ fontSize: '0.75rem', py: 0 }}
-                    aria-label="select gemini model"
-                  >
-                    {geminiModels.map((m) => (
-                      <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>
-                        {m.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close chat">
-                  <CloseIcon fontSize="small" />
-                </IconButton>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 0.5 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={sendOnlyRawData}
+                      onChange={(e) => setSendOnlyRawData(e.target.checked)}
+                      size="small"
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                      Send only raw data to AI agent
+                    </Typography>
+                  }
+                  sx={{ m: 0 }}
+                />
               </Box>
             </Box>
 
@@ -1410,6 +1547,7 @@ export default function Home() {
                         rejectedMessages={rejectedMessages}
                         onAccept={handleAcceptProposal}
                         onReject={handleRejectProposal}
+                        currentData={extractedData}
                       />
                     )}
                     {msg.attachments && msg.attachments.length > 0 && (
@@ -1443,8 +1581,33 @@ export default function Home() {
             {/* Chat Input / Actions */}
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
               {/* Selected attachments / Context */}
-              {(file || attachments.length > 0) && (
+              {(file || attachments.length > 0 || (!sendOnlyRawData && extractedData)) && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                  {/* Parsed ITR JSON Data Highlighted Badge */}
+                  {!sendOnlyRawData && extractedData && (
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        pl: 0.75,
+                        pr: 0.75,
+                        py: 0.25,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        borderColor: 'primary.main',
+                      }}
+                      data-testid="parsed-itr-badge"
+                    >
+                      <AttachFileIcon sx={{ fontSize: 12, color: 'inherit' }} />
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
+                        Parsed ITR JSON Data
+                      </Typography>
+                    </Paper>
+                  )}
+
                   {/* Form-16 Context */}
                   {file && (
                     <Paper

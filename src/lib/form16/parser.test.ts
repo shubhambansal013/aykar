@@ -93,7 +93,7 @@ describe('parseForm16Text', () => {
     expect(result.employee.pan).toBe('VWXYZ9876S');
 
     // Period & AY
-    expect(result.assessmentYear).toBe('2024');
+    expect(result.assessmentYear).toBe('2024-25');
     expect(result.period.from).toBe('01-Apr-2023');
     expect(result.period.to).toBe('31-Mar-2024');
 
@@ -104,8 +104,8 @@ describe('parseForm16Text', () => {
     expect(result.salary.grossSalary).toBe(1550000);
 
     // Exempt Allowances
-    expect(result.salary.exemptAllowancesUs10).toContainEqual({ code: '10(13A)', amount: 120000 });
-    expect(result.salary.exemptAllowancesUs10).toContainEqual({ code: '10(14)', amount: 20000 });
+    expect(result.salary.exemptAllowancesUs10).toContainEqual({ code: '10(13A)', nature: 'Exempt Allowance 10(13A)', amount: 120000 });
+    expect(result.salary.exemptAllowancesUs10).toContainEqual({ code: '10(14)', nature: 'Exempt Allowance 10(14)', amount: 20000 });
     expect(result.salary.totalExemptAllowances).toBe(140000);
     expect(result.salary.netSalary).toBe(1410000);
 
@@ -285,7 +285,7 @@ describe('parseForm16Text', () => {
     expect(res.employee.name.lastName).toBe('BANSAL');
     expect(res.employee.address).toBe('T2-703 Pareena Coban, Dhankot Sector 99A, Dhankot(49), Gurgaon - 122505 Haryana');
 
-    expect(res.assessmentYear).toBe('2026');
+    expect(res.assessmentYear).toBe('2026-27');
     expect(res.period.from).toBe('01-Apr-2025');
     expect(res.period.to).toBe('31-Mar-2026');
 
@@ -376,5 +376,159 @@ describe('ParserUtils additional coverage tests', () => {
     };
     const text = 'start_block some text but no end boundary here';
     expect(ParserUtils.getScopedBlock(text, boundaries, 15)).toBe('start_block som');
+  });
+
+  it('should correctly extract Form-16 data for OPTUM/MANAK JEET SINGH and verify ITR json structure', () => {
+    const optumForm16Text = `
+      Name and address of the Employer/Specified Bank: OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED, 5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana
+      Name and address of the Employee/Specified senior citizen: MANAK JEET SINGH, 1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana
+      PAN of the Deductor: AAACQ2188G
+      TAN of the Deductor: HYDQ00152F
+      PAN of the Employee: AFNPS1912F
+      Assessment Year: 2026-27
+      Period with the employer: From 01-Apr-2025 To 31-Mar-2026
+
+      1. Gross Salary
+      (a) Salary as per section 17(1) 7,275,532.00
+      (b) Value of perquisites u/s 17(2) 5,004.00
+      (c) Profits in lieu of salary u/s 17(3) 0.00
+      Total Gross Salary 7,280,536.00
+
+      2. Less: Allowances to the extent exempt u/s 10
+      House rent allowance under section 10(13A) 1,226,539.00
+      Total Exempt Allowances 1,226,539.00
+
+      3. Net Salary 6,053,997.00
+
+      4. Deductions u/s 16
+      Standard deduction u/s 16(ia) 50,000.00
+      Entertainment allowance u/s 16(ii) 0.00
+      Tax on employment u/s 16(iii) 2,400.00
+
+      5. Income chargeable under the head "Salaries" 6,001,597.00
+
+      6. Any other income reported by the employee
+      Income from house property 0.00
+      Income from other sources 0.00
+      Total other income 0.00
+
+      7. Gross Total Income 6,001,597.00
+
+      8. Deductions under Chapter VI-A
+      80C 1,50,000.00
+      80CCC 0.00
+      80CCD(1) 0.00
+      80CCD(1B) 49,705.00
+      80CCD(2) 0.00
+      80D 22,184.00
+      80E 0.00
+      80G 0.00
+      80TTA 0.00
+      Total Chapter VI-A Deductions 221,889.00
+
+      9. Total Income 5,779,708.00
+      10. Tax Payable 1,769,096.00
+    `;
+
+    const expectedJson = {
+      "employer": {
+        "name": "OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED",
+        "tan": "HYDQ00152F",
+        "pan": "AAACQ2188G",
+        "address": "5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana"
+      },
+      "employee": {
+        "name": {
+          "firstName": "MANAK",
+          "middleName": "JEET",
+          "lastName": "SINGH"
+        },
+        "pan": "AFNPS1912F",
+        "address": "1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana"
+      },
+      "assessmentYear": "2026-27",
+      "period": {
+        "from": "01-Apr-2025",
+        "to": "31-Mar-2026"
+      },
+      "salary": {
+        "grossSalary": 7280536,
+        "salaryAsPer17_1": 7275532,
+        "perquisites17_2": 5004,
+        "profitsInLieu17_3": 0,
+        "exemptAllowancesUs10": [
+          {
+            "nature": "House rent allowance under section 10(13A)",
+            "amount": 1226539
+          }
+        ],
+        "totalExemptAllowances": 1226539,
+        "netSalary": 6053997,
+        "standardDeduction16ia": 50000,
+        "entertainmentAllowance16ii": 0,
+        "professionalTax16iii": 2400,
+        "totalDeductionsUs16": 52400,
+        "incomeChargeableUnderHeadSalaries": 6001597
+      },
+      "otherIncome": {
+        "houseProperty": 0,
+        "otherSources": [],
+        "totalOtherSources": 0
+      },
+      "grossTotalIncome": 6001597,
+      "deductions80C": 150000,
+      "deductions80CCC": 0,
+      "deductions80CCD1": 0,
+      "deductions80CCD1B": 49705,
+      "deductions80CCD2": 0,
+      "deductions80D": 22184,
+      "deductions80E": 0,
+      "deductions80G": 0,
+      "deductions80TTA": 0,
+      "totalChapterVIADeductions": 221889,
+      "totalIncome": 5779708,
+      "taxPayable": 1769096
+    };
+
+    const parsed = parseForm16Text(optumForm16Text);
+
+    // Deep equality assertions on all blocks to verify perfect alignment
+    expect(parsed.employer).toEqual(expectedJson.employer);
+    expect(parsed.employee).toEqual(expectedJson.employee);
+    expect(parsed.assessmentYear).toBe(expectedJson.assessmentYear);
+    expect(parsed.period).toEqual(expectedJson.period);
+
+    // Verify exempt allowances without checking the optional 'code' field to match exact format
+    const sanitizedExemptAllowances = parsed.salary.exemptAllowancesUs10.map(({ nature, amount }) => ({ nature, amount }));
+    expect(sanitizedExemptAllowances).toEqual(expectedJson.salary.exemptAllowancesUs10);
+
+    // Verify other salary fields
+    expect(parsed.salary.grossSalary).toBe(expectedJson.salary.grossSalary);
+    expect(parsed.salary.salaryAsPer17_1).toBe(expectedJson.salary.salaryAsPer17_1);
+    expect(parsed.salary.perquisites17_2).toBe(expectedJson.salary.perquisites17_2);
+    expect(parsed.salary.profitsInLieu17_3).toBe(expectedJson.salary.profitsInLieu17_3);
+    expect(parsed.salary.totalExemptAllowances).toBe(expectedJson.salary.totalExemptAllowances);
+    expect(parsed.salary.netSalary).toBe(expectedJson.salary.netSalary);
+    expect(parsed.salary.standardDeduction16ia).toBe(expectedJson.salary.standardDeduction16ia);
+    expect(parsed.salary.entertainmentAllowance16ii).toBe(expectedJson.salary.entertainmentAllowance16ii);
+    expect(parsed.salary.professionalTax16iii).toBe(expectedJson.salary.professionalTax16iii);
+    expect(parsed.salary.totalDeductionsUs16).toBe(expectedJson.salary.totalDeductionsUs16);
+    expect(parsed.salary.incomeChargeableUnderHeadSalaries).toBe(expectedJson.salary.incomeChargeableUnderHeadSalaries);
+
+    // Other income & deductions
+    expect(parsed.otherIncome).toEqual(expectedJson.otherIncome);
+    expect(parsed.grossTotalIncome).toBe(expectedJson.grossTotalIncome);
+    expect(parsed.deductions80C).toBe(expectedJson.deductions80C);
+    expect(parsed.deductions80CCC).toBe(expectedJson.deductions80CCC);
+    expect(parsed.deductions80CCD1).toBe(expectedJson.deductions80CCD1);
+    expect(parsed.deductions80CCD1B).toBe(expectedJson.deductions80CCD1B);
+    expect(parsed.deductions80CCD2).toBe(expectedJson.deductions80CCD2);
+    expect(parsed.deductions80D).toBe(expectedJson.deductions80D);
+    expect(parsed.deductions80E).toBe(expectedJson.deductions80E);
+    expect(parsed.deductions80G).toBe(expectedJson.deductions80G);
+    expect(parsed.deductions80TTA).toBe(expectedJson.deductions80TTA);
+    expect(parsed.totalChapterVIADeductions).toBe(expectedJson.totalChapterVIADeductions);
+    expect(parsed.totalIncome).toBe(expectedJson.totalIncome);
+    expect(parsed.taxPayable).toBe(expectedJson.taxPayable);
   });
 });

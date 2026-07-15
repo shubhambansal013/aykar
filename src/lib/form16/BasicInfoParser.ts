@@ -83,7 +83,7 @@ export class BasicInfoParser {
     // 2. Assessment Year
     const ayMatch = text.match(config.assessmentYear.fallbackRegexes[0]);
     if (ayMatch) {
-      data.assessmentYear = ayMatch[1].split('-')[0];
+      data.assessmentYear = ayMatch[1];
     }
 
     // 3. Employer Name and Address

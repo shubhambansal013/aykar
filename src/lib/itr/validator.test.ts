@@ -147,4 +147,16 @@ describe('validateForm16Data', () => {
     const errors = validateForm16Data(data);
     expect(errors.some(e => e.includes('no matching TDS u/s 192 was found in Form 26AS'))).toBe(true);
   });
+
+  it('should handle highly partial or missing Form16Data nested structures without throwing', () => {
+    const partialData = {
+      assessmentYear: '2026-27',
+      grossTotalIncome: 100,
+    } as any;
+
+    expect(() => {
+      const errors = validateForm16Data(partialData);
+      expect(errors).toBeDefined();
+    }).not.toThrow();
+  });
 });

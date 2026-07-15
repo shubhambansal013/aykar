@@ -54,10 +54,10 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
+
+import { CueTextField } from '@/app/components/FieldCues';
+import { AssistantMessage } from '@/app/components/AssistantMessage';
 
 interface Attachment {
   name: string;
@@ -71,960 +71,8 @@ interface Message {
   attachments?: Attachment[];
 }
 
-export interface FieldCue {
-  status: 'success' | 'warning' | 'error' | 'none';
-  message: string;
-}
-
-const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
-const TAN_REGEX = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
-
-export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
-  if (!data) {
-    return { status: 'none', message: 'No data' };
-  }
-
-  const parts = path.split('.');
-
-  // Helper to get nested value
-  const getValue = (obj: any, keys: string[]): any => {
-    let current = obj;
-    for (const key of keys) {
-      if (current === undefined || current === null) return undefined;
-      current = current[key];
-    }
-    return current;
-  };
-
-  const val = getValue(data, parts);
-
-  // General check for emptyness/negatives
-  const isNum = typeof val === 'number';
-  const isStr = typeof val === 'string';
-
-  switch (path) {
-    // Employer Details
-    case 'employer.name':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Employer name is missing.' };
-      }
-      return { status: 'success', message: 'Employer name is verified.' };
-    case 'employer.pan':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Employer PAN is missing.' };
-      }
-      if (!PAN_REGEX.test(val.trim().toUpperCase())) {
-        return { status: 'error', message: 'Invalid Employer PAN format (Expected format: ABCDE1234F).' };
-      }
-      return { status: 'success', message: 'Employer PAN format is valid.' };
-    case 'employer.tan':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Employer TAN is missing.' };
-      }
-      if (!TAN_REGEX.test(val.trim().toUpperCase())) {
-        return { status: 'error', message: 'Invalid Employer TAN format (Expected format: ABCD12345E).' };
-      }
-      return { status: 'success', message: 'Employer TAN format is valid.' };
-    case 'employer.address':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Employer address is missing.' };
-      }
-      return { status: 'success', message: 'Employer address is verified.' };
-
-    // Employee Details
-    case 'employee.name.firstName':
-      if (!val || val.trim() === '') {
-        return { status: 'error', message: 'Employee First Name is required.' };
-      }
-      return { status: 'success', message: 'Employee First Name is verified.' };
-    case 'employee.name.middleName':
-      return { status: 'none', message: '' };
-    case 'employee.name.lastName':
-      if (!val || val.trim() === '') {
-        return { status: 'error', message: 'Employee Last Name is required.' };
-      }
-      return { status: 'success', message: 'Employee Last Name is verified.' };
-    case 'employee.pan':
-      if (!val || val.trim() === '') {
-        return { status: 'error', message: 'Employee PAN is required.' };
-      }
-      if (!PAN_REGEX.test(val.trim().toUpperCase())) {
-        return { status: 'error', message: 'Invalid Employee PAN format (Expected format: ABCDE1234F).' };
-      }
-      return { status: 'success', message: 'Employee PAN format is valid.' };
-    case 'employee.address':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Employee address is missing.' };
-      }
-      return { status: 'success', message: 'Employee address is verified.' };
-
-    // General Assessment details
-    case 'assessmentYear':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Assessment Year is missing.' };
-      }
-      if (!/^\d{4}-\d{2}$/.test(val.trim()) && !/^\d{4}-\d{4}$/.test(val.trim())) {
-        return { status: 'warning', message: 'Expected Assessment Year format (e.g. 2026-27 or 2025-2026).' };
-      }
-      return { status: 'success', message: 'Assessment Year format is valid.' };
-    case 'period.from':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Period From date is missing.' };
-      }
-      return { status: 'success', message: 'Period From is verified.' };
-    case 'period.to':
-      if (!val || val.trim() === '') {
-        return { status: 'warning', message: 'Period To date is missing.' };
-      }
-      return { status: 'success', message: 'Period To is verified.' };
-
-    // Salary Details
-    case 'salary.grossSalary': {
-      const calcGross = (data.salary?.salaryAsPer17_1 || 0) + (data.salary?.perquisites17_2 || 0) + (data.salary?.profitsInLieu17_3 || 0);
-      if (Math.abs((val || 0) - calcGross) > 1) {
-        return { status: 'error', message: `Gross Salary (₹${val}) must equal standard components sum 17(1) + 17(2) + 17(3) = ₹${calcGross}.` };
-      }
-      return { status: 'success', message: 'Gross Salary matches components sum.' };
-    }
-    case 'salary.salaryAsPer17_1':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'salary.perquisites17_2':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'salary.profitsInLieu17_3':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'salary.totalExemptAllowances': {
-      const sumAlw = (data.salary?.exemptAllowancesUs10 || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
-      if (Math.abs((val || 0) - sumAlw) > 1) {
-        return { status: 'warning', message: `Total Exempt Allowances (₹${val}) does not match sum of individual allowances (₹${sumAlw}).` };
-      }
-      return { status: 'success', message: 'Total Exempt Allowances is verified.' };
-    }
-    case 'salary.netSalary': {
-      const calcNet = (data.salary?.grossSalary || 0) - (data.salary?.totalExemptAllowances || 0);
-      if (Math.abs((val || 0) - calcNet) > 1) {
-        return { status: 'error', message: `Net Salary (₹${val}) must equal Gross Salary (₹${data.salary?.grossSalary || 0}) minus Exempt Allowances (₹${data.salary?.totalExemptAllowances || 0}) = ₹${calcNet}.` };
-      }
-      return { status: 'success', message: 'Net Salary calculation is consistent.' };
-    }
-    case 'salary.standardDeduction16ia':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      if (val > 75000) {
-        return { status: 'error', message: 'Standard deduction (u/s 16ia) cannot exceed ₹75,000 for AY 2026-27.' };
-      }
-      return { status: 'success', message: 'Standard deduction value is within limits.' };
-    case 'salary.entertainmentAllowance16ii':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'salary.professionalTax16iii':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'salary.totalDeductionsUs16': {
-      const calcDeductions = (data.salary?.standardDeduction16ia || 0) + (data.salary?.entertainmentAllowance16ii || 0) + (data.salary?.professionalTax16iii || 0);
-      if (Math.abs((val || 0) - calcDeductions) > 1) {
-        return { status: 'error', message: `Total deductions u/s 16 (₹${val}) must equal sum of SD (u/s 16ia) + EA (16ii) + PT (16iii) = ₹${calcDeductions}.` };
-      }
-      return { status: 'success', message: 'Total deductions u/s 16 are consistent.' };
-    }
-    case 'salary.incomeChargeableUnderHeadSalaries': {
-      const calcChargeable = (data.salary?.netSalary || 0) - (data.salary?.totalDeductionsUs16 || 0);
-      if (Math.abs((val || 0) - calcChargeable) > 1) {
-        return { status: 'error', message: `Income chargeable under head Salaries (₹${val}) must equal Net Salary (₹${data.salary?.netSalary || 0}) minus Total Deductions u/s 16 (₹${data.salary?.totalDeductionsUs16 || 0}) = ₹${calcChargeable}.` };
-      }
-      return { status: 'success', message: 'Income Chargeable under head Salaries calculation is consistent.' };
-    }
-
-    // Other Income
-    case 'otherIncome.houseProperty':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'otherIncome.totalOtherSources': {
-      const sumOS = (data.otherIncome?.otherSources || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
-      if (Math.abs((val || 0) - sumOS) > 1) {
-        return { status: 'warning', message: `Total other sources (₹${val}) does not match individual item sum (₹${sumOS}).` };
-      }
-      return { status: 'success', message: 'Verified.' };
-    }
-
-    // Gross Total Income
-    case 'grossTotalIncome': {
-      const calcGTI = (data.salary?.incomeChargeableUnderHeadSalaries || 0) + (data.otherIncome?.houseProperty || 0) + (data.otherIncome?.totalOtherSources || 0);
-      if (Math.abs((val || 0) - calcGTI) > 1) {
-        return { status: 'error', message: `Gross Total Income (₹${val}) must equal Salaries (₹${data.salary?.incomeChargeableUnderHeadSalaries || 0}) + HP (₹${data.otherIncome?.houseProperty || 0}) + Other Sources (₹${data.otherIncome?.totalOtherSources || 0}) = ₹${calcGTI}.` };
-      }
-      return { status: 'success', message: 'Gross Total Income calculation is consistent.' };
-    }
-
-    // Chapter VI-A Deductions
-    case 'deductions80C':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      if (val > 150000) {
-        return { status: 'error', message: 'Section 80C deduction cannot exceed ₹1,50,000.' };
-      }
-      return { status: 'success', message: 'Section 80C is within limits.' };
-    case 'deductions80CCC':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80CCD1':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80CCD1B':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      if (val > 50000) {
-        return { status: 'error', message: 'Section 80CCD(1B) deduction cannot exceed ₹50,000.' };
-      }
-      return { status: 'success', message: 'Section 80CCD(1B) is within limits.' };
-    case 'deductions80CCD2':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80D':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80E':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80G':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'deductions80TTA':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      if (val > 10000) {
-        return { status: 'error', message: 'Section 80TTA deduction cannot exceed ₹10,000.' };
-      }
-      return { status: 'success', message: 'Section 80TTA is within limits.' };
-    case 'totalChapterVIADeductions': {
-      const calcDeductionsSum =
-        (data.deductions80C || 0) +
-        (data.deductions80CCC || 0) +
-        (data.deductions80CCD1 || 0) +
-        (data.deductions80CCD1B || 0) +
-        (data.deductions80CCD2 || 0) +
-        (data.deductions80D || 0) +
-        (data.deductions80E || 0) +
-        (data.deductions80G || 0) +
-        (data.deductions80TTA || 0);
-      if (Math.abs((val || 0) - calcDeductionsSum) > 1) {
-        return { status: 'error', message: `Total Chapter VI-A Deductions (₹${val}) must equal sum of individual sections (80C, 80D, etc.) = ₹${calcDeductionsSum}.` };
-      }
-      return { status: 'success', message: 'Total Chapter VI-A Deductions matches individual items.' };
-    }
-
-    // Tax Summary
-    case 'totalIncome': {
-      const calcTI = Math.max(0, (data.grossTotalIncome || 0) - (data.totalChapterVIADeductions || 0));
-      if (Math.abs((val || 0) - calcTI) > 1) {
-        return { status: 'error', message: `Total Income (₹${val}) must equal Gross Total Income minus Chapter VI-A Deductions = ₹${calcTI}.` };
-      }
-      return { status: 'success', message: 'Total Income matches calculation.' };
-    }
-    case 'taxPayable':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-
-    case 'taxCredits.tdsSalary': {
-      const form16Tds = data.taxPayable;
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      if (form16Tds > 0 && val !== form16Tds) {
-        return { status: 'warning', message: `TDS on Salary (₹${val}) does not match Form-16 TDS (₹${form16Tds}).` };
-      }
-      return { status: 'success', message: 'TDS on Salary is verified.' };
-    }
-    case 'taxCredits.tdsOther':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'taxCredits.tcs':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'taxCredits.advanceTax':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-    case 'taxCredits.selfAssessmentTax':
-      if (val < 0) return { status: 'error', message: 'Value cannot be negative.' };
-      return { status: 'none', message: '' };
-
-    default:
-      if (isNum && val < 0) {
-        return { status: 'error', message: 'Value cannot be negative.' };
-      }
-      return { status: 'none', message: '' };
-  }
-}
-
-interface CueTextFieldProps {
-  label: string;
-  path: string;
-  type?: 'text' | 'number';
-  isMonospace?: boolean;
-  uppercase?: boolean;
-  startAdornment?: React.ReactNode;
-  data: Form16Data;
-  onChange: (value: any) => void;
-}
-
-export function CueTextField({
-  label,
-  path,
-  type = 'text',
-  isMonospace = false,
-  uppercase = false,
-  startAdornment,
-  data,
-  onChange,
-}: CueTextFieldProps) {
-  const getNestedValue = (obj: any, keyPath: string): any => {
-    const keys = keyPath.split('.');
-    let current = obj;
-    for (const key of keys) {
-      if (current === undefined || current === null) return '';
-      current = current[key];
-    }
-    return current ?? '';
-  };
-
-  const val = getNestedValue(data, path);
-  const cue = getFieldCue(path, data);
-
-  const isNone = cue.status === 'none';
-
-  let color = '#2e7d32'; // success (green)
-  let Icon = CheckCircleIcon;
-  if (cue.status === 'warning') {
-    color = '#ed6c02'; // warning (orange)
-    Icon = WarningIcon;
-  } else if (cue.status === 'error') {
-    color = '#d32f2f'; // error (red)
-    Icon = ErrorIcon;
-  }
-
-  const customSx: any = isNone
-    ? {}
-    : {
-        '& .MuiOutlinedInput-root': {
-          '& fieldset': { borderColor: `${color} !important` },
-          '&:hover fieldset': { borderColor: `${color} !important` },
-          '&.Mui-focused fieldset': { borderColor: `${color} !important` },
-        },
-        '& .MuiInputLabel-root': {
-          color: `${color} !important`,
-        },
-      };
-
-  const inputComponent = (
-    <TextField
-      fullWidth
-      label={label}
-      type={type}
-      value={val}
-      onChange={(e) => {
-        let v: any = e.target.value;
-        if (type === 'number') {
-          v = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
-        }
-        onChange(v);
-      }}
-      variant="outlined"
-      sx={customSx}
-      slotProps={{
-        input: {
-          startAdornment: startAdornment,
-          endAdornment: !isNone ? (
-            <InputAdornment position="end" sx={{ color: color }}>
-              <Icon sx={{ fontSize: 18 }} />
-            </InputAdornment>
-          ) : undefined,
-          style: {
-            fontFamily: isMonospace ? 'monospace' : 'inherit',
-            textTransform: uppercase ? 'uppercase' : 'none',
-          },
-        },
-      }}
-    />
-  );
-
-  if (!isNone && cue.message) {
-    return (
-      <Tooltip title={cue.message} arrow>
-        {inputComponent}
-      </Tooltip>
-    );
-  }
-
-  return inputComponent;
-}
-
-export interface FieldDiff {
-  path: string;
-  label: string;
-  oldVal: any;
-  newVal: any;
-}
-
-export function getForm16Differences(current: any, updated: any): FieldDiff[] {
-  if (!updated) return [];
-  const activeCurrent = current || {};
-
-  const fieldLabels: Record<string, string> = {
-    'employer.name': 'Employer Name',
-    'employer.pan': 'Employer PAN',
-    'employer.tan': 'Employer TAN',
-    'employer.address': 'Employer Address',
-    'employee.name.firstName': 'Employee First Name',
-    'employee.name.middleName': 'Employee Middle Name',
-    'employee.name.lastName': 'Employee Last Name',
-    'employee.pan': 'Employee PAN',
-    'employee.address': 'Employee Address',
-    'assessmentYear': 'Assessment Year',
-    'period.from': 'Period From',
-    'period.to': 'Period To',
-    'salary.grossSalary': 'Gross Salary',
-    'salary.salaryAsPer17_1': 'Salary u/s 17(1)',
-    'salary.perquisites17_2': 'Perquisites u/s 17(2)',
-    'salary.profitsInLieu17_3': 'Profits in lieu u/s 17(3)',
-    'salary.totalExemptAllowances': 'Total Exempt Allowances',
-    'salary.netSalary': 'Net Salary',
-    'salary.standardDeduction16ia': 'Standard Deduction',
-    'salary.entertainmentAllowance16ii': 'Entertainment Allowance',
-    'salary.professionalTax16iii': 'Professional Tax',
-    'salary.totalDeductionsUs16': 'Total Deductions u/s 16',
-    'salary.incomeChargeableUnderHeadSalaries': 'Income from Salaries',
-    'otherIncome.houseProperty': 'House Property Income',
-    'otherIncome.totalOtherSources': 'Other Sources Income',
-    'grossTotalIncome': 'Gross Total Income',
-    'deductions80C': 'Section 80C',
-    'deductions80CCC': 'Section 80CCC',
-    'deductions80CCD1': 'Section 80CCD(1)',
-    'deductions80CCD1B': 'Section 80CCD(1B)',
-    'deductions80CCD2': 'Section 80CCD(2)',
-    'deductions80D': 'Section 80D',
-    'deductions80E': 'Section 80E',
-    'deductions80G': 'Section 80G',
-    'deductions80TTA': 'Section 80TTA',
-    'totalChapterVIADeductions': 'Total Chapter VI-A Deductions',
-    'totalIncome': 'Total Taxable Income',
-    'taxPayable': 'Tax Payable',
-  };
-
-  const getNestedValue = (obj: any, keyPath: string): any => {
-    const keys = keyPath.split('.');
-    let curr = obj;
-    for (const k of keys) {
-      if (curr === undefined || curr === null) return undefined;
-      curr = curr[k];
-    }
-    return curr;
-  };
-
-  const areValuesDifferent = (v1: any, v2: any): boolean => {
-    const empty1 = v1 === undefined || v1 === null || v1 === '';
-    const empty2 = v2 === undefined || v2 === null || v2 === '';
-    if (empty1 && empty2) return false;
-    if ((v1 === 0 && empty2) || (v2 === 0 && empty1)) return false;
-    if (typeof v1 === 'string' && typeof v2 === 'string') {
-      return v1.trim() !== v2.trim();
-    }
-    return v1 !== v2;
-  };
-
-  const diffs: FieldDiff[] = [];
-  for (const [path, label] of Object.entries(fieldLabels)) {
-    const oldVal = getNestedValue(activeCurrent, path);
-    const newVal = getNestedValue(updated, path);
-    if (areValuesDifferent(oldVal, newVal)) {
-      diffs.push({ path, label, oldVal, newVal });
-    }
-  }
-
-  return diffs;
-}
-
-export function renderInlineMarkdown(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  let remainingText = text;
-  let keyIdx = 0;
-
-  while (remainingText.length > 0) {
-    const boldIdx = remainingText.indexOf('**');
-    const italicIdx = remainingText.indexOf('*');
-    const codeIdx = remainingText.indexOf('`');
-    const linkIdx = remainingText.indexOf('[');
-
-    const indices = [
-      { type: 'bold', index: boldIdx },
-      { type: 'italic', index: italicIdx },
-      { type: 'code', index: codeIdx },
-      { type: 'link', index: linkIdx },
-    ].filter(x => x.index !== -1);
-
-    if (indices.length === 0) {
-      parts.push(<React.Fragment key={`text-${keyIdx++}`}>{remainingText}</React.Fragment>);
-      break;
-    }
-
-    indices.sort((a, b) => a.index - b.index);
-    const first = indices[0];
-
-    if (first.index > 0) {
-      parts.push(<React.Fragment key={`text-${keyIdx++}`}>{remainingText.slice(0, first.index)}</React.Fragment>);
-      remainingText = remainingText.slice(first.index);
-    }
-
-    if (first.type === 'bold') {
-      const nextBold = remainingText.indexOf('**', 2);
-      if (nextBold !== -1) {
-        const content = remainingText.slice(2, nextBold);
-        parts.push(<strong key={`bold-${keyIdx++}`} style={{ fontWeight: 'bold' }}>{content}</strong>);
-        remainingText = remainingText.slice(nextBold + 2);
-      } else {
-        parts.push(<React.Fragment key={`text-${keyIdx++}`}>**</React.Fragment>);
-        remainingText = remainingText.slice(2);
-      }
-    } else if (first.type === 'italic') {
-      const nextItalic = remainingText.indexOf('*', 1);
-      if (nextItalic !== -1) {
-        const content = remainingText.slice(1, nextItalic);
-        parts.push(<em key={`italic-${keyIdx++}`} style={{ fontStyle: 'italic' }}>{content}</em>);
-        remainingText = remainingText.slice(nextItalic + 1);
-      } else {
-        parts.push(<React.Fragment key={`text-${keyIdx++}`}>*</React.Fragment>);
-        remainingText = remainingText.slice(1);
-      }
-    } else if (first.type === 'code') {
-      const nextCode = remainingText.indexOf('`', 1);
-      if (nextCode !== -1) {
-        const content = remainingText.slice(1, nextCode);
-        parts.push(
-          <code
-            key={`code-${keyIdx++}`}
-            style={{
-              fontFamily: 'monospace',
-              backgroundColor: 'rgba(128, 128, 128, 0.15)',
-              padding: '2px 4px',
-              borderRadius: '3px',
-              fontSize: '0.75rem',
-            }}
-          >
-            {content}
-          </code>
-        );
-        remainingText = remainingText.slice(nextCode + 1);
-      } else {
-        parts.push(<React.Fragment key={`text-${keyIdx++}`}>`</React.Fragment>);
-        remainingText = remainingText.slice(1);
-      }
-    } else if (first.type === 'link') {
-      const closeBracket = remainingText.indexOf(']');
-      if (closeBracket !== -1) {
-        const openParen = remainingText.indexOf('(', closeBracket);
-        const closeParen = remainingText.indexOf(')', closeBracket);
-        if (openParen === closeBracket + 1 && closeParen !== -1) {
-          const label = remainingText.slice(1, closeBracket);
-          const url = remainingText.slice(openParen + 1, closeParen);
-          parts.push(
-            <a
-              key={`link-${keyIdx++}`}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#0284c7', textDecoration: 'underline' }}
-            >
-              {label}
-            </a>
-          );
-          remainingText = remainingText.slice(closeParen + 1);
-          continue;
-        }
-      }
-      parts.push(<React.Fragment key={`text-${keyIdx++}`}>[</React.Fragment>);
-      remainingText = remainingText.slice(1);
-    }
-  }
-
-  return <>{parts}</>;
-}
-
-export function parseMarkdown(text: string): React.ReactNode[] {
-  const lines = text.split('\n');
-  const elements: React.ReactNode[] = [];
-
-  let inCodeBlock = false;
-  let codeBlockLanguage = '';
-  let codeBlockLines: string[] = [];
-
-  let currentList: { type: 'bullet' | 'ordered'; items: string[] } | null = null;
-
-  const flushList = (key: string) => {
-    if (!currentList) return;
-    if (currentList.type === 'bullet') {
-      elements.push(
-        <Box component="ul" key={key} sx={{ pl: 2.5, my: 1, display: 'flex', flexDirection: 'column', gap: 0.5, listStyleType: 'disc' }}>
-          {currentList.items.map((item, idx) => (
-            <Box component="li" key={idx} sx={{ fontSize: '0.825rem', lineHeight: 1.4 }}>
-              {renderInlineMarkdown(item)}
-            </Box>
-          ))}
-        </Box>
-      );
-    } else {
-      elements.push(
-        <Box component="ol" key={key} sx={{ pl: 2.5, my: 1, display: 'flex', flexDirection: 'column', gap: 0.5, listStyleType: 'decimal' }}>
-          {currentList.items.map((item, idx) => (
-            <Box component="li" key={idx} sx={{ fontSize: '0.825rem', lineHeight: 1.4 }}>
-              {renderInlineMarkdown(item)}
-            </Box>
-          ))}
-        </Box>
-      );
-    }
-    currentList = null;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.trim().startsWith('```')) {
-      if (inCodeBlock) {
-        const codeText = codeBlockLines.join('\n');
-        elements.push(
-          <Paper
-            variant="outlined"
-            key={`code-${i}`}
-            sx={{
-              p: 1.25,
-              my: 1,
-              bgcolor: 'grey.950',
-              color: '#38bdf8',
-              borderRadius: 1.5,
-              overflowX: 'auto',
-              border: '1px solid',
-              borderColor: 'grey.800',
-            }}
-          >
-            {codeBlockLanguage && (
-              <Box sx={{ fontSize: '10px', color: 'grey.500', pb: 0.5, borderBottom: '1px solid', borderColor: 'grey.900', mb: 1, fontFamily: 'monospace', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                {codeBlockLanguage}
-              </Box>
-            )}
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '11px', fontFamily: 'monospace' }}>
-              <code>{codeText}</code>
-            </pre>
-          </Paper>
-        );
-        inCodeBlock = false;
-        codeBlockLines = [];
-        codeBlockLanguage = '';
-      } else {
-        inCodeBlock = true;
-        codeBlockLanguage = line.trim().slice(3).trim();
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBlockLines.push(line);
-      continue;
-    }
-
-    const bulletMatch = line.match(/^(\s*)[*+-]\s+(.*)$/);
-    const orderedMatch = line.match(/^(\s*)\d+\.\s+(.*)$/);
-
-    if (bulletMatch) {
-      if (currentList && currentList.type !== 'bullet') {
-        flushList(`list-flush-${i}`);
-      }
-      if (!currentList) {
-        currentList = { type: 'bullet', items: [] };
-      }
-      currentList.items.push(bulletMatch[2]);
-      continue;
-    } else if (orderedMatch) {
-      if (currentList && currentList.type !== 'ordered') {
-        flushList(`list-flush-${i}`);
-      }
-      if (!currentList) {
-        currentList = { type: 'ordered', items: [] };
-      }
-      currentList.items.push(orderedMatch[2]);
-      continue;
-    } else {
-      if (currentList) {
-        flushList(`list-flush-${i}`);
-      }
-    }
-
-    const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
-    if (headerMatch) {
-      const level = headerMatch[1].length;
-      const text = headerMatch[2];
-      let fontSize = '1rem';
-      let mt = 1.5;
-      let mb = 0.5;
-
-      if (level === 1) {
-        fontSize = '1.15rem';
-        mt = 2;
-      } else if (level === 2) {
-        fontSize = '1.05rem';
-        mt = 1.75;
-      } else if (level === 3) {
-        fontSize = '0.95rem';
-        mt = 1.5;
-      } else {
-        fontSize = '0.875rem';
-        mt = 1.25;
-      }
-
-      elements.push(
-        <Typography
-          key={`header-${i}`}
-          sx={{
-            fontSize,
-            fontWeight: 'bold',
-            mt,
-            mb,
-            lineHeight: 1.2,
-            borderBottom: level <= 2 ? '1px solid' : 'none',
-            borderColor: 'divider',
-            pb: level <= 2 ? 0.5 : 0,
-            color: 'primary.main',
-          }}
-        >
-          {renderInlineMarkdown(text)}
-        </Typography>
-      );
-      continue;
-    }
-
-    if (line.startsWith('>')) {
-      const text = line.slice(1).trim();
-      elements.push(
-        <Box
-          key={`blockquote-${i}`}
-          sx={{
-            pl: 1.5,
-            borderLeft: '3px solid',
-            borderColor: 'primary.light',
-            my: 1,
-            color: 'text.secondary',
-            fontStyle: 'italic',
-          }}
-        >
-          <Typography variant="body2" sx={{ fontSize: '0.825rem', lineHeight: 1.4 }}>
-            {renderInlineMarkdown(text)}
-          </Typography>
-        </Box>
-      );
-      continue;
-    }
-
-    if (line.trim() === '---' || line.trim() === '***') {
-      elements.push(<Divider key={`hr-${i}`} sx={{ my: 1.5 }} />);
-      continue;
-    }
-
-    if (line.trim() !== '') {
-      elements.push(
-        <Typography
-          key={`p-${i}`}
-          variant="body2"
-          sx={{
-            my: 0.75,
-            fontSize: '0.825rem',
-            lineHeight: 1.45,
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {renderInlineMarkdown(line)}
-        </Typography>
-      );
-    }
-  }
-
-  if (currentList) {
-    flushList(`list-flush-end`);
-  }
-
-  return elements;
-}
-
-interface AssistantMessageProps {
-  content: string;
-  msgIdx: number;
-  acceptedMessages: Record<number, boolean>;
-  rejectedMessages: Record<number, boolean>;
-  onAccept: (msgIdx: number, data: any) => void;
-  onReject: (msgIdx: number) => void;
-  onUndo?: (msgIdx: number) => void;
-  currentData: Form16Data | null;
-}
-
-export function AssistantMessage({
-  content,
-  msgIdx,
-  acceptedMessages,
-  rejectedMessages,
-  onAccept,
-  onReject,
-  onUndo,
-  currentData,
-}: AssistantMessageProps) {
-  const parsed = useMemo(() => {
-    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-    const match = content.match(jsonRegex);
-    if (match) {
-      try {
-        const json = JSON.parse(match[1].trim());
-        const textOutside = content.replace(jsonRegex, '').trim();
-        return { json, textOutside };
-      } catch (e) {
-        // failed parsing
-      }
-    }
-    return { json: null, textOutside: content };
-  }, [content]);
-
-  const isAccepted = acceptedMessages[msgIdx];
-  const isRejected = rejectedMessages[msgIdx];
-
-  const { json, textOutside } = parsed;
-  const recommendations = json && Array.isArray(json.recommendations) ? json.recommendations : [];
-  const updatedData = json ? json.updatedForm16Data : null;
-
-  const diffs = useMemo(() => {
-    return getForm16Differences(currentData, updatedData);
-  }, [currentData, updatedData]);
-
-  if (!parsed.json) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {parseMarkdown(content)}
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      {textOutside && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          {parseMarkdown(textOutside)}
-        </Box>
-      )}
-
-      {/* Recommendations Cards */}
-      {recommendations.map((rec: any, rIdx: number) => {
-        let severity: 'error' | 'warning' | 'info' | 'success' = 'info';
-        if (rec.type === 'error') severity = 'error';
-        else if (rec.type === 'warning') severity = 'warning';
-        else if (rec.type === 'info') severity = 'info';
-
-        return (
-          <Alert key={rIdx} severity={severity} variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }}>
-            <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>
-              {rec.field ? `Field: ${rec.field}` : 'Recommendation'}
-            </AlertTitle>
-            <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-              {rec.message}
-            </Typography>
-            {rec.suggestion && (
-              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
-                Suggestion: {rec.suggestion}
-              </Typography>
-            )}
-          </Alert>
-        );
-      })}
-
-      {/* Proposed Updated Data Action Card */}
-      {updatedData && (diffs.length > 0 || isAccepted || isRejected) && (
-        <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed' }}>
-          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SmartToyIcon sx={{ fontSize: 16 }} /> AI Suggested Updates
-            </Typography>
-            <Typography variant="body2" sx={{ my: 1, fontSize: '0.775rem' }}>
-              The AI assistant has detected discrepancies and proposed corrections to your tax details. Would you like to override your existing form details with these suggested corrections?
-            </Typography>
-
-            {/* List of differences */}
-            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '0.725rem' }}>
-                Proposed Changes:
-              </Typography>
-              {diffs.map((diff, dIdx) => (
-                <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.25 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
-                    {diff.label}:
-                  </Typography>
-                  <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
-                    {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                    →
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
-                    {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-
-            {!isAccepted && !isRejected ? (
-              <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="success"
-                  onClick={() => onAccept(msgIdx, updatedData)}
-                >
-                  Accept & Apply
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={() => onReject(msgIdx)}
-                >
-                  Reject
-                </Button>
-              </Box>
-            ) : isAccepted ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mt: 1.5 }}>
-                <Alert severity="success" variant="filled" sx={{ py: 0.5, px: 1, borderRadius: 1, flexGrow: 1 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Applied Successfully!</Typography>
-                </Alert>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={() => onUndo?.(msgIdx)}
-                >
-                  Undo
-                </Button>
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mt: 1.5 }}>
-                <Typography variant="caption" color="error" sx={{ fontWeight: 'bold' }}>
-                  Updates Rejected
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={() => onUndo?.(msgIdx)}
-                >
-                  Undo
-                </Button>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </Box>
-  );
-}
-
 export default function Home() {
+  // Document Files & Data State
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
 
@@ -1040,6 +88,196 @@ export default function Home() {
   const [tisLoading, setTisLoading] = useState(false);
   const [form26asLoading, setForm26asLoading] = useState(false);
 
+  // Raw Extracted Text States
+  const [rawText, setRawText] = useState<string>('');
+  const [aisRawText, setAisRawText] = useState<string>('');
+  const [tisRawText, setTisRawText] = useState<string>('');
+  const [form26asRawText, setForm26asRawText] = useState<string>('');
+
+  // Validation, Loading & Theme States
+  const [errors, setErrors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+
+  // AI Chat States
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachingFile, setAttachingFile] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
+  const [sendOnlyRawData, setSendOnlyRawData] = useState<boolean>(false);
+
+  // AI Proposal States
+  const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
+  const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
+  const [proposalBackups, setProposalBackups] = useState<Record<number, Form16Data | null>>({});
+
+  // Chat Resizing States
+  const [chatWidth, setChatWidth] = useState(400);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Initialize Color Mode from System Preference
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setMode(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  // Initialize Chat Width from LocalStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedWidth = localStorage.getItem('ai_chat_width');
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (parsed >= 280 && parsed < window.innerWidth * 0.75) {
+          setChatWidth(parsed);
+        }
+      }
+    }
+  }, []);
+
+  // Persist Chat Width when drag completes
+  useEffect(() => {
+    if (!isDragging && chatWidth !== 400) {
+      localStorage.setItem('ai_chat_width', chatWidth.toString());
+    }
+  }, [isDragging, chatWidth]);
+
+  // Handle Drag Resizing of Chat Panel
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth >= 280 && newWidth < window.innerWidth * 0.8) {
+        setChatWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  // Combined Raw Text Memo
+  const combinedRawText = useMemo(() => {
+    let result = '';
+    if (rawText) {
+      result += `--- FORM-16 RAW EXTRACTED TEXT ---\n${rawText}\n\n`;
+    }
+    if (aisRawText) {
+      result += `--- AIS RAW EXTRACTED TEXT ---\n${aisRawText}\n\n`;
+    }
+    if (tisRawText) {
+      result += `--- TIS RAW EXTRACTED TEXT ---\n${tisRawText}\n\n`;
+    }
+    if (form26asRawText) {
+      result += `--- FORM 26AS RAW EXTRACTED TEXT ---\n${form26asRawText}\n\n`;
+    }
+    return result || 'No raw text extracted yet.';
+  }, [rawText, aisRawText, tisRawText, form26asRawText]);
+
+  // Gemini Models Memo
+  const geminiModels = useMemo(() => {
+    const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
+    return geminiProvider ? geminiProvider.models : [];
+  }, []);
+
+  // MUI Theme Memo
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: {
+            main: mode === 'dark' ? '#38bdf8' : '#0284c7',
+          },
+          secondary: {
+            main: mode === 'dark' ? '#94a3b8' : '#475569',
+          },
+          background: {
+            default: mode === 'dark' ? '#0f172a' : '#f8fafc',
+            paper: mode === 'dark' ? '#1e293b' : '#ffffff',
+          },
+        },
+        typography: {
+          fontFamily: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          h6: {
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            letterSpacing: '-0.01em',
+          },
+          subtitle1: {
+            fontSize: '0.9rem',
+            fontWeight: 600,
+          },
+          body1: {
+            fontSize: '0.875rem',
+          },
+          body2: {
+            fontSize: '0.8rem',
+          },
+          button: {
+            textTransform: 'none',
+            fontWeight: 500,
+          }
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: '6px',
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: '8px',
+                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                border: mode === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
+              },
+            },
+          },
+          MuiTextField: {
+            defaultProps: {
+              size: 'small',
+            },
+          },
+        },
+      }),
+    [mode]
+  );
+
+  // Auto-Scroll chat
+  const scrollToBottom = () => {
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    if (chatOpen) {
+      scrollToBottom();
+    }
+  }, [messages, chatOpen]);
+
+  // Helper: Deep copy state and update nested path value
   const updateNestedValue = (path: string, val: any) => {
     setExtractedData((prev) => {
       if (!prev) return prev;
@@ -1071,46 +309,8 @@ export default function Home() {
       return next;
     });
   };
-  const [rawText, setRawText] = useState<string>('');
-  const [aisRawText, setAisRawText] = useState<string>('');
-  const [tisRawText, setTisRawText] = useState<string>('');
-  const [form26asRawText, setForm26asRawText] = useState<string>('');
 
-  const combinedRawText = useMemo(() => {
-    let result = '';
-    if (rawText) {
-      result += `--- FORM-16 RAW EXTRACTED TEXT ---\n${rawText}\n\n`;
-    }
-    if (aisRawText) {
-      result += `--- AIS RAW EXTRACTED TEXT ---\n${aisRawText}\n\n`;
-    }
-    if (tisRawText) {
-      result += `--- TIS RAW EXTRACTED TEXT ---\n${tisRawText}\n\n`;
-    }
-    if (form26asRawText) {
-      result += `--- FORM 26AS RAW EXTRACTED TEXT ---\n${form26asRawText}\n\n`;
-    }
-    return result || 'No raw text extracted yet.';
-  }, [rawText, aisRawText, tisRawText, form26asRawText]);
-
-  const [errors, setErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
-
-  // AI Chat States
-  const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [attachingFile, setAttachingFile] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
-  const [sendOnlyRawData, setSendOnlyRawData] = useState<boolean>(false);
-
-  const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
-  const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
-  const [proposalBackups, setProposalBackups] = useState<Record<number, Form16Data | null>>({});
-
+  // Helper: Sanitize AI suggested object with default structure
   const sanitizeForm16Data = (data: any): Form16Data => {
     const defaultData: Form16Data = {
       employer: { name: '', tan: '', pan: '', address: '' },
@@ -1192,6 +392,7 @@ export default function Home() {
     };
   };
 
+  // Chat Actions
   const handleAcceptProposal = (msgIdx: number, updatedData: any) => {
     if (extractedData) {
       setProposalBackups((prev) => ({ ...prev, [msgIdx]: JSON.parse(JSON.stringify(extractedData)) }));
@@ -1231,144 +432,7 @@ export default function Home() {
     });
   };
 
-  const geminiModels = useMemo(() => {
-    const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
-    return geminiProvider ? geminiProvider.models : [];
-  }, []);
-
-  // Chat resizing states
-  const [chatWidth, setChatWidth] = useState(400);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setMode(prefersDark ? 'dark' : 'light');
-    }
-  }, []);
-
-  // Load chatWidth from localStorage if available
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedWidth = localStorage.getItem('ai_chat_width');
-      if (savedWidth) {
-        const parsed = parseInt(savedWidth, 10);
-        if (parsed >= 280 && parsed < window.innerWidth * 0.75) {
-          setChatWidth(parsed);
-        }
-      }
-    }
-  }, []);
-
-  // Save chatWidth to localStorage when resize is completed
-  useEffect(() => {
-    if (!isDragging && chatWidth !== 400) {
-      localStorage.setItem('ai_chat_width', chatWidth.toString());
-    }
-  }, [isDragging, chatWidth]);
-
-  // Handle resizing drag
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth >= 280 && newWidth < window.innerWidth * 0.8) {
-        setChatWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-
-  const startResize = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          primary: {
-            main: mode === 'dark' ? '#38bdf8' : '#0284c7',
-          },
-          secondary: {
-            main: mode === 'dark' ? '#94a3b8' : '#475569',
-          },
-          background: {
-            default: mode === 'dark' ? '#0f172a' : '#f8fafc',
-            paper: mode === 'dark' ? '#1e293b' : '#ffffff',
-          },
-        },
-        typography: {
-          fontFamily: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          h6: {
-            fontSize: '1.05rem',
-            fontWeight: 600,
-            letterSpacing: '-0.01em',
-          },
-          subtitle1: {
-            fontSize: '0.9rem',
-            fontWeight: 600,
-          },
-          body1: {
-            fontSize: '0.875rem',
-          },
-          body2: {
-            fontSize: '0.8rem',
-          },
-          button: {
-            textTransform: 'none',
-            fontWeight: 500,
-          }
-        },
-        components: {
-          MuiButton: {
-            styleOverrides: {
-              root: {
-                borderRadius: '6px',
-                padding: '6px 14px',
-                fontSize: '0.8rem',
-              },
-            },
-          },
-          MuiCard: {
-            styleOverrides: {
-              root: {
-                borderRadius: '8px',
-                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                border: mode === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
-              },
-            },
-          },
-          MuiTextField: {
-            defaultProps: {
-              size: 'small',
-            },
-          },
-        },
-      }),
-    [mode]
-  );
-
-  const toggleTheme = () => {
-    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
+  // Upload Handlers
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -1469,20 +533,7 @@ export default function Home() {
     }
   };
 
-  // Scroll to bottom in Chat Window
-  const scrollToBottom = () => {
-    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    if (chatOpen) {
-      scrollToBottom();
-    }
-  }, [messages, chatOpen]);
-
-  // Handle Send Chat message
+  // Send Chat Message
   const handleSendMessage = async (isReviewRequest = false) => {
     if (!inputMessage.trim() && attachments.length === 0 && !isReviewRequest) return;
 
@@ -1543,23 +594,30 @@ export default function Home() {
     }
   };
 
-  // Trigger AI Review using the pre-configured prompt
-  const handleAIReview = () => {
-    handleSendMessage(true);
-  };
-
+  // Helper functions for reading files
   const readFileAsText = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = (err) => reject(err);
       reader.readAsText(file);
     });
   };
 
-  // Handle adding custom attachments
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.substring(result.indexOf(',') + 1);
+        resolve(base64);
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Chat Attachments Handler
   const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -1567,18 +625,16 @@ export default function Home() {
     setAttachingFile(true);
     try {
       const mimeType = selectedFile.type;
-
-      // If PDF, we can use existing extractor to fetch text first, or send standard pdf
       let base64Data = '';
       let finalMimeType = mimeType || 'application/octet-stream';
+
       if (mimeType === 'application/pdf') {
         const arrayBuffer = await selectedFile.arrayBuffer();
         try {
           const pdfText = await extractTextFromPDF(arrayBuffer);
           base64Data = btoa(unescape(encodeURIComponent(pdfText)));
-          finalMimeType = 'text/plain'; // Treat successfully extracted PDF text as text
+          finalMimeType = 'text/plain';
         } catch {
-          // Fallback to reading file normally
           base64Data = await readFileAsBase64(selectedFile);
         }
       } else if (mimeType && (mimeType.startsWith('text/') || mimeType === 'application/json' || selectedFile.name.endsWith('.csv'))) {
@@ -1608,22 +664,13 @@ export default function Home() {
     }
   };
 
-  const readFileAsBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // strip data url prefix
-        const base64 = result.substring(result.indexOf(',') + 1);
-        resolve(base64);
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
   };
 
   return (
@@ -1643,17 +690,17 @@ export default function Home() {
               </IconButton>
             </Tooltip>
             <Tooltip title={`Toggle ${mode === 'light' ? 'Dark' : 'Light'} Mode`}>
-              <IconButton onClick={toggleTheme} color="inherit" aria-label="toggle color mode">
+              <IconButton onClick={() => setMode((prev) => (prev === 'light' ? 'dark' : 'light'))} color="inherit" aria-label="toggle color mode">
                 {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
               </IconButton>
             </Tooltip>
           </Toolbar>
         </AppBar>
 
-        {/* Main Split Layout Container */}
+        {/* Main Layout Area */}
         <Box sx={{ display: 'flex', flexGrow: 1, minHeight: 0, width: '100%', overflow: 'hidden', position: 'relative' }}>
 
-          {/* Left Panel: Main Application Area */}
+          {/* Left Panel: Main App */}
           <Box sx={{
             flexGrow: 1,
             minWidth: 0,
@@ -1662,7 +709,7 @@ export default function Home() {
             display: { xs: chatOpen ? 'none' : 'block', md: 'block' }
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
-              {/* Upload Section */}
+              {/* Document Upload section */}
               <Card variant="outlined" sx={{ mb: 2.5 }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 'bold' }}>
@@ -1732,7 +779,7 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Reconciliation & Discrepancy Matching Panel */}
+              {/* Reconciliation Alerts */}
               {extractedData && (extractedData as ReconciledTaxData).discrepancies && ((extractedData as ReconciledTaxData).discrepancies?.length ?? 0) > 0 && (
                 <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
                   <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
@@ -1746,12 +793,12 @@ export default function Home() {
                 </Alert>
               )}
 
-              {/* Detected Income Sources Confirmation Panel */}
+              {/* Supplementary Income */}
               {extractedData && (extractedData as ReconciledTaxData).detectedIncomeSources && ((extractedData as ReconciledTaxData).detectedIncomeSources?.length ?? 0) > 0 && (
                 <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
-                      <CheckCircleIcon sx={{ fontSize: 18 }} /> Detected Supplementary Income Sources (AIS/TIS)
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Detected Supplementary Income Sources (AIS/TIS)
                     </Typography>
                     <Typography variant="caption" color="textSecondary" sx={{ mb: 1.5, display: 'block' }}>
                       The following additional incomes were found in the uploaded AIS/TIS documents and have been successfully merged into your other sources to prevent under-reporting:
@@ -1782,7 +829,7 @@ export default function Home() {
 
               {extractedData && (
                 <>
-                  {/* Validation Warnings */}
+                  {/* Validation warnings */}
                   {errors.length > 0 && (
                     <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 0.5 }}>
                       <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem', m: 0 }}>Validation Warnings:</AlertTitle>
@@ -1796,19 +843,18 @@ export default function Home() {
                     </Alert>
                   )}
 
-                  {/* Review & Edit Section */}
+                  {/* Review / Edit Form */}
                   <Card variant="outlined" sx={{ mb: 2.5 }}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
                           2. Review & Edit Extracted Information
                         </Typography>
-                        {/* AI Review Button */}
                         <Button
                           variant="contained"
                           color="secondary"
                           startIcon={<SmartToyIcon fontSize="small" />}
-                          onClick={handleAIReview}
+                          onClick={() => handleSendMessage(true)}
                           size="small"
                         >
                           AI Review
@@ -2038,32 +1084,8 @@ export default function Home() {
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid size={{ xs: 12, md: 6 }}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900',
-                            color: '#10b981',
-                            borderRadius: 1.5,
-                            height: 280,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              color: 'grey.400',
-                              pb: 0.5,
-                              mb: 1,
-                              borderBottom: '1px solid',
-                              borderColor: 'grey.800',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
+                        <Paper variant="outlined" sx={{ p: 1.5, bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900', color: '#10b981', borderRadius: 1.5, height: 280, display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="subtitle2" sx={{ color: 'grey.400', pb: 0.5, mb: 1, borderBottom: '1px solid', borderColor: 'grey.800', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
                             <CodeIcon sx={{ fontSize: 14 }} /> Raw Extracted Text
                           </Typography>
                           <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
@@ -2074,32 +1096,8 @@ export default function Home() {
                         </Paper>
                       </Grid>
                       <Grid size={{ xs: 12, md: 6 }}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900',
-                            color: '#60a5fa',
-                            borderRadius: 1.5,
-                            height: 280,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              color: 'grey.400',
-                              pb: 0.5,
-                              mb: 1,
-                              borderBottom: '1px solid',
-                              borderColor: 'grey.800',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
+                        <Paper variant="outlined" sx={{ p: 1.5, bgcolor: mode === 'dark' ? 'grey.950' : 'grey.900', color: '#60a5fa', borderRadius: 1.5, height: 280, display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="subtitle2" sx={{ color: 'grey.400', pb: 0.5, mb: 1, borderBottom: '1px solid', borderColor: 'grey.800', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
                             <CodeIcon sx={{ fontSize: 14 }} /> Intermediate Form16Data Object
                           </Typography>
                           <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
@@ -2116,7 +1114,7 @@ export default function Home() {
             </Container>
           </Box>
 
-          {/* Draggable Divider / Resizer */}
+          {/* Draggable Resizer */}
           {chatOpen && (
             <Box
               onMouseDown={startResize}
@@ -2134,7 +1132,7 @@ export default function Home() {
             />
           )}
 
-          {/* Right Panel: Chat Window */}
+          {/* Right Panel: Chat Panel */}
           <Box sx={{
             width: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
             minWidth: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
@@ -2195,7 +1193,7 @@ export default function Home() {
               </Box>
             </Box>
 
-            {/* Chat Messages List */}
+            {/* Chat Messages */}
             <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
               {messages.length === 0 && (
                 <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
@@ -2230,16 +1228,7 @@ export default function Home() {
                     }}
                   >
                     {msg.role === 'user' ? (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          margin: 0,
-                          whiteSpace: 'pre-wrap',
-                          fontFamily: 'inherit',
-                          fontSize: '0.825rem',
-                          lineHeight: 1.4,
-                        }}
-                      >
+                      <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
                         {msg.content}
                       </Typography>
                     ) : (
@@ -2282,29 +1271,14 @@ export default function Home() {
 
             <Divider />
 
-            {/* Chat Input / Actions */}
+            {/* Chat Input */}
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
-              {/* Selected attachments / Context */}
+              {/* Badges for Selected Context Files */}
               {(file || aisFile || tisFile || form26asFile || attachments.length > 0 || (!sendOnlyRawData && extractedData)) && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {/* Parsed ITR JSON Data Highlighted Badge */}
+                  {/* Parsed Data Badge */}
                   {!sendOnlyRawData && extractedData && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.75,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        borderColor: 'primary.main',
-                      }}
-                      data-testid="parsed-itr-badge"
-                    >
+                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.75, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main' }} data-testid="parsed-itr-badge">
                       <AttachFileIcon sx={{ fontSize: 12, color: 'inherit' }} />
                       <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
                         Parsed ITR JSON Data
@@ -2314,34 +1288,12 @@ export default function Home() {
 
                   {/* Form-16 Context */}
                   {file && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
-                      data-testid="form16-badge"
-                    >
+                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="form16-badge">
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {file.name}
                       </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setFile(null);
-                          setExtractedData(null);
-                          setRawText('');
-                          setErrors([]);
-                        }}
-                        aria-label="remove form16 context"
-                      >
+                      <IconButton size="small" onClick={() => { setFile(null); setExtractedData(null); setRawText(''); setErrors([]); }} aria-label="remove form16 context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -2349,39 +1301,12 @@ export default function Home() {
 
                   {/* AIS Context */}
                   {aisFile && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
-                      data-testid="ais-badge"
-                    >
+                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="ais-badge">
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {aisFile.name}
                       </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setAisFile(null);
-                          setAisData(null);
-                          setAisRawText('');
-                          if (rawText) {
-                            const parsed = parseForm16Text(rawText);
-                            const reconciled = reconcileAllDocuments(parsed, undefined, tisData || undefined, form26asData || undefined);
-                            setExtractedData(reconciled);
-                            setErrors(validateForm16Data(reconciled));
-                          }
-                        }}
-                        aria-label="remove ais context"
-                      >
+                      <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, undefined, tisData || undefined, form26asData || undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove ais context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -2389,39 +1314,12 @@ export default function Home() {
 
                   {/* TIS Context */}
                   {tisFile && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
-                      data-testid="tis-badge"
-                    >
+                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="tis-badge">
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {tisFile.name}
                       </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setTisFile(null);
-                          setTisData(null);
-                          setTisRawText('');
-                          if (rawText) {
-                            const parsed = parseForm16Text(rawText);
-                            const reconciled = reconcileAllDocuments(parsed, aisData || undefined, undefined, form26asData || undefined);
-                            setExtractedData(reconciled);
-                            setErrors(validateForm16Data(reconciled));
-                          }
-                        }}
-                        aria-label="remove tis context"
-                      >
+                      <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, aisData || undefined, undefined, form26asData || undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove tis context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -2429,39 +1327,12 @@ export default function Home() {
 
                   {/* Form 26AS Context */}
                   {form26asFile && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
-                      data-testid="form26as-badge"
-                    >
+                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="form26as-badge">
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {form26asFile.name}
                       </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setForm26asFile(null);
-                          setForm26asData(null);
-                          setForm26asRawText('');
-                          if (rawText) {
-                            const parsed = parseForm16Text(rawText);
-                            const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, undefined);
-                            setExtractedData(reconciled);
-                            setErrors(validateForm16Data(reconciled));
-                          }
-                        }}
-                        aria-label="remove form26as context"
-                      >
+                      <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove form26as context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -2469,20 +1340,7 @@ export default function Home() {
 
                   {/* Supplementary Attachments */}
                   {attachments.map((att, idx) => (
-                    <Paper
-                      key={idx}
-                      variant="outlined"
-                      sx={{
-                        pl: 0.75,
-                        pr: 0.25,
-                        py: 0.25,
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        bgcolor: 'action.hover',
-                      }}
-                    >
+                    <Paper key={idx} variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }}>
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
                         {att.name}
@@ -2496,23 +1354,10 @@ export default function Home() {
               )}
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {/* Attachment Upload Input */}
-                <input
-                  id="chat-attachment-upload"
-                  type="file"
-                  onChange={handleAttachmentUpload}
-                  style={{ display: 'none' }}
-                />
+                <input id="chat-attachment-upload" type="file" onChange={handleAttachmentUpload} style={{ display: 'none' }} />
                 <Tooltip title="Attach supplementary document (PDF, Text, or Image)">
                   <span>
-                    <IconButton
-                      component="label"
-                      htmlFor="chat-attachment-upload"
-                      color="primary"
-                      disabled={attachingFile}
-                      aria-label="attach document"
-                      size="small"
-                    >
+                    <IconButton component="label" htmlFor="chat-attachment-upload" color="primary" disabled={attachingFile} aria-label="attach document" size="small">
                       {attachingFile ? <CircularProgress size={20} /> : <AttachFileIcon fontSize="small" />}
                     </IconButton>
                   </span>
@@ -2551,14 +1396,9 @@ export default function Home() {
           </Box>
         </Box>
 
-        {/* Floating Action Chat Button */}
+        {/* Floating AI Chat Button */}
         {!chatOpen && (
-          <Fab
-            color="primary"
-            aria-label="open ai chat window"
-            sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }}
-            onClick={() => setChatOpen(true)}
-          >
+          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => setChatOpen(true)}>
             <ChatIcon />
           </Fab>
         )}

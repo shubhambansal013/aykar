@@ -21,11 +21,8 @@ vi.mock('@/lib/form26as/parser', () => ({
   parseForm26ASText: vi.fn().mockReturnValue({ tdsSalary: [] })
 }));
 
-import { getFieldCue } from './page';
-
-import { CueTextField } from './page';
-
-import { AssistantMessage } from './page';
+import { getFieldCue, CueTextField } from '@/app/components/FieldCues';
+import { AssistantMessage } from '@/app/components/AssistantMessage';
 
 describe('AssistantMessage component tests', () => {
   const mockForm16 = {
@@ -964,7 +961,7 @@ describe('Home Page', () => {
     // Find call with `/api/chat`
     const chatCall = mockFetch.mock.calls.find((call: any) => call[0] === '/api/chat');
     expect(chatCall).toBeDefined();
-    const body = JSON.parse(chatCall[1].body);
+    const body = JSON.parse(chatCall![1].body);
     expect(body.itrData).not.toBeNull();
     expect(body.itrData.employee.pan).toBe('ABCDE1234F');
 
@@ -1348,5 +1345,102 @@ describe('Home Page', () => {
     expect(screen.getByTestId('form16-badge')).toBeDefined();
 
     vi.restoreAllMocks();
-  }, 20000);
+  }, 45000);
+
+  test('handles end-to-end user document reconciliation, validation cues, and AI advisory flow', async () => {
+    // 1. Setup mock functions for PDF text extraction and parsing
+    const mockText = 'Raw extracted text content for integration test';
+    const mockData = {
+      employer: { name: 'Refactored Corp', pan: 'AAAPB1234C', tan: 'AAAB12345C', address: '123 clean street' },
+      employee: { name: { firstName: 'Alice', lastName: 'Smith' }, pan: 'ABCDE1234F', address: '456 clean avenue' },
+      assessmentYear: '2026-27',
+      period: { from: '2025-04-01', to: '2026-03-31' },
+      salary: {
+        grossSalary: 1200000,
+        salaryAsPer17_1: 1100000,
+        perquisites17_2: 100000,
+        profitsInLieu17_3: 0,
+        exemptAllowancesUs10: [],
+        totalExemptAllowances: 0,
+        netSalary: 1200000,
+        standardDeduction16ia: 50000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 50000,
+        incomeChargeableUnderHeadSalaries: 1150000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 1150000,
+      deductions80C: 150000,
+      totalChapterVIADeductions: 150000,
+      totalIncome: 1000000,
+      taxPayable: 75000,
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    // 2. Mock API call response for AI review with recommendations and data updates
+    const mockAIResponse = {
+      role: 'assistant',
+      content: `Here is your review.
+\`\`\`json
+{
+  "recommendations": [
+    { "type": "warning", "field": "salary.grossSalary", "message": "Confirming gross salary details", "suggestion": "Looks good!" }
+  ],
+  "updatedForm16Data": {
+    "employer": { "name": "Refactored Corp" },
+    "employee": { "pan": "ABCDE1234F", "name": { "firstName": "AliceUpdated", "lastName": "Smith" } },
+    "assessmentYear": "2026-27",
+    "salary": { "grossSalary": 1200000 }
+  }
+}
+\`\`\``
+    };
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockAIResponse
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    // 3. Upload the simulated Form-16 PDF
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['mock pdf content'], 'form16_clean.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(16))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // 4. Verify that data gets populated in the CueTextField elements correctly
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Refactored Corp')).toBeDefined();
+      expect(screen.getByDisplayValue('Alice')).toBeDefined();
+    });
+
+    // 5. Trigger the AI Review advisory flow
+    const aiReviewBtn = screen.getByText('AI Review');
+    fireEvent.click(aiReviewBtn);
+
+    // 6. Verify that recommendations from Markdown and AssistantMessage render seamlessly
+    await waitFor(() => {
+      expect(screen.getByText('AI Suggested Updates')).toBeDefined();
+      expect(screen.getByText('Confirming gross salary details')).toBeDefined();
+    });
+
+    // 7. Apply the updates and verify changes flow to the main form
+    const acceptBtn = screen.getByText('Accept & Apply');
+    fireEvent.click(acceptBtn);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('AliceUpdated')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  });
 });

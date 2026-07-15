@@ -218,9 +218,11 @@ export default function Home() {
                           label="Employee PAN"
                           value={extractedData.employee.pan}
                           onChange={(e) =>
-                            setExtractedData({
-                              ...extractedData,
-                              employee: { ...extractedData.employee, pan: e.target.value },
+                            setExtractedData((prev) => {
+                              if (!prev) return prev;
+                              const next = JSON.parse(JSON.stringify(prev));
+                              next.employee.pan = e.target.value;
+                              return next;
                             })
                           }
                           variant="outlined"
@@ -233,12 +235,11 @@ export default function Home() {
                           label="First Name"
                           value={extractedData.employee.name.firstName}
                           onChange={(e) =>
-                            setExtractedData({
-                              ...extractedData,
-                              employee: {
-                                ...extractedData.employee,
-                                name: { ...extractedData.employee.name, firstName: e.target.value },
-                              },
+                            setExtractedData((prev) => {
+                              if (!prev) return prev;
+                              const next = JSON.parse(JSON.stringify(prev));
+                              next.employee.name.firstName = e.target.value;
+                              return next;
                             })
                           }
                           variant="outlined"
@@ -248,12 +249,11 @@ export default function Home() {
                           label="Last Name"
                           value={extractedData.employee.name.lastName}
                           onChange={(e) =>
-                            setExtractedData({
-                              ...extractedData,
-                              employee: {
-                                ...extractedData.employee,
-                                name: { ...extractedData.employee.name, lastName: e.target.value },
-                              },
+                            setExtractedData((prev) => {
+                              if (!prev) return prev;
+                              const next = JSON.parse(JSON.stringify(prev));
+                              next.employee.name.lastName = e.target.value;
+                              return next;
                             })
                           }
                           variant="outlined"
@@ -273,9 +273,11 @@ export default function Home() {
                           type="number"
                           value={extractedData.salary.grossSalary}
                           onChange={(e) =>
-                            setExtractedData({
-                              ...extractedData,
-                              salary: { ...extractedData.salary, grossSalary: parseFloat(e.target.value) || 0 },
+                            setExtractedData((prev) => {
+                              if (!prev) return prev;
+                              const next = JSON.parse(JSON.stringify(prev));
+                              next.salary.grossSalary = parseFloat(e.target.value) || 0;
+                              return next;
                             })
                           }
                           variant="outlined"
@@ -291,9 +293,11 @@ export default function Home() {
                           type="number"
                           value={extractedData.salary.standardDeduction16ia}
                           onChange={(e) =>
-                            setExtractedData({
-                              ...extractedData,
-                              salary: { ...extractedData.salary, standardDeduction16ia: parseFloat(e.target.value) || 0 },
+                            setExtractedData((prev) => {
+                              if (!prev) return prev;
+                              const next = JSON.parse(JSON.stringify(prev));
+                              next.salary.standardDeduction16ia = parseFloat(e.target.value) || 0;
+                              return next;
                             })
                           }
                           variant="outlined"
@@ -319,9 +323,119 @@ export default function Home() {
                             type="number"
                             value={extractedData.deductions80C}
                             onChange={(e) =>
-                              setExtractedData({
-                                ...extractedData,
-                                deductions80C: parseFloat(e.target.value) || 0,
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80C = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80CCC"
+                            type="number"
+                            value={extractedData.deductions80CCC}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80CCC = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80CCD(1)"
+                            type="number"
+                            value={extractedData.deductions80CCD1}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80CCD1 = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80CCD(1B)"
+                            type="number"
+                            value={extractedData.deductions80CCD1B}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80CCD1B = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80CCD(2)"
+                            type="number"
+                            value={extractedData.deductions80CCD2}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80CCD2 = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
                               })
                             }
                             variant="outlined"
@@ -339,9 +453,67 @@ export default function Home() {
                             type="number"
                             value={extractedData.deductions80D}
                             onChange={(e) =>
-                              setExtractedData({
-                                ...extractedData,
-                                deductions80D: parseFloat(e.target.value) || 0,
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80D = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80E"
+                            type="number"
+                            value={extractedData.deductions80E}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80E = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Section 80G"
+                            type="number"
+                            value={extractedData.deductions80G}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80G = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
                               })
                             }
                             variant="outlined"
@@ -359,9 +531,37 @@ export default function Home() {
                             type="number"
                             value={extractedData.deductions80TTA}
                             onChange={(e) =>
-                              setExtractedData({
-                                ...extractedData,
-                                deductions80TTA: parseFloat(e.target.value) || 0,
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.deductions80TTA = parseFloat(e.target.value) || 0;
+                                next.totalChapterVIADeductions =
+                                  next.deductions80C + next.deductions80CCC + next.deductions80CCD1 +
+                                  next.deductions80CCD1B + next.deductions80CCD2 + next.deductions80D +
+                                  next.deductions80E + next.deductions80G + next.deductions80TTA;
+                                return next;
+                              })
+                            }
+                            variant="outlined"
+                            slotProps={{
+                              input: {
+                                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                          <TextField
+                            fullWidth
+                            label="Total Chapter VI-A Deductions"
+                            type="number"
+                            value={extractedData.totalChapterVIADeductions}
+                            onChange={(e) =>
+                              setExtractedData((prev) => {
+                                if (!prev) return prev;
+                                const next = JSON.parse(JSON.stringify(prev));
+                                next.totalChapterVIADeductions = parseFloat(e.target.value) || 0;
+                                return next;
                               })
                             }
                             variant="outlined"

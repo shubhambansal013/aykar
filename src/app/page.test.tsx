@@ -15,6 +15,19 @@ vi.mock('@/lib/itr/mapper');
 describe('Home Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   test('renders Form-16 parser title', () => {
@@ -110,7 +123,16 @@ describe('Home Page', () => {
         name: { firstName: 'Old', lastName: 'Name' }
       },
       salary: { grossSalary: 100, standardDeduction16ia: 50 },
-      deductions80C: 1, deductions80D: 2, deductions80TTA: 3
+      deductions80C: 1,
+      deductions80CCC: 4,
+      deductions80CCD1: 5,
+      deductions80CCD1B: 6,
+      deductions80CCD2: 7,
+      deductions80D: 2,
+      deductions80E: 8,
+      deductions80G: 9,
+      deductions80TTA: 3,
+      totalChapterVIADeductions: 45
     };
 
     vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue('text');
@@ -137,17 +159,38 @@ describe('Home Page', () => {
     fireEvent.change(screen.getByDisplayValue('100'), { target: { value: '200' } });
     expect(screen.getByDisplayValue('200')).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('50'), { target: { value: '60' } });
-    expect(screen.getByDisplayValue('60')).toBeDefined();
+    fireEvent.change(screen.getByDisplayValue('50'), { target: { value: '150' } });
+    expect(screen.getByDisplayValue('150')).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '10' } });
-    expect(screen.getByDisplayValue('10')).toBeDefined();
+    fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '11' } });
+    expect(screen.getByDisplayValue('11')).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('2'), { target: { value: '20' } });
-    expect(screen.getByDisplayValue('20')).toBeDefined();
+    fireEvent.change(screen.getByDisplayValue('4'), { target: { value: '44' } });
+    expect(screen.getByDisplayValue('44')).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('3'), { target: { value: '30' } });
-    expect(screen.getByDisplayValue('30')).toBeDefined();
+    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '55' } });
+    expect(screen.getByDisplayValue('55')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('6'), { target: { value: '66' } });
+    expect(screen.getByDisplayValue('66')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('7'), { target: { value: '77' } });
+    expect(screen.getByDisplayValue('77')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('2'), { target: { value: '22' } });
+    expect(screen.getByDisplayValue('22')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('8'), { target: { value: '88' } });
+    expect(screen.getByDisplayValue('88')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('9'), { target: { value: '99' } });
+    expect(screen.getByDisplayValue('99')).toBeDefined();
+
+    fireEvent.change(screen.getByDisplayValue('3'), { target: { value: '33' } });
+    expect(screen.getByDisplayValue('33')).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText('Total Chapter VI-A Deductions'), { target: { value: '445' } });
+    expect(screen.getByDisplayValue('445')).toBeDefined();
 
     // Re-validate button
     fireEvent.click(screen.getByText(/Re-validate Data/i));
@@ -155,11 +198,17 @@ describe('Home Page', () => {
 
     // Download button
     global.URL.createObjectURL = vi.fn().mockReturnValue('blob:url');
-    const mockAnchor = { click: vi.fn(), href: '', download: '' };
-    vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor as any);
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByText(/Download ITR JSON/i));
     expect(mapper.mapForm16ToITR1).toHaveBeenCalled();
-    expect(mockAnchor.click).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockRestore();
+  });
+
+  test('handles file upload with no files selected', () => {
+    render(<Home />);
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    fireEvent.change(fileInput, { target: { files: [] } });
   });
 });

@@ -93,6 +93,10 @@ export class SalaryParser {
         // To support old literal "Exempt Allowance <codeMatch>" vs full description "House rent allowance under section 10(13A)"
         // If nature starts with "Exempt Allowance" and has code, let's keep it as is
         // Otherwise, if the text has "House rent allowance under section 10(13A)", use that exactly!
+        if (nature.toLowerCase() === 'exempt allowance' && code && !nature.includes(code)) {
+          nature = `Exempt Allowance ${code}`;
+        }
+
         data.salary.exemptAllowancesUs10.push({
           code,
           nature,

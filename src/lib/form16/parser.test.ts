@@ -378,6 +378,20 @@ describe('ParserUtils additional coverage tests', () => {
     expect(ParserUtils.getScopedBlock(text, boundaries, 15)).toBe('start_block som');
   });
 
+  it('should cover the default code and nature fallback logic in SalaryParser', () => {
+    const text = `
+      Allowances to the extent exempt u/s 10
+      Exempt Allowance 50,000.00
+      Total Exempt Allowances 50,000.00
+    `;
+    const result = parseForm16Text(text);
+    expect(result.salary.exemptAllowancesUs10).toContainEqual({
+      code: '10',
+      nature: 'Exempt Allowance 10',
+      amount: 50000
+    });
+  });
+
   it('should correctly extract Form-16 data for OPTUM/MANAK JEET SINGH and verify ITR json structure', () => {
     const optumForm16Text = `
       Name and address of the Employer/Specified Bank: OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED, 5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana

@@ -379,7 +379,7 @@ export default function Home() {
           <Toolbar variant="dense">
             <ReceiptLongIcon color="primary" sx={{ mr: 1.5, display: { xs: 'none', sm: 'block' } }} />
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-              Form-16 to ITR JSON Parser
+              ITR Assist
             </Typography>
             <Tooltip title="Ask AI / Chat">
               <IconButton onClick={() => setChatOpen((prev) => !prev)} color="inherit" aria-label="open ai chat">

@@ -44,4 +44,45 @@ Dividend of amount 7,100.00
     expect(parsed.interestDeposit).toBe(41000);
     expect(parsed.dividendIncome).toBe(7100);
   });
+
+  it('should parse realistic multi-line tabular AIS with separate labels and values', () => {
+    const text = `
+Annual Information Statement
+Part B - Tax Deducted at Source (TDS)
+Name of Deductor: ICICI BANK LIMITED
+TAN of Deductor: MUMI01234F
+Section: 194A
+Transaction Details:
+1 194A 15/07/2023 F 2,500.00
+2 194A 15/10/2023 F 2,500.00
+
+SFT Information:
+Savings bank interest
+State Bank of India
+Reported Value: 10,000.00
+Derived Value: 10,200.00
+
+Interest on deposits
+HDFC Bank
+Reported Value: 20,000.00
+Derived Value: 22,000.00
+
+Dividend Income
+Reliance Industries Ltd
+Reported Value: 3,000.00
+Derived Value: 3,500.00
+    `;
+
+    const parsed = parseAISText(text);
+    expect(parsed.interestSavings).toBe(10200);
+    expect(parsed.interestDeposit).toBe(22000);
+    expect(parsed.dividendIncome).toBe(3500);
+    expect(parsed.tdsDetails).toHaveLength(1);
+    expect(parsed.tdsDetails[0]).toEqual({
+      tan: 'MUMI01234F',
+      deductorName: 'ICICI BANK LIMITED',
+      section: '194A',
+      amount: 5000, // 2,500 + 2,500
+    });
+  });
 });

@@ -1,105 +1,90 @@
 import { TISData } from '../types';
-import { ParserUtils } from '../form16/ParserUtils';
 
-export function parseTISText(text: string): TISData {
-  const data: TISData = {
-    salaryDerived: 0,
-    interestSavings: 0,
-    interestDeposit: 0,
-    dividendIncome: 0,
-  };
+function extractNumbersNoSpace(line: string): number[] {
+  const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
+  if (!matches) return [];
+  return matches.map(m => parseFloat(m.replace(/[\s,]/g, '')) || 0);
+}
 
-  const lines = text.split('\n');
+function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
+  let maxValue = 0;
 
-  const salaryPatterns = [
-    /Salary\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /\bSalary\b/i
-  ];
-
-  const savingsPatterns = [
-    /Interest\s+from\s+savings\s+bank\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Savings\s+bank\s+interest\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Interest\s+from\s+Savings\s+Bank\b/i,
-  ];
-
-  const depositPatterns = [
-    /Interest\s+on\s+deposit\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Deposit\s+interest\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Interest\s+from\s+deposits\b/i,
-  ];
-
-  const dividendPatterns = [
-    /Dividend\s+Income\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /Dividend\s*[:\-]?\s*(-?\s*\d[\d\s,]*\.\d{2})/i,
-    /\bDividend\b/i,
-  ];
-
-  for (const line of lines) {
-    // Salary - check specifically to avoid matching other words if salary is part of larger name
-    // e.g. "Salary from Optum" should match
-    for (const pat of salaryPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.salaryDerived = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = ParserUtils.extractNumbersFromLine(line);
-          if (numbers.length > 0) {
-            data.salaryDerived = numbers[numbers.length - 1];
-          }
-        }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let matched = false;
+    for (const pat of patterns) {
+      if (pat.test(line)) {
+        matched = true;
         break;
       }
     }
 
-    // Savings Interest
-    for (const pat of savingsPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.interestSavings = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = ParserUtils.extractNumbersFromLine(line);
-          if (numbers.length > 0) {
-            data.interestSavings = numbers[numbers.length - 1];
+    if (matched) {
+      const currentLineNumbers = extractNumbersNoSpace(line);
+      let foundNumbers: number[] = [];
+      if (currentLineNumbers.length > 0) {
+        foundNumbers = currentLineNumbers;
+      } else {
+        const end = Math.min(lines.length - 1, i + 3);
+        for (let j = i + 1; j <= end; j++) {
+          const subLine = lines[j];
+          if (/Interest\s+from\s+savings/i.test(subLine) ||
+              /Interest\s+on\s+deposit/i.test(subLine) ||
+              /Dividend/i.test(subLine) ||
+              /Salary/i.test(subLine)) {
+            break;
+          }
+          const nums = extractNumbersNoSpace(subLine);
+          if (nums.length > 0) {
+            foundNumbers.push(...nums);
           }
         }
-        break;
       }
-    }
 
-    // Deposit Interest
-    for (const pat of depositPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.interestDeposit = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = ParserUtils.extractNumbersFromLine(line);
-          if (numbers.length > 0) {
-            data.interestDeposit = numbers[numbers.length - 1];
-          }
+      if (foundNumbers.length > 0) {
+        const val = foundNumbers[foundNumbers.length - 1];
+        if (val > maxValue) {
+          maxValue = val;
         }
-        break;
-      }
-    }
-
-    // Dividend
-    for (const pat of dividendPatterns) {
-      const match = line.match(pat);
-      if (match) {
-        if (match[1]) {
-          data.dividendIncome = ParserUtils.parseNormalizedNumber(match[1]);
-        } else {
-          const numbers = ParserUtils.extractNumbersFromLine(line);
-          if (numbers.length > 0) {
-            data.dividendIncome = numbers[numbers.length - 1];
-          }
-        }
-        break;
       }
     }
   }
 
-  return data;
+  return maxValue;
+}
+
+export function parseTISText(text: string): TISData {
+  const lines = text.split('\n');
+
+  const salaryPatterns = [
+    /Salary/i,
+  ];
+
+  const savingsPatterns = [
+    /Interest\s+from\s+savings\s+bank/i,
+    /Savings\s+bank\s+interest/i,
+  ];
+
+  const depositPatterns = [
+    /Interest\s+on\s+deposit/i,
+    /Deposit\s+interest/i,
+    /Interest\s+from\s+deposits/i,
+  ];
+
+  const dividendPatterns = [
+    /Dividend\s+Income/i,
+    /\bDividend\b/i,
+  ];
+
+  const salaryDerived = findValueForPatterns(lines, salaryPatterns);
+  const interestSavings = findValueForPatterns(lines, savingsPatterns);
+  const interestDeposit = findValueForPatterns(lines, depositPatterns);
+  const dividendIncome = findValueForPatterns(lines, dividendPatterns);
+
+  return {
+    salaryDerived,
+    interestSavings,
+    interestDeposit,
+    dividendIncome,
+  };
 }

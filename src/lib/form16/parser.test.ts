@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseForm16Text } from './parser';
 import { BasicInfoParser } from './BasicInfoParser';
+import { ParserUtils } from './ParserUtils';
 
 describe('parseForm16Text', () => {
   it('should extract PAN and basic salary components', () => {
@@ -320,5 +321,60 @@ describe('parseForm16Text', () => {
     expect(resDeductions.deductions80C).toBe(150000);
     expect(resDeductions.deductions80D).toBe(25000);
     expect(resDeductions.deductions80TTA).toBe(10000);
+  });
+});
+
+describe('ParserUtils additional coverage tests', () => {
+  it('should cover all branches of parseNormalizedNumber', () => {
+    expect(ParserUtils.parseNormalizedNumber('')).toBe(0);
+    expect(ParserUtils.parseNormalizedNumber('invalid')).toBe(0);
+    expect(ParserUtils.parseNormalizedNumber('12,34,56.78')).toBe(123456.78);
+    expect(ParserUtils.parseNormalizedNumber('-1,000.50')).toBe(-1000.5);
+  });
+
+  it('should cover branches of extractNumbersFromLine', () => {
+    expect(ParserUtils.extractNumbersFromLine('no numbers here')).toEqual([]);
+    expect(ParserUtils.extractNumbersFromLine('amount is 100.00')).toEqual([100]);
+    expect(ParserUtils.extractNumbersFromLine('multiple 100.00 and -200.00')).toEqual([100, -200]);
+  });
+
+  it('should cover all edge cases of extractAmount', () => {
+    // 1. rule with empty lineRegexes
+    const ruleNoLine: any = {
+      fallbackRegexes: [/fallback\s+([\d.]+)/i]
+    };
+    expect(ParserUtils.extractAmount('fallback 123.45', ruleNoLine)).toBe(123.45);
+
+    // 2. rule with defined numericTokenIndex >= 0
+    const ruleWithIndex: any = {
+      lineRegexes: [/target/i],
+      fallbackRegexes: [],
+      numericTokenIndex: 0
+    };
+    expect(ParserUtils.extractAmount('target 10.00 20.00', ruleWithIndex)).toBe(10);
+
+    // 3. rule with resolvedIndex out of bounds
+    const ruleOutBounds: any = {
+      lineRegexes: [/target/i],
+      fallbackRegexes: [],
+      numericTokenIndex: 5
+    };
+    expect(ParserUtils.extractAmount('target 10.00 20.00', ruleOutBounds)).toBe(0);
+
+    // 4. fallback regex with undefined matches
+    const ruleUndefinedMatch: any = {
+      fallbackRegexes: [/fallback(\s+)?([\d.]+)?/i]
+    };
+    expect(ParserUtils.extractAmount('fallback', ruleUndefinedMatch)).toBe(0);
+    expect(ParserUtils.extractAmount('no fallback match', ruleUndefinedMatch)).toBe(0);
+  });
+
+  it('should cover getScopedBlock with missing end boundaries', () => {
+    const boundaries = {
+      start: /start_block/i,
+      end: /end_block/i
+    };
+    const text = 'start_block some text but no end boundary here';
+    expect(ParserUtils.getScopedBlock(text, boundaries, 15)).toBe('start_block som');
   });
 });

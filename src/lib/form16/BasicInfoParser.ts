@@ -1,4 +1,6 @@
 import { Form16Data } from '../types';
+import { extractionConfig } from './extractionConfig';
+import { ParserUtils } from './ParserUtils';
 
 export class BasicInfoParser {
   private static cleanLabels(text: string): string {
@@ -46,18 +48,20 @@ export class BasicInfoParser {
   }
 
   public static parse(text: string, data: Form16Data): void {
-    // 1. PAN / TAN Extraction (flexible colon matching)
-    const employeePanMatch = text.match(/PAN\s+OF\s+THE\s+EMPLOYEE(?:\/Specified\s+senior\s+citizen)?\s*[:\-]?\s*([A-Z]{5}[0-9]{4}[A-Z])/i);
+    const config = extractionConfig.basicInfo;
+
+    // 1. PAN / TAN Extraction using line/fallback regexes from configuration
+    const employeePanMatch = text.match(config.employeePan.fallbackRegexes[0]);
     if (employeePanMatch) {
       data.employee.pan = employeePanMatch[1].toUpperCase();
     }
 
-    const employerTanMatch = text.match(/TAN\s+OF\s+THE\s+DEDUCTOR\s*[:\-]?\s*([A-Z]{4}[0-9]{5}[A-Z])/i);
+    const employerTanMatch = text.match(config.employerTan.fallbackRegexes[0]);
     if (employerTanMatch) {
       data.employer.tan = employerTanMatch[1].toUpperCase();
     }
 
-    const employerPanMatch = text.match(/PAN\s+OF\s+THE\s+DEDUCTOR\s*[:\-]?\s*([A-Z]{5}[0-9]{4}[A-Z])/i);
+    const employerPanMatch = text.match(config.employerPan.fallbackRegexes[0]);
     if (employerPanMatch) {
       data.employer.pan = employerPanMatch[1].toUpperCase();
     }
@@ -77,13 +81,13 @@ export class BasicInfoParser {
     }
 
     // 2. Assessment Year
-    const ayMatch = text.match(/Assessment\s+Year\s*[:\-]?\s*(\d{4}-\d{2,4})/i);
+    const ayMatch = text.match(config.assessmentYear.fallbackRegexes[0]);
     if (ayMatch) {
       data.assessmentYear = ayMatch[1].split('-')[0];
     }
 
     // 3. Employer Name and Address
-    const employerMatch = text.match(/Name and address of the Employer(?:\/(?:Specified Bank|Specified senior citizen))?[:\-\s]*(.*?)(?=\s*(?:Name and address of the Employee|PAN of the|TAN of the|Assessment Year|Period with|$))/is);
+    const employerMatch = text.match(new RegExp(`${config.employerBlock.start.source}(.*?)${config.employerBlock.end.source}`, 'is'));
     if (employerMatch) {
       const employerBlock = this.cleanLabels(employerMatch[1]);
 
@@ -143,52 +147,34 @@ export class BasicInfoParser {
     // 4. Employee Name and Address
     let employeeName = '';
 
-    // Source A: Form 12BB
-    const form12bbMatch = text.match(/Name and address of the employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|PAN|$))/i);
-    if (form12bbMatch) {
-      employeeName = form12bbMatch[1].trim();
-    }
-
-    // Source B: Form 12BA label with flexible match
-    if (!employeeName) {
-      const form12baMatch = text.match(/Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|CESPB|[A-Z]{5}[0-9]{4}[A-Z]|$))/i);
-      if (form12baMatch) {
-        employeeName = form12baMatch[1].trim();
-      }
-    }
-
-    // Source B.1: Name of employee label
-    if (!employeeName) {
-      const nameOfEmployeeMatch = text.match(/Name\s+of\s+the?\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Designation|Address|PAN|TAN|$))/i);
-      if (nameOfEmployeeMatch) {
-        employeeName = nameOfEmployeeMatch[1].trim();
-      }
-    }
-
-    // Source B.2: Form 12BA declaration matching
-    if (!employeeName) {
-      const form12baDeclMatch = text.match(/I,\s*([A-Z\s]+?),\s*employee\s+of/i);
-      if (form12baDeclMatch) {
-        employeeName = form12baDeclMatch[1].trim();
-      }
-    }
-
-    // Source C: Verification/Declaration line for Employee (excluding Sumit Jain / Finance Manager / Deductor)
-    if (!employeeName) {
-      const declMatches = [...text.matchAll(/I,\s*([A-Z\s]+?),\s*(?:son|daughter)\s*of/gi)];
-      for (const match of declMatches) {
-        const candidate = match[1].trim();
-        const isDeductor = text.toLowerCase().includes(`${candidate.toLowerCase()}...working in the capacity of`) ||
-                           text.toLowerCase().includes(`${candidate.toLowerCase()} working as finance`) ||
-                           candidate.toLowerCase().includes('sumit jain');
-        if (!isDeductor && candidate.length > 3) {
-          employeeName = candidate;
-          break;
+    // Walk through configured employee declaration name regexes
+    for (const declRegex of config.employeeDeclarations) {
+      if (declRegex.global) {
+        const declMatches = [...text.matchAll(declRegex)];
+        for (const match of declMatches) {
+          const candidate = match[1].trim();
+          const isDeductor = text.toLowerCase().includes(`${candidate.toLowerCase()}...working in the capacity of`) ||
+                             text.toLowerCase().includes(`${candidate.toLowerCase()} working as finance`) ||
+                             candidate.toLowerCase().includes('sumit jain');
+          if (!isDeductor && candidate.length > 3) {
+            employeeName = candidate;
+            break;
+          }
+        }
+      } else {
+        const match = text.match(declRegex);
+        if (match) {
+          const candidate = match[1].trim();
+          if (candidate.length > 3) {
+            employeeName = candidate;
+            break;
+          }
         }
       }
+      if (employeeName) break;
     }
 
-    const employeeMatch = text.match(/Name and address of the Employee(?:\/(?:Specified Bank|Specified senior citizen))?[:\-\s]*(.*?)(?=\s*(?:PAN of the|TAN of the|Assessment Year|Period with|$))/is);
+    const employeeMatch = text.match(new RegExp(`${config.employeeBlock.start.source}(.*?)${config.employeeBlock.end.source}`, 'is'));
     let employeeBlock = '';
     if (employeeMatch) {
       employeeBlock = this.cleanLabels(employeeMatch[1]);
@@ -228,8 +214,12 @@ export class BasicInfoParser {
 
     // 5. Period
     // Find dates in the vicinity of "Period"
-    // Let's search for "Period with the employer" or "Period with Employer"
-    const periodIndex = text.toLowerCase().indexOf('period with');
+    let periodIndex = -1;
+    for (const keyword of config.periodSearchKeywords) {
+      periodIndex = text.toLowerCase().indexOf(keyword);
+      if (periodIndex !== -1) break;
+    }
+
     if (periodIndex !== -1) {
       // Look 150 characters before/after
       const startSearch = Math.max(0, periodIndex - 50);
@@ -263,7 +253,7 @@ export class BasicInfoParser {
 
     // Fallback standard regex
     if (!data.period.from) {
-      const periodMatch = text.match(/Period with the employer:\s*From\s+([^\s]+)\s+To\s+([^\s]+)/i);
+      const periodMatch = text.match(config.periodFallback);
       if (periodMatch) {
         data.period.from = periodMatch[1];
         data.period.to = periodMatch[2];

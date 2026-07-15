@@ -53,12 +53,54 @@ export class SalaryParser {
     const exemptSectionMatch = text.match(new RegExp(`${config.exemptAllowancesBlock.start.source}(.*?)${config.exemptAllowancesBlock.end.source}`, 'is'));
     if (exemptSectionMatch) {
       const sectionContent = exemptSectionMatch[1];
-      let match;
-      const allowanceRegex = new RegExp(config.exemptAllowancesLines);
-      while ((match = allowanceRegex.exec(sectionContent)) !== null) {
+      const lines = sectionContent.split(/[\r\n]+/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (/total/i.test(trimmed) || /less:/i.test(trimmed) || /allowances\s+to\s+the\s+extent/i.test(trimmed)) {
+          continue;
+        }
+
+        // Extract numbers from the line
+        const numbers = ParserUtils.extractNumbersFromLine(trimmed);
+        if (numbers.length === 0) continue;
+
+        // The amount is the last number
+        const amount = numbers[numbers.length - 1];
+
+        // Find the description/nature of the allowance
+        // It is the text on the line before the first number
+        const numMatch = trimmed.match(/-?\s*\d+(?:,\s*\d+)*\.\d{2}/) || trimmed.match(/\b\d+\b/);
+        let nature = trimmed;
+        if (numMatch && numMatch.index !== undefined) {
+          nature = trimmed.substring(0, numMatch.index).trim();
+        }
+        // Clean nature of trailing dots, dashes, spaces, commas
+        nature = nature.replace(/[\s\.\-:,]+$/g, '').trim();
+
+        // If nature is empty, skip
+        if (!nature) continue;
+
+        // Find code u/s 10 (e.g. 10(13A) or 10(14) etc.)
+        const codeMatch = trimmed.match(/10\([0-9a-zA-Z()]+\)/i) || trimmed.match(/10\b/i);
+        let code = '';
+        if (codeMatch) {
+          code = codeMatch[0];
+        } else {
+          code = '10';
+        }
+
+        // To support old literal "Exempt Allowance <codeMatch>" vs full description "House rent allowance under section 10(13A)"
+        // If nature starts with "Exempt Allowance" and has code, let's keep it as is
+        // Otherwise, if the text has "House rent allowance under section 10(13A)", use that exactly!
+        if (nature.toLowerCase() === 'exempt allowance' && code && !nature.includes(code)) {
+          nature = `Exempt Allowance ${code}`;
+        }
+
         data.salary.exemptAllowancesUs10.push({
-          code: match[1],
-          amount: ParserUtils.parseNormalizedNumber(match[2])
+          code,
+          nature,
+          amount
         });
       }
     }

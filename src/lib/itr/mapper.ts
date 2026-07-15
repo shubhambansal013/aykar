@@ -55,7 +55,7 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
           ProfitsInSalary: data.salary.profitsInLieu17_3,
           AllwncExemptUs10: {
             AllwncExemptUs10Dtls: data.salary.exemptAllowancesUs10.map(item => ({
-              SalNatureDesc: item.code,
+              SalNatureDesc: item.code || item.nature || '',
               SalOthAmount: item.amount,
             })),
             TotalAllwncExemptUs10: data.salary.totalExemptAllowances,

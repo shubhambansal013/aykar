@@ -24,7 +24,7 @@ export interface Form16Data {
     salaryAsPer17_1: number;
     perquisites17_2: number;
     profitsInLieu17_3: number;
-    exemptAllowancesUs10: Array<{ code: string; amount: number }>;
+    exemptAllowancesUs10: Array<{ code?: string; nature?: string; amount: number }>;
     totalExemptAllowances: number;
     netSalary: number;
     standardDeduction16ia: number;

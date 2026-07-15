@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseForm16Text } from './parser';
+import { BasicInfoParser } from './BasicInfoParser';
 
 describe('parseForm16Text', () => {
   it('should extract PAN and basic salary components', () => {
@@ -292,5 +293,32 @@ describe('parseForm16Text', () => {
     expect(res.salary.grossSalary).toBe(8724500);
     expect(res.salary.standardDeduction16ia).toBe(75000);
     expect(res.taxPayable).toBe(2488029);
+  });
+
+  it('should test positional anchoring and tokenized name extraction from block', () => {
+    // 1. Test name block extraction directly
+    expect(BasicInfoParser.extractNameFromBlock('SHUBHAM BANSAL T2-703 Pareena Coban')).toBe('SHUBHAM BANSAL');
+    expect(BasicInfoParser.extractNameFromBlock('ALBERT EINSTEIN Flat 12B')).toBe('ALBERT EINSTEIN');
+    expect(BasicInfoParser.extractNameFromBlock('Solo, 123 Lane')).toBe('Solo');
+    expect(BasicInfoParser.extractNameFromBlock('John Quincy Adams, 456 Residency Road')).toBe('John Quincy Adams');
+
+    // 2. Test Form 12BA declaration name extraction
+    const form12baDeclText = `I, ALBERT EINSTEIN, employee of M/s GOOGLE ...`;
+    const resForm12ba = parseForm16Text(form12baDeclText);
+    expect(resForm12ba.employee.name.firstName).toBe('ALBERT');
+    expect(resForm12ba.employee.name.lastName).toBe('EINSTEIN');
+
+    // 3. Test Chapter VI-A positional boundary column extraction
+    const deductionsText = `
+      Deductions under Chapter VI-A
+      80C 1,80,000.00 1,50,000.00
+      80D 30,000.00 25,000.00
+      80TTA 10,000.00
+      Total Income 500,000.00
+    `;
+    const resDeductions = parseForm16Text(deductionsText);
+    expect(resDeductions.deductions80C).toBe(150000);
+    expect(resDeductions.deductions80D).toBe(25000);
+    expect(resDeductions.deductions80TTA).toBe(10000);
   });
 });

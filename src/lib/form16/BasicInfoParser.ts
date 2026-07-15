@@ -3,27 +3,61 @@ import { Form16Data } from '../types';
 export class BasicInfoParser {
   private static cleanLabels(text: string): string {
     return text
-      .replace(/^\s*[\/:-]*\s*Specified Bank/i, '')
-      .replace(/^\s*[\/:-]*\s*Specified senior citizen/i, '')
-      .replace(/^\s*[\/:-]*\s*Name and address of the Employer\s*[\/:-]*/i, '')
-      .replace(/^\s*[\/:-]*\s*Name and address of the Employee\s*[\/:-]*/i, '')
+      .replace(/^\s*[\/:-]*\s*Specified\s*(?:Bank|senior\s*citizen)/i, '')
+      .replace(/^\s*[\/:-]*\s*Name\s+and\s+address\s+of\s+the\s+(?:Employer|Employee)\s*[\/:-]*/i, '')
+      .replace(/^\s*[\/:-]*\s*Name\s+and\s+address\s+of\s+the\s+Employee\s*\/\s*Specified\s*(?:senior\s*citizen|Bank)/i, '')
       .trim()
       .replace(/^[:\-\s]+|[:\-\s]+$/g, '');
   }
 
+  public static extractNameFromBlock(block: string): string {
+    const tokens = block.trim().split(/\s+/);
+    const nameParts: string[] = [];
+
+    for (const token of tokens) {
+      // Clean token from trailing punctuation/spaces
+      const cleanToken = token.replace(/[,;:\-\s]+$/, '').replace(/^[,;:\-\s]+/, '');
+      if (!cleanToken) continue;
+
+      // If token is a single letter (like T from T2-703 split as T 2-703) and we already have a 2-word name, break
+      if (cleanToken.length === 1 && nameParts.length >= 2) {
+        break;
+      }
+
+      const isAddressKeyword = /^(Sector|Phase|Flat|House|Room|Plot|Lane|Road|H\.?No|Floor|Block|Building|Bld|Apt|Apartment|Near|Opposite|Opp|Behind|Ward|Street|Nagar|Colony|Society|Vihar|Enclave|Gali|City|Dist|District|State|Pin|PinCode|Haryana|Karnataka|Delhi|Mumbai|Gurgaon|Gurugram|Bangalore|Bengaluru)$/i.test(cleanToken.replace(/[^a-zA-Z]/g, ''));
+      const hasDigits = /\d/.test(cleanToken);
+
+      if (isAddressKeyword || hasDigits) {
+        break;
+      }
+
+      if (/^[A-Za-z.]+$/.test(cleanToken)) {
+        nameParts.push(cleanToken);
+      } else {
+        break;
+      }
+
+      if (nameParts.length >= 3) {
+        break;
+      }
+    }
+
+    return nameParts.join(' ').trim();
+  }
+
   public static parse(text: string, data: Form16Data): void {
-    // 1. PAN / TAN Extraction
-    const employeePanMatch = text.match(/PAN OF THE EMPLOYEE(?:\/Specified senior citizen)?\s+([A-Z]{5}[0-9]{4}[A-Z])/i);
+    // 1. PAN / TAN Extraction (flexible colon matching)
+    const employeePanMatch = text.match(/PAN\s+OF\s+THE\s+EMPLOYEE(?:\/Specified\s+senior\s+citizen)?\s*[:\-]?\s*([A-Z]{5}[0-9]{4}[A-Z])/i);
     if (employeePanMatch) {
       data.employee.pan = employeePanMatch[1].toUpperCase();
     }
 
-    const employerTanMatch = text.match(/TAN OF THE DEDUCTOR\s+([A-Z]{4}[0-9]{5}[A-Z])/i);
+    const employerTanMatch = text.match(/TAN\s+OF\s+THE\s+DEDUCTOR\s*[:\-]?\s*([A-Z]{4}[0-9]{5}[A-Z])/i);
     if (employerTanMatch) {
       data.employer.tan = employerTanMatch[1].toUpperCase();
     }
 
-    const employerPanMatch = text.match(/PAN OF THE DEDUCTOR\s+([A-Z]{5}[0-9]{4}[A-Z])/i);
+    const employerPanMatch = text.match(/PAN\s+OF\s+THE\s+DEDUCTOR\s*[:\-]?\s*([A-Z]{5}[0-9]{4}[A-Z])/i);
     if (employerPanMatch) {
       data.employer.pan = employerPanMatch[1].toUpperCase();
     }
@@ -43,7 +77,7 @@ export class BasicInfoParser {
     }
 
     // 2. Assessment Year
-    const ayMatch = text.match(/Assessment Year\s+(\d{4}-\d{2,4})/i);
+    const ayMatch = text.match(/Assessment\s+Year\s*[:\-]?\s*(\d{4}-\d{2,4})/i);
     if (ayMatch) {
       data.assessmentYear = ayMatch[1].split('-')[0];
     }
@@ -110,16 +144,32 @@ export class BasicInfoParser {
     let employeeName = '';
 
     // Source A: Form 12BB
-    const form12bbMatch = text.match(/Name and address of the employee\s*:\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|$))/i);
+    const form12bbMatch = text.match(/Name and address of the employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|PAN|$))/i);
     if (form12bbMatch) {
       employeeName = form12bbMatch[1].trim();
     }
 
-    // Source B: Form 12BA
+    // Source B: Form 12BA label with flexible match
     if (!employeeName) {
-      const form12baMatch = text.match(/Name, designation and Permanent Account Number or Aadhaar Number of employee:\s*([A-Z\s]+?)(?:,|\s+Designation|\s+Software|CESPB|$)/i);
+      const form12baMatch = text.match(/Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|CESPB|[A-Z]{5}[0-9]{4}[A-Z]|$))/i);
       if (form12baMatch) {
         employeeName = form12baMatch[1].trim();
+      }
+    }
+
+    // Source B.1: Name of employee label
+    if (!employeeName) {
+      const nameOfEmployeeMatch = text.match(/Name\s+of\s+the?\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Designation|Address|PAN|TAN|$))/i);
+      if (nameOfEmployeeMatch) {
+        employeeName = nameOfEmployeeMatch[1].trim();
+      }
+    }
+
+    // Source B.2: Form 12BA declaration matching
+    if (!employeeName) {
+      const form12baDeclMatch = text.match(/I,\s*([A-Z\s]+?),\s*employee\s+of/i);
+      if (form12baDeclMatch) {
+        employeeName = form12baDeclMatch[1].trim();
       }
     }
 
@@ -144,19 +194,9 @@ export class BasicInfoParser {
       employeeBlock = this.cleanLabels(employeeMatch[1]);
     }
 
-    // Source D: First line or capital words block from the employeeBlock
+    // Source D: Tokenized capital words from employeeBlock (highest reliability fallback)
     if (!employeeName && employeeBlock) {
-      const lines = employeeBlock.split(/[\n,]+/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length > 0) {
-        const firstLine = lines[0];
-        // Take everything until a digit/word containing digit or common address keyword
-        const namePartMatch = firstLine.match(/^([A-Z\s]+?)(?=\s+(?:\w*\d\w*|Sector|Pareena|Flat|House|Room|Plot|Lane|Road|H\.?No|$))/i);
-        if (namePartMatch) {
-          employeeName = namePartMatch[1].trim();
-        } else {
-          employeeName = firstLine;
-        }
-      }
+      employeeName = this.extractNameFromBlock(employeeBlock);
     }
 
     // Parse employeeName into first, middle, last names
@@ -183,24 +223,6 @@ export class BasicInfoParser {
           addressStr = employeeBlock.replace(new RegExp(`^\\s*${employeeName}\\s*[,\\s]*`, 'i'), '').trim();
         }
         data.employee.address = addressStr.replace(/^[\s,]+|[\s,]+$/g, '');
-      }
-    } else if (employeeBlock) {
-      // Fallback split
-      const employeeLines = employeeBlock.split(/[\n,]+/).map(l => l.trim()).filter(l => l.length > 0);
-      if (employeeLines.length > 0) {
-        const fullDisplayName = employeeLines[0];
-        const nameParts = fullDisplayName.split(/\s+/);
-        if (nameParts.length === 1) {
-          data.employee.name.lastName = nameParts[0];
-        } else if (nameParts.length === 2) {
-          data.employee.name.firstName = nameParts[0];
-          data.employee.name.lastName = nameParts[1];
-        } else {
-          data.employee.name.firstName = nameParts[0];
-          data.employee.name.middleName = nameParts.slice(1, -1).join(' ');
-          data.employee.name.lastName = nameParts[nameParts.length - 1];
-        }
-        data.employee.address = employeeLines.slice(1).join(', ').trim();
       }
     }
 

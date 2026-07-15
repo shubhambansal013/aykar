@@ -83,6 +83,53 @@ describe('AI Chat Route API Handler', () => {
     expect(bodyObj.systemInstruction.parts[0].text).toContain('Extracted raw form-16 text');
   });
 
+  test('correctly decodes and maps text attachments under parts instead of inlineData', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'MOCK_KEY');
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Response' }]
+            }
+          }
+        ]
+      })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const textContent = 'This is content of a plain text file attachment.';
+    const base64Data = Buffer.from(textContent).toString('base64');
+
+    const mockReq = new NextRequest('http://localhost/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'user',
+            content: 'Please analyze this text file.',
+            attachments: [
+              { name: 'attached_text.txt', mimeType: 'text/plain', data: base64Data }
+            ]
+          }
+        ],
+        isReview: false,
+      }),
+    });
+
+    const response = await POST(mockReq);
+    expect(response.status).toBe(200);
+
+    const bodyObj = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(bodyObj.contents[0].role).toBe('user');
+    expect(bodyObj.contents[0].parts[0].text).toBe('Please analyze this text file.');
+    expect(bodyObj.contents[0].parts[1].text).toContain('[Attached File: attached_text.txt]');
+    expect(bodyObj.contents[0].parts[1].text).toContain(textContent);
+    expect(bodyObj.contents[0].parts[1].inlineData).toBeUndefined();
+  });
+
   test('respects custom model name requested in body', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'MOCK_KEY');
 

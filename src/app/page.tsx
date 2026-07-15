@@ -531,6 +531,7 @@ interface AssistantMessageProps {
   rejectedMessages: Record<number, boolean>;
   onAccept: (msgIdx: number, data: any) => void;
   onReject: (msgIdx: number) => void;
+  onUndo?: (msgIdx: number) => void;
   currentData: Form16Data | null;
 }
 
@@ -541,6 +542,7 @@ export function AssistantMessage({
   rejectedMessages,
   onAccept,
   onReject,
+  onUndo,
   currentData,
 }: AssistantMessageProps) {
   const parsed = useMemo(() => {
@@ -663,13 +665,33 @@ export function AssistantMessage({
                 </Button>
               </Box>
             ) : isAccepted ? (
-              <Alert severity="success" variant="filled" sx={{ py: 0, px: 1, borderRadius: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Applied Successfully!</Typography>
-              </Alert>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mt: 1.5 }}>
+                <Alert severity="success" variant="filled" sx={{ py: 0.5, px: 1, borderRadius: 1, flexGrow: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Applied Successfully!</Typography>
+                </Alert>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => onUndo?.(msgIdx)}
+                >
+                  Undo
+                </Button>
+              </Box>
             ) : (
-              <Typography variant="caption" color="error" sx={{ fontWeight: 'bold' }}>
-                Updates Rejected
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mt: 1.5 }}>
+                <Typography variant="caption" color="error" sx={{ fontWeight: 'bold' }}>
+                  Updates Rejected
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => onUndo?.(msgIdx)}
+                >
+                  Undo
+                </Button>
+              </Box>
             )}
           </CardContent>
         </Card>
@@ -726,6 +748,27 @@ export default function Home() {
     });
   };
   const [rawText, setRawText] = useState<string>('');
+  const [aisRawText, setAisRawText] = useState<string>('');
+  const [tisRawText, setTisRawText] = useState<string>('');
+  const [form26asRawText, setForm26asRawText] = useState<string>('');
+
+  const combinedRawText = useMemo(() => {
+    let result = '';
+    if (rawText) {
+      result += `--- FORM-16 RAW EXTRACTED TEXT ---\n${rawText}\n\n`;
+    }
+    if (aisRawText) {
+      result += `--- AIS RAW EXTRACTED TEXT ---\n${aisRawText}\n\n`;
+    }
+    if (tisRawText) {
+      result += `--- TIS RAW EXTRACTED TEXT ---\n${tisRawText}\n\n`;
+    }
+    if (form26asRawText) {
+      result += `--- FORM 26AS RAW EXTRACTED TEXT ---\n${form26asRawText}\n\n`;
+    }
+    return result || 'No raw text extracted yet.';
+  }, [rawText, aisRawText, tisRawText, form26asRawText]);
+
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
@@ -738,12 +781,16 @@ export default function Home() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
   const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
-  const [sendOnlyRawData, setSendOnlyRawData] = useState<boolean>(true);
+  const [sendOnlyRawData, setSendOnlyRawData] = useState<boolean>(false);
 
   const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
   const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
+  const [proposalBackups, setProposalBackups] = useState<Record<number, Form16Data | null>>({});
 
   const handleAcceptProposal = (msgIdx: number, updatedData: any) => {
+    if (extractedData) {
+      setProposalBackups((prev) => ({ ...prev, [msgIdx]: JSON.parse(JSON.stringify(extractedData)) }));
+    }
     setAcceptedMessages((prev) => ({ ...prev, [msgIdx]: true }));
     setExtractedData(updatedData);
     setErrors(validateForm16Data(updatedData));
@@ -751,6 +798,31 @@ export default function Home() {
 
   const handleRejectProposal = (msgIdx: number) => {
     setRejectedMessages((prev) => ({ ...prev, [msgIdx]: true }));
+  };
+
+  const handleUndoProposal = (msgIdx: number) => {
+    if (acceptedMessages[msgIdx]) {
+      const backup = proposalBackups[msgIdx];
+      if (backup) {
+        setExtractedData(backup);
+        setErrors(validateForm16Data(backup));
+      }
+    }
+    setAcceptedMessages((prev) => {
+      const next = { ...prev };
+      delete next[msgIdx];
+      return next;
+    });
+    setRejectedMessages((prev) => {
+      const next = { ...prev };
+      delete next[msgIdx];
+      return next;
+    });
+    setProposalBackups((prev) => {
+      const next = { ...prev };
+      delete next[msgIdx];
+      return next;
+    });
   };
 
   const geminiModels = useMemo(() => {
@@ -922,6 +994,7 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+      setAisRawText(text);
       const parsed = parseAISText(text);
       setAisData(parsed);
 
@@ -947,6 +1020,7 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+      setTisRawText(text);
       const parsed = parseTISText(text);
       setTisData(parsed);
 
@@ -972,6 +1046,7 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+      setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
       setForm26asData(parsed);
 
@@ -1032,7 +1107,11 @@ export default function Home() {
         body: JSON.stringify({
           messages: updatedMessages,
           itrData: sendOnlyRawData ? null : extractedData,
+          itrJson: sendOnlyRawData ? null : (extractedData ? mapForm16ToITR1(extractedData) : null),
           rawText: rawText,
+          aisRawText: aisRawText,
+          tisRawText: tisRawText,
+          form26asRawText: form26asRawText,
           isReview: isReviewRequest,
           model: selectedModel,
         }),
@@ -1063,6 +1142,17 @@ export default function Home() {
     handleSendMessage(true);
   };
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsText(file);
+    });
+  };
+
   // Handle adding custom attachments
   const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -1074,13 +1164,23 @@ export default function Home() {
 
       // If PDF, we can use existing extractor to fetch text first, or send standard pdf
       let base64Data = '';
+      let finalMimeType = mimeType || 'application/octet-stream';
       if (mimeType === 'application/pdf') {
         const arrayBuffer = await selectedFile.arrayBuffer();
         try {
           const pdfText = await extractTextFromPDF(arrayBuffer);
           base64Data = btoa(unescape(encodeURIComponent(pdfText)));
+          finalMimeType = 'text/plain'; // Treat successfully extracted PDF text as text
         } catch {
           // Fallback to reading file normally
+          base64Data = await readFileAsBase64(selectedFile);
+        }
+      } else if (mimeType && (mimeType.startsWith('text/') || mimeType === 'application/json' || selectedFile.name.endsWith('.csv'))) {
+        try {
+          const text = await readFileAsText(selectedFile);
+          base64Data = btoa(unescape(encodeURIComponent(text)));
+          finalMimeType = 'text/plain';
+        } catch {
           base64Data = await readFileAsBase64(selectedFile);
         }
       } else {
@@ -1089,7 +1189,7 @@ export default function Home() {
 
       const newAttachment: Attachment = {
         name: selectedFile.name,
-        mimeType: mimeType || 'application/octet-stream',
+        mimeType: finalMimeType,
         data: base64Data,
       };
 
@@ -1562,7 +1662,7 @@ export default function Home() {
                           </Typography>
                           <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                             <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '10px', fontFamily: 'monospace' }}>
-                              {rawText}
+                              {combinedRawText}
                             </pre>
                           </Box>
                         </Paper>
@@ -1744,6 +1844,7 @@ export default function Home() {
                         rejectedMessages={rejectedMessages}
                         onAccept={handleAcceptProposal}
                         onReject={handleRejectProposal}
+                        onUndo={handleUndoProposal}
                         currentData={extractedData}
                       />
                     )}
@@ -1828,8 +1929,17 @@ export default function Home() {
                         size="small"
                         onClick={() => {
                           setFile(null);
+                          setAisFile(null);
+                          setTisFile(null);
+                          setForm26asFile(null);
                           setExtractedData(null);
+                          setAisData(null);
+                          setTisData(null);
+                          setForm26asData(null);
                           setRawText('');
+                          setAisRawText('');
+                          setTisRawText('');
+                          setForm26asRawText('');
                           setErrors([]);
                         }}
                         aria-label="remove form16 context"

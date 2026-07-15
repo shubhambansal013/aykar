@@ -1,11 +1,11 @@
 
 > temp-app@0.1.0 dev
-> next dev
+> next dev -p 3000
 
 ▲ Next.js 16.2.10 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 582ms
+✓ Ready in 561ms
 Attention: Next.js now collects completely anonymous telemetry regarding usage.
 This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
@@ -13,6 +13,6 @@ https://nextjs.org/telemetry
 
 
 ○ Compiling / ...
- GET / 200 in 10.1s (next.js: 9.4s, application-code: 708ms)
- GET / 200 in 99ms (next.js: 4ms, application-code: 95ms)
-[browser] React does not recognize the `PaperProps` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `paperprops` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+ GET / 200 in 9.7s (next.js: 8.8s, application-code: 926ms)
+GEMINI_API_KEY environment variable is not defined.
+ POST /api/chat 200 in 672ms (next.js: 647ms, application-code: 25ms)

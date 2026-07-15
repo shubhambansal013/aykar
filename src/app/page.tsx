@@ -77,7 +77,7 @@ export default function Home() {
   const [chatLoading, setChatLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachingFile, setAttachingFile] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = useState(aiConfig.modelName);
 
   const geminiModels = useMemo(() => {
     const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
@@ -1054,7 +1054,7 @@ export default function Home() {
                   <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
-                    I have full context of your Form-16 / ITR details. You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
+                    You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
                   </Typography>
                 </Box>
               )}
@@ -1123,9 +1123,44 @@ export default function Home() {
 
             {/* Chat Input / Actions */}
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
-              {/* Selected attachments */}
-              {attachments.length > 0 && (
+              {/* Selected attachments / Context */}
+              {(file || attachments.length > 0) && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                  {/* Form-16 Context */}
+                  {file && (
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        pl: 0.75,
+                        pr: 0.25,
+                        py: 0.25,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                      <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                        {file.name}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setFile(null);
+                          setExtractedData(null);
+                          setRawText('');
+                          setErrors([]);
+                        }}
+                        aria-label="remove form16 context"
+                      >
+                        <CloseIcon sx={{ fontSize: 12 }} />
+                      </IconButton>
+                    </Paper>
+                  )}
+
+                  {/* Supplementary Attachments */}
                   {attachments.map((att, idx) => (
                     <Paper
                       key={idx}
@@ -1142,11 +1177,11 @@ export default function Home() {
                       }}
                     >
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                      <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
+                      <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
                         {att.name}
                       </Typography>
                       <IconButton size="small" onClick={() => removeAttachment(idx)} aria-label="remove attachment">
-                        <DeleteIcon sx={{ fontSize: 12 }} />
+                        <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
                   ))}

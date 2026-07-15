@@ -856,6 +856,85 @@ describe('Home Page', () => {
     fireEvent.mouseUp(document);
   });
 
+  test('handles sendOnlyRawData state toggling and affects fetch payload', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: { grossSalary: 1000000, standardDeduction16ia: 50000 },
+      deductions80C: 150000, deductions80D: 25000, deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockProposalResponse = {
+      role: 'assistant',
+      content: 'AI Answer'
+    };
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockProposalResponse
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    // Upload file first to populate extractedData
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // Open chat
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    // Verify checkbox is checked by default
+    const checkbox = screen.getByLabelText('Send only raw data to AI agent') as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+
+    // badge should not be present
+    expect(screen.queryByTestId('parsed-itr-badge')).toBeNull();
+
+    // uncheck the checkbox
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(false);
+
+    // badge should now be present
+    expect(screen.getByTestId('parsed-itr-badge')).toBeDefined();
+
+    // Ask a question in input and send
+    const input = screen.getByPlaceholderText('Ask your tax question...');
+    fireEvent.change(input, { target: { value: 'How can I save more tax?' } });
+    const sendBtn = screen.getByLabelText('send message');
+    fireEvent.click(sendBtn);
+
+    // Check payload passed to fetch has itrData defined
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled();
+    });
+
+    // Find call with `/api/chat`
+    const chatCall = mockFetch.mock.calls.find((call: any) => call[0] === '/api/chat');
+    expect(chatCall).toBeDefined();
+    const body = JSON.parse(chatCall[1].body);
+    expect(body.itrData).not.toBeNull();
+    expect(body.itrData.employee.pan).toBe('ABCDE1234F');
+
+    vi.restoreAllMocks();
+  }, 15000);
+
   test('handles AI updates proposal accept and reject end-to-end in Home page', async () => {
     const mockText = 'Raw PDF text';
     const mockData = {

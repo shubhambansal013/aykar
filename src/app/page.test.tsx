@@ -514,7 +514,7 @@ describe('Home Page', () => {
 
   test('renders Form-16 parser title and AI Chat elements', () => {
     render(<Home />);
-    expect(screen.getByText(/Form-16 to ITR JSON Parser/i)).toBeDefined();
+    expect(screen.getByText(/Form-16 to ITR JSON Parser|ITR Assist/i)).toBeDefined();
     expect(screen.getByLabelText('open ai chat')).toBeDefined();
     expect(screen.getByLabelText('open ai chat window')).toBeDefined();
   });

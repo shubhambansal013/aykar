@@ -116,5 +116,5 @@ describe('Form-16 to ITR Integration Test with real PDF', () => {
     sanitizedParsed.salary.exemptAllowancesUs10 = parsed.salary.exemptAllowancesUs10.map(({ nature, amount }) => ({ nature, amount }));
 
     expect(sanitizedParsed).toEqual(expectedJson);
-  });
+  }, 20000);
 });

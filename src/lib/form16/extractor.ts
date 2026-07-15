@@ -1,15 +1,39 @@
-export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
+export async function extractTextFromPDF(data: ArrayBuffer | Buffer): Promise<string> {
   try {
-    const pdfjs = await import('pdfjs-dist');
+    let pdfjs: any;
+    const isNode = typeof process !== 'undefined' && process.versions != null && process.versions.node;
 
-    // Point to the worker source from a reliable CDN
-    if (typeof window !== 'undefined' && 'Worker' in window) {
-      // Using unpkg as a fallback since cdnjs might be lagging or have different path structures for newer versions
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+    let disableWorker = false;
+    if (isNode) {
+      // Node.js environment - use legacy build
+      const module = await import('pdfjs-dist/legacy/build/pdf');
+      pdfjs = module.default || module;
+      disableWorker = true;   // disable worker in Node.js
+    } else {
+      // browser
+      const module = await import('pdfjs-dist');
+      pdfjs = module.default || module;
+      // Point to the worker source from a reliable CDN
+      if (typeof window !== 'undefined' && 'Worker' in window) {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+      }
+    }
+
+    // Convert input to Uint8Array for pdfjs
+    let byteArray: Uint8Array;
+    if (Buffer.isBuffer(data)) {
+      byteArray = new Uint8Array(data);
+    } else if (data instanceof ArrayBuffer) {
+      byteArray = new Uint8Array(data);
+    } else if (data instanceof Uint8Array) {
+      byteArray = data;
+    } else {
+      throw new Error('Unsupported data type for PDF extraction');
     }
 
     const loadingTask = pdfjs.getDocument({
-      data,
+      data: byteArray,
+      disableWorker
     });
 
     const pdf = await loadingTask.promise;

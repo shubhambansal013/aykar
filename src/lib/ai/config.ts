@@ -30,10 +30,23 @@ export const providersConfig: ProviderConfig[] = [
   }
 ];
 
+// Helper function to dynamically locate the default model for a given provider
+const getDefaultModelName = (providerName: string): string => {
+  const provider = providersConfig.find(p => p.provider === providerName);
+  
+  // Find the model with isDefault: true
+  const defaultModel = provider?.models.find(m => m.isDefault);
+  
+  // Return the default model value, or fallback to the first model in the list, or a generic string
+  return defaultModel?.value || provider?.models[0]?.value || '';
+};
+
+const defaultProvider = 'gemini';
+
 export const aiConfig: AIConfig = {
-  provider: 'gemini',
-  // Default fallback model
-  modelName: 'gemini-1.5-flash',
+  provider: defaultProvider,
+  // Dynamically resolved from the provider's default instead of a hardcoded string
+  modelName: getDefaultModelName(defaultProvider),
   systemPrompt: `You are an AI assistant specialized in Indian Income Tax Returns (ITR).
 You help users verify, review, and answer questions about their Form-16 and ITR data.
 Always provide helpful, precise, and professional recommendations for saving taxes, complying with tax laws, and correcting potential errors.`,

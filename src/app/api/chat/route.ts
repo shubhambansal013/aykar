@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiConfig } from '@/lib/ai/config';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 interface Part {
   text?: string;
@@ -18,7 +19,18 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, itrData, rawText, isReview } = await req.json();
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      try {
+        const cfContext = getCloudflareContext();
+        if (cfContext?.env?.GEMINI_API_KEY) {
+          apiKey = cfContext.env.GEMINI_API_KEY as string;
+        }
+      } catch (e) {
+        // Silently catch errors if getCloudflareContext is called outside Cloudflare (e.g. tests or local dev without context)
+      }
+    }
+
     if (!apiKey) {
       // Return a simulated response when API key is not configured (e.g. in development/tests)
       // to make testing/development seamless.

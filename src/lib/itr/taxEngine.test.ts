@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateOldRegime, calculateNewRegime, compareTaxRegimes } from './taxEngine';
+import { calculateOldRegime, calculateNewRegime, compareTaxRegimes, recalculateAllFormFields } from './taxEngine';
 import { Form16Data } from '../types';
 
 describe('taxEngine', () => {
@@ -157,5 +157,74 @@ describe('taxEngine', () => {
     expect(newRes.taxBeforeRebate).toBe(7500);
     expect(newRes.rebate87A).toBe(7500);
     expect(newRes.totalTaxPayable).toBe(0);
+  });
+
+  describe('recalculateAllFormFields', () => {
+    it('correctly recalculates fields under OLD regime when individual components change', () => {
+      const data: Form16Data = {
+        ...baseMockData,
+        salary: {
+          ...baseMockData.salary,
+          salaryAsPer17_1: 1000000,
+          perquisites17_2: 50000,
+          profitsInLieu17_3: 10000,
+          grossSalary: 0, // Should be calculated as 1060000
+          exemptAllowancesUs10: [
+            { code: '10(13A)', amount: 50000 }
+          ],
+          totalExemptAllowances: 0, // Should be calculated as 50000
+          netSalary: 0, // Should be calculated as 1010000
+          standardDeduction16ia: 50000,
+          entertainmentAllowance16ii: 0,
+          professionalTax16iii: 2500,
+          totalDeductionsUs16: 0, // Should be calculated as 52500
+          incomeChargeableUnderHeadSalaries: 0, // Should be calculated as 957500
+        },
+        otherIncome: {
+          houseProperty: -20000,
+          otherSources: [
+            { nature: 'Savings Bank Interest', amount: 15000 }
+          ],
+          totalOtherSources: 0, // Should be calculated as 15000
+        },
+        deductions80C: 100000,
+        deductions80D: 25000,
+        deductions80TTA: 10000,
+        totalChapterVIADeductions: 0, // Should be calculated as 135000
+        totalIncome: 0, // Should be calculated
+      };
+
+      const result = recalculateAllFormFields(data, 'OLD');
+      expect(result.salary.grossSalary).toBe(1060000);
+      expect(result.salary.totalExemptAllowances).toBe(50000);
+      expect(result.salary.netSalary).toBe(1010000);
+      expect(result.salary.totalDeductionsUs16).toBe(52500);
+      expect(result.salary.incomeChargeableUnderHeadSalaries).toBe(957500);
+      expect(result.otherIncome.totalOtherSources).toBe(15000);
+      expect(result.grossTotalIncome).toBe(957500 - 20000 + 15000); // 952500
+      expect(result.totalChapterVIADeductions).toBe(155000);
+      expect(result.totalIncome).toBe(952500 - 155000); // 797500
+      expect(result.taxPayable).toBeGreaterThan(0);
+    });
+
+    it('respects manual overrides when editedPath matches summary fields', () => {
+      const data: Form16Data = {
+        ...baseMockData,
+        salary: {
+          ...baseMockData.salary,
+          salaryAsPer17_1: 1000000,
+          perquisites17_2: 50000,
+          profitsInLieu17_3: 10000,
+          grossSalary: 1500000, // Manual override
+        },
+        totalChapterVIADeductions: 250000, // Manual override
+      };
+
+      const result = recalculateAllFormFields(data, 'OLD', 'salary.grossSalary');
+      expect(result.salary.grossSalary).toBe(1500000); // Maintained override
+
+      const resultDeductions = recalculateAllFormFields(data, 'OLD', 'totalChapterVIADeductions');
+      expect(resultDeductions.totalChapterVIADeductions).toBe(250000); // Maintained override
+    });
   });
 });

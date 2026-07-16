@@ -234,3 +234,130 @@ export function compareTaxRegimes(data: Form16Data): DualRegimeComparison {
     optimalRegime,
   };
 }
+
+/**
+ * Performs a complete mathematical recalculation of all dependent and derived fields in Form16Data
+ * based on the active tax regime ('OLD' or 'NEW').
+ * Optional editedPath indicates which specific field is being edited directly by the user,
+ * allowing us to respect manual overrides to summary fields.
+ */
+export function recalculateAllFormFields(data: Form16Data, regime: 'OLD' | 'NEW', editedPath?: string): Form16Data {
+  const next: Form16Data = JSON.parse(JSON.stringify(data || {}));
+
+  const salary = next.salary || {
+    grossSalary: 0,
+    salaryAsPer17_1: 0,
+    perquisites17_2: 0,
+    profitsInLieu17_3: 0,
+    exemptAllowancesUs10: [],
+    totalExemptAllowances: 0,
+    netSalary: 0,
+    standardDeduction16ia: 0,
+    entertainmentAllowance16ii: 0,
+    professionalTax16iii: 0,
+    totalDeductionsUs16: 0,
+    incomeChargeableUnderHeadSalaries: 0,
+  };
+  next.salary = salary;
+
+  const otherIncome = next.otherIncome || { houseProperty: 0, otherSources: [], totalOtherSources: 0 };
+  next.otherIncome = otherIncome;
+
+  // 1. Gross Salary = 17_1 + 17_2 + 17_3
+  if (editedPath !== 'salary.grossSalary') {
+    const calculatedGross = (salary.salaryAsPer17_1 || 0) + (salary.perquisites17_2 || 0) + (salary.profitsInLieu17_3 || 0);
+    if (calculatedGross > 0 || (salary.salaryAsPer17_1 === 0 && salary.perquisites17_2 === 0 && salary.profitsInLieu17_3 === 0 && salary.grossSalary === 0)) {
+      salary.grossSalary = calculatedGross;
+    }
+  }
+
+  // 2. Exempt Allowances (Blocked under NEW, allowed under OLD)
+  if (editedPath !== 'salary.totalExemptAllowances') {
+    if (regime === 'OLD') {
+      const calculatedExempt = (salary.exemptAllowancesUs10 || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
+      if (calculatedExempt > 0 || (salary.exemptAllowancesUs10 && salary.exemptAllowancesUs10.length > 0)) {
+        salary.totalExemptAllowances = calculatedExempt;
+      }
+    } else {
+      salary.totalExemptAllowances = 0;
+    }
+  }
+
+  // 3. Net Salary = Gross - Exempt
+  if (editedPath !== 'salary.netSalary') {
+    const calculatedNet = Math.max(0, (salary.grossSalary || 0) - (salary.totalExemptAllowances || 0));
+    if (calculatedNet > 0 || salary.grossSalary > 0) {
+      salary.netSalary = calculatedNet;
+    }
+  }
+
+  // 4. Deductions u/s 16
+  const standardDeduction = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : (regime === 'NEW' ? 50000 : 75000);
+  if (editedPath !== 'salary.totalDeductionsUs16') {
+    if (regime === 'OLD') {
+      const calcDeductions = (salary.standardDeduction16ia || 0) + (salary.entertainmentAllowance16ii || 0) + (salary.professionalTax16iii || 0);
+      if (calcDeductions > 0) {
+        salary.totalDeductionsUs16 = calcDeductions;
+      }
+    } else {
+      salary.totalDeductionsUs16 = standardDeduction;
+    }
+  }
+
+  // 5. Income Chargeable under head Salaries
+  if (editedPath !== 'salary.incomeChargeableUnderHeadSalaries') {
+    const calcChargeableSalary = Math.max(0, (salary.netSalary || 0) - (salary.totalDeductionsUs16 || 0));
+    if (calcChargeableSalary > 0 || salary.netSalary > 0) {
+      salary.incomeChargeableUnderHeadSalaries = calcChargeableSalary;
+    }
+  }
+
+  // 6. Other Sources sum
+  if (editedPath !== 'otherIncome.totalOtherSources') {
+    const calcOtherSources = (otherIncome.otherSources || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
+    if (calcOtherSources > 0 || (otherIncome.otherSources && otherIncome.otherSources.length > 0)) {
+      otherIncome.totalOtherSources = calcOtherSources;
+    }
+  }
+
+  // 7. Gross Total Income = Salaries + HP + Other Sources
+  if (editedPath !== 'grossTotalIncome') {
+    const hpIncome = regime === 'OLD' ? (otherIncome.houseProperty || 0) : Math.max(0, otherIncome.houseProperty || 0);
+    const calcGTI = (salary.incomeChargeableUnderHeadSalaries || 0) + hpIncome + (otherIncome.totalOtherSources || 0);
+    if (calcGTI > 0 || salary.incomeChargeableUnderHeadSalaries > 0 || otherIncome.totalOtherSources > 0) {
+      next.grossTotalIncome = calcGTI;
+    }
+  }
+
+  // 8. Chapter VI-A Deductions
+  if (editedPath !== 'totalChapterVIADeductions') {
+    next.totalChapterVIADeductions =
+      (next.deductions80C || 0) +
+      (next.deductions80CCC || 0) +
+      (next.deductions80CCD1 || 0) +
+      (next.deductions80CCD1B || 0) +
+      (next.deductions80CCD2 || 0) +
+      (next.deductions80D || 0) +
+      (next.deductions80E || 0) +
+      (next.deductions80G || 0) +
+      (next.deductions80TTA || 0);
+  }
+
+  const activeDeductions = regime === 'OLD' ? next.totalChapterVIADeductions : (next.deductions80CCD2 || 0);
+
+  // 9. Total Income (Taxable Income)
+  if (editedPath !== 'totalIncome') {
+    const calcTI = Math.max(0, (next.grossTotalIncome || 0) - activeDeductions);
+    if (calcTI > 0 || next.grossTotalIncome > 0) {
+      next.totalIncome = calcTI;
+    }
+  }
+
+  // 10. Tax Payable
+  if (editedPath !== 'taxPayable') {
+    const computed = regime === 'NEW' ? calculateNewRegime(next) : calculateOldRegime(next);
+    next.taxPayable = computed.totalTaxPayable;
+  }
+
+  return next;
+}

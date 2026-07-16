@@ -75,4 +75,65 @@ describe('FieldCues Unit Tests', () => {
     fireEvent.change(input, { target: { value: 'Jane' } });
     expect(onChangeSpy).toHaveBeenCalledWith('Jane');
   });
+
+  test('CueTextField renders AI Spark icon and no recommendation text string when AI suggestion is applied', () => {
+    const onChangeSpy = vi.fn();
+    const updatedData = {
+      ...dummyData,
+      salary: {
+        ...dummyData.salary,
+        grossSalary: 1100000,
+      },
+    };
+    const originalData = { ...dummyData };
+    const appliedAiSuggestions = { ...updatedData };
+
+    render(
+      <CueTextField
+        label="Gross Salary"
+        path="salary.grossSalary"
+        data={updatedData}
+        originalData={originalData}
+        appliedAiSuggestions={appliedAiSuggestions}
+        onChange={onChangeSpy}
+      />
+    );
+
+    // Should NOT contain the text string
+    expect(screen.queryByText('Applied from AI recommendation')).toBeNull();
+
+    // Should contain the ✨ Spark icon
+    const spark = screen.getByText('✨');
+    expect(spark).toBeDefined();
+  });
+
+  test('CueTextField renders side-by-side comparison text when grossSalary discrepancy is present', () => {
+    const onChangeSpy = vi.fn();
+    const discrepancyData = {
+      ...dummyData,
+      salary: {
+        ...dummyData.salary,
+        grossSalary: 1000000,
+      },
+      tisData: {
+        salaryDerived: 1200000,
+        interestSavings: 0,
+        interestDeposit: 0,
+        dividendIncome: 0,
+      },
+    };
+
+    render(
+      <CueTextField
+        label="Gross Salary"
+        path="salary.grossSalary"
+        data={discrepancyData}
+        onChange={onChangeSpy}
+      />
+    );
+
+    // Should display the ⚠️ Form-16 vs TIS side-by-side comparison text
+    const comparisonElement = screen.getByText(/Form-16: ₹10,00,000 vs TIS: ₹12,00,000/);
+    expect(comparisonElement).toBeDefined();
+  });
 });

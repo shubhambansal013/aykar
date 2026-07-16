@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form16Data } from '@/lib/types';
+import { Form16Data, ReconciledTaxData } from '@/lib/types';
 import { TextField, Tooltip, InputAdornment } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -347,8 +347,8 @@ export function CueTextField({
     }
   }
 
-  let color = '#2e7d32'; // success (green)
-  let Icon = CheckCircleIcon;
+  let color = 'inherit';
+  let Icon = null;
   if (cue.status === 'warning') {
     color = '#ed6c02'; // warning (orange)
     Icon = WarningIcon;
@@ -357,7 +357,10 @@ export function CueTextField({
     Icon = ErrorIcon;
   }
 
-  const customSx: any = isNone
+  const isErrorOrWarning = cue.status === 'error' || cue.status === 'warning';
+  const isAiApplied = modificationLabel === 'Applied from AI recommendation';
+
+  const customSx: any = !isErrorOrWarning
     ? {}
     : {
         '& .MuiOutlinedInput-root': {
@@ -370,10 +373,58 @@ export function CueTextField({
         },
       };
 
-  const helperText = modificationLabel ? (
+  // Compute side-by-side comparison text if there is a discrepancy with TIS/26AS
+  const recon = data as ReconciledTaxData;
+  let comparisonText = '';
+  if (path === 'salary.grossSalary' && recon?.tisData?.salaryDerived) {
+    const tisVal = recon.tisData.salaryDerived;
+    if (Math.abs(val - tisVal) > 10) {
+      comparisonText = `Form-16: ₹${val.toLocaleString('en-IN')} vs TIS: ₹${tisVal.toLocaleString('en-IN')}`;
+    }
+  }
+
+  if (path === 'taxCredits.tdsSalary' && recon?.form26asData) {
+    const employerTan = recon.employer?.tan;
+    if (employerTan) {
+      const matchingTds26as = (recon.form26asData.tdsSalary || []).find(
+        (item) => item.tan && item.tan.toUpperCase() === employerTan.toUpperCase()
+      );
+      if (matchingTds26as && Math.abs(matchingTds26as.amount - val) > 1) {
+        comparisonText = `Form-16: ₹${val.toLocaleString('en-IN')} vs 26AS: ₹${matchingTds26as.amount.toLocaleString('en-IN')}`;
+      }
+    }
+  }
+
+  // Replace "Applied from AI recommendation" text with inside-field spark icon
+  let helperText = (modificationLabel && !isAiApplied) ? (
     <span style={{ fontSize: '0.675rem', fontWeight: 600 }}>
       {modificationLabel}
     </span>
+  ) : undefined;
+
+  if (comparisonText) {
+    helperText = (
+      <span style={{ fontSize: '0.675rem', fontWeight: 700, display: 'block', color: '#ed6c02' }}>
+        ⚠️ {comparisonText}
+      </span>
+    );
+  }
+
+  const endAdornmentElement = (isErrorOrWarning || isAiApplied) ? (
+    <InputAdornment position="end" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      {isAiApplied && (
+        <Tooltip title="Auto-filled by Jules AI from Form-16" arrow>
+          <span style={{ cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', paddingRight: '4px' }}>
+            ✨
+          </span>
+        </Tooltip>
+      )}
+      {isErrorOrWarning && Icon && (
+        <InputAdornment position="end" sx={{ color: color, m: 0 }}>
+          <Icon sx={{ fontSize: 18 }} />
+        </InputAdornment>
+      )}
+    </InputAdornment>
   ) : undefined;
 
   const inputComponent = (
@@ -402,11 +453,7 @@ export function CueTextField({
       slotProps={{
         input: {
           startAdornment: startAdornment,
-          endAdornment: !isNone ? (
-            <InputAdornment position="end" sx={{ color: color }}>
-              <Icon sx={{ fontSize: 18 }} />
-            </InputAdornment>
-          ) : undefined,
+          endAdornment: endAdornmentElement,
           style: {
             fontFamily: isMonospace ? 'monospace' : 'inherit',
             textTransform: uppercase ? 'uppercase' : 'none',
@@ -425,4 +472,71 @@ export function CueTextField({
   }
 
   return inputComponent;
+}
+
+export const sectionFields = {
+  general: [
+    'assessmentYear',
+    'period.from',
+    'period.to',
+    'employer.name',
+    'employer.pan',
+    'employer.tan',
+    'employer.address',
+    'employee.name.firstName',
+    'employee.name.middleName',
+    'employee.name.lastName',
+    'employee.pan',
+    'employee.address',
+  ],
+  salary: [
+    'salary.salaryAsPer17_1',
+    'salary.perquisites17_2',
+    'salary.profitsInLieu17_3',
+    'salary.grossSalary',
+    'salary.totalExemptAllowances',
+    'salary.netSalary',
+    'salary.standardDeduction16ia',
+    'salary.entertainmentAllowance16ii',
+    'salary.professionalTax16iii',
+    'salary.totalDeductionsUs16',
+    'salary.incomeChargeableUnderHeadSalaries',
+  ],
+  other: [
+    'otherIncome.houseProperty',
+    'otherIncome.totalOtherSources',
+  ],
+  deductions: [
+    'deductions80C',
+    'deductions80CCC',
+    'deductions80CCD1',
+    'deductions80CCD1B',
+    'deductions80CCD2',
+    'deductions80D',
+    'deductions80E',
+    'deductions80G',
+    'deductions80TTA',
+    'totalChapterVIADeductions',
+  ],
+  taxCredits: [
+    'taxCredits.tdsSalary',
+    'taxCredits.tdsOther',
+    'taxCredits.tcs',
+    'taxCredits.advanceTax',
+    'taxCredits.selfAssessmentTax',
+  ],
+  summary: [
+    'grossTotalIncome',
+    'totalIncome',
+    'taxPayable',
+  ],
+};
+
+export function getSectionVerifiedCount(section: keyof typeof sectionFields, data: Form16Data | null): number {
+  if (!data) return 0;
+  const paths = sectionFields[section];
+  return paths.reduce((count, path) => {
+    const cue = getFieldCue(path, data);
+    return cue.status === 'success' ? count + 1 : count;
+  }, 0);
 }

@@ -457,6 +457,7 @@ export default function Home() {
       alert('Failed to process PDF. Please try again.');
     } finally {
       setLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -485,6 +486,7 @@ export default function Home() {
       alert('Failed to process AIS PDF.');
     } finally {
       setAisLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -513,6 +515,7 @@ export default function Home() {
       alert('Failed to process TIS PDF.');
     } finally {
       setTisLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -541,6 +544,7 @@ export default function Home() {
       alert('Failed to process Form 26AS PDF.');
     } finally {
       setForm26asLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -672,6 +676,7 @@ export default function Home() {
       alert('Failed to attach file.');
     } finally {
       setAttachingFile(false);
+      e.target.value = '';
     }
   };
 

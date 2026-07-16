@@ -1,0 +1,191 @@
+syntax = "proto3";
+
+package tax.sources.form16;
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Top-level bundle to elegantly handle multiple employers throughout the FY
+message Form16Bundle {
+  tax.common.DocumentMetadata metadata = 1;
+  tax.common.TaxpayerProfile taxpayer_profile = 2;
+  repeated Form16 certificates = 3;             // Individual certificates per employer
+}
+
+message Form16 {
+  string certificate_number = 1;                // e.g., "UXBGJYA" or "SFOLYRA"
+  EmployerProfile employer_profile = 2;
+  EmploymentPeriod employment_period = 3;
+
+  PartA part_a = 4;                             // Tax deducted and deposited summary
+  PartB part_b = 5;                             // Detailed computational breakdown
+  optional Form12BA perquisites_details = 6;    // Detailed perquisite valuation list (if applicable)
+
+  Verification verification = 7;                 // Signatory verification block
+}
+
+// ==========================================
+// Base & Identity Structures
+// ==========================================
+message EmployerProfile {
+  string tan = 1;                               // Deductor TAN
+  string pan = 2;                               // Deductor PAN
+  string name = 3;                              // e.g., "PARAMETRIC TECHNOLOGY..."
+  string address = 4;                           // Full employer address
+  optional string email = 5;                     // e.g., "shchoudhary@ptc.com"
+  optional string phone = 6;                     // e.g., "+(91)80-8197124546"
+  string cit_tds_address = 7;                   // CIT (TDS) Jurisdiction address
+}
+
+message EmploymentPeriod {
+  string start_date = 1;                        // DD-MM-YYYY format
+  string end_date = 2;                          // DD-MM-YYYY format
+  string assessment_year = 3;                   // e.g., "2026-27"
+  optional string employee_reference_no = 4;     // Internal company serial / payroll ID
+}
+
+// ==========================================
+// Part A: Tax Deposited & Quarter Summaries
+// ==========================================
+message PartA {
+  repeated QuarterSummary quarter_summaries = 1; // Summary of amount paid & tax deducted
+  repeated ChallanDeposit challan_deposits = 2;   // Payment-wise challan details (OLTAS matching)
+  double total_amount_paid = 3;                 // Aggregated salary paid
+  double total_tds_deducted = 4;                // Aggregated tax deducted
+  double total_tds_deposited = 5;               // Aggregated tax deposited
+}
+
+message QuarterSummary {
+  string quarter = 1;                           // e.g., "Q1", "Q2", "Q3", "Q4"
+  string receipt_number = 2;                    // Original quarterly return filing receipt
+  double amount_paid_credited = 3;              // Salary paid in quarter
+  double tax_deducted = 4;                      // Tax cut in quarter
+  double tax_deposited = 5;                     // Tax deposited in quarter
+}
+
+message ChallanDeposit {
+  double tax_deposited = 1;                     // Amount deposited
+  string bsr_code = 2;                          // 7-digit bank branch code
+  string date_of_deposit = 3;                   // DD-MM-YYYY
+  string challan_serial_number = 4;             // Challan serial
+  string matching_status = 5;                   // OLTAS status: e.g., "F" (Final), "U" (Unmatched)
+}
+
+// ==========================================
+// Part B: Computational Breakdown
+// ==========================================
+message PartB {
+  bool opting_out_of_115BAC_new_regime = 1;     // "No" = Opted into Default/New Regime
+
+  // Section 17 Details
+  double salary_us_17_1 = 2;                    // Base/Gross salary
+  double perquisites_us_17_2 = 3;               // Valuation of perks
+  double profits_in_lieu_us_17_3 = 4;           // Profits in lieu
+  double salary_from_other_employers_reported = 5; // Mid-year salary declared to this employer
+  double total_gross_salary = 6;                // (17_1 + 17_2 + 17_3)
+
+  // Section 10 Exemptions
+  repeated ExemptionSection10 section10_exemptions = 7;
+  double total_section10_exemptions = 8;        // Sum of all Section 10 allowances
+
+  // Deductions under Section 16
+  double standard_deduction = 9;                // Standard Deduction u/s 16(ia)
+  double entertainment_allowance = 10;          // Entertainment allowance u/s 16(ii)
+  double professional_tax = 11;                 // Tax on employment u/s 16(iii)
+  double total_section16_deductions = 12;       // Sum of deductions u/s 16
+
+  double income_chargeable_under_salaries = 13; // [Gross Salary - Sec 10 - Sec 16]
+
+  // Other declared Income (Sec 192 (2B))
+  double income_from_house_property_reported = 14; // Housing gains/losses reported
+  double income_from_other_sources_reported = 15;  // Savings/FD Interest reported
+  double gross_total_income = 16;               // Salaries + Other Income
+
+  // Chapter VI-A Deductions
+  ChapterViaDeductions chapter_via_deductions = 17;
+  double total_chapter_via_deductions = 18;     // Aggregate deductible amount
+
+  // Tax Calculation Summary
+  double total_taxable_income = 19;             // [Gross Total Income - Chapter VIA]
+  double tax_on_total_income = 20;              // Tax computed
+  double rebate_us_87A = 21;                    // Section 87A rebate
+  double surcharge = 22;                        // Surcharge (if applicable)
+  double health_education_cess = 23;            // Cess
+  double tax_payable = 24;                      // Net tax liability before relief
+  double relief_us_89 = 25;                     // Relief on back-payouts
+  double tax_deducted_as_per_12BAA_tds = 26;    // Other TDS submitted
+  double tax_collected_as_per_12BAA_tcs = 27;    // Other TCS submitted
+  double net_tax_payable = 28;                  // Final due
+}
+
+message ExemptionSection10 {
+  string section_code = 1;                      // e.g., "10(5)", "10(13A)", "10(14)"
+  string description = 2;                       // e.g., "House Rent Allowance"
+  double amount = 3;                            // Deductible amount
+}
+
+// ==========================================
+// Chapter VI-A Deductions Block
+// ==========================================
+message ChapterViaDeductions {
+  message DeductionItem {
+    double gross_amount = 1;                    // Actual investment declared
+    double qualifying_amount = 2;               // Eligible amount
+    double deductible_amount = 3;               // Tax exempted value
+  }
+
+  DeductionItem sec_80C = 1;                     // LIC, EPF, PPF, ELSS, etc.
+  DeductionItem sec_80CCC = 2;                   // Pension Fund
+  DeductionItem sec_80CCD_1 = 3;                 // NPS Employee contribution
+  DeductionItem sec_80CCD_1B = 4;                // NPS voluntary (up to 50k)
+  DeductionItem sec_80CCD_2 = 5;                 // NPS Employer contribution
+  DeductionItem sec_80D = 6;                     // Medical Insurance Premiums
+  DeductionItem sec_80E = 7;                     // Education loan interest
+  DeductionItem sec_80CCH_employee = 8;          // Agnipath Contribution (Self)
+  DeductionItem sec_80CCH_central_govt = 9;      // Agnipath Contribution (Govt)
+  DeductionItem sec_80G = 10;                    // Charitable Donations
+  DeductionItem sec_80TTA = 11;                  // Savings bank interest deduction
+
+  // Array to cleanly map other dynamic/rare VIA sections without schema expansion
+  // E.g., 80DD, 80DDB, 80GG, 80EE, 80EEA, 80EEB, 80U
+  repeated OtherChapterViaDeduction other_deductions = 12;
+}
+
+message OtherChapterViaDeduction {
+  string section_code = 1;                      // e.g., "80DDB", "80EEB", "80U"
+  string description = 2;                       // Section label
+  double gross_amount = 3;                      // Invested value
+  double qualifying_amount = 4;                 // Eligible value
+  double deductible_amount = 5;                 // Applied deduction value
+}
+
+// ==========================================
+// Form 12BA: Perquisites Details (Detailed)
+// ==========================================
+message Form12BA {
+  repeated PerquisiteItem items = 1;             // Items matching Form 12BA spec
+  double total_perquisites_value = 2;           // Total value of perks
+  double total_profits_in_lieu_of_salary = 3;   // Section 17(3) profits
+  double tax_deducted_from_salary_192_1 = 4;    // Tax deducted from salary
+  double tax_paid_by_employer_192_1A = 5;       // Tax paid on perks
+}
+
+message PerquisiteItem {
+  string section_item_number = 1;               // "1" to "20" corresponding to Form 12BA
+  string description = 2;                       // Nature of perquisite (e.g. Accommodation, Cars)
+  double valuation_amount = 3;                  // Valuation as per rules
+  double recovered_amount = 4;                  // Recovery from employee
+  double taxable_amount = 5;                    // Net taxable: (Valuation - Recovered)
+}
+
+// ==========================================
+// Digital Signature & Signatory Verification
+// ==========================================
+message Verification {
+  string signatory_name = 1;                    // Name of deductor
+  string parent_name = 2;                       // e.g. "son/daughter of..."
+  string designation = 3;                       // Role (e.g. Director Payroll)
+  string place = 4;                             // Signature place
+  string date = 5;                              // Signature date
+  bool digital_signature_verified = 6;          // True if cryptographic signature checks out
+}

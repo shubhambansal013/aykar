@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package tax.sources.ais;
+
+import "common/common.proto";
+
+message AnnualInformationStatement {
+  tax.common.DocumentMetadata metadata = 1; // AIS tracker
+  tax.common.TaxpayerProfile profile = 2;   // Taxpayer details
+  PartB1TdsTcs tds_tcs_info = 3;             // Part B1: TDS & TCS data
+  PartB2Sft sft_info = 4;                     // Part B2: Specified Financial Transactions
+  PartB7OtherInfo other_info = 5;             // Part B7: Other Information (Annexure II)
+  repeated TaxPayment tax_payments = 6;       // Part B3: Challan self-assessments / advance tax
+  DemandsAndRefunds demands_and_refunds = 7;  // Part B4: Outstanding dues and returns
+}
+
+// ==========================================
+// Part B1: TDS / TCS
+// ==========================================
+message PartB1TdsTcs {
+  repeated TdsRecord records = 1; // Array of deduplicated TDS groups
+}
+
+message TdsRecord {
+  string info_code = 1;               // e.g., "TDS-192"
+  string info_description = 2;        // e.g., "Salary received (Section 192)"
+  string information_source = 3;      // Employer or institution name
+  int32 total_count = 4;              // Count of credits
+  double total_amount = 5;            // Cumulative amount paid
+  repeated TdsTransaction transactions = 6; // Quarterly / monthly breakdown
+}
+
+message TdsTransaction {
+  string quarter = 1;                 // e.g., "Q3(Oct-Dec)"
+  string date_of_payment_credit = 2;  // Credit date
+  double amount_paid_credited = 3;    // Base amount credited
+  double tds_deducted = 4;            // Taxes cut
+  double tds_deposited = 5;           // Taxes deposited with govt
+  string status = 6;                  // "Active" / "Modified"
+}
+
+// ==========================================
+// Part B2: SFT Transactions
+// ==========================================
+message PartB2Sft {
+  repeated BankInterest savings_interest = 1; // SFT-016(SB)
+  repeated BankInterest deposit_interest = 2; // SFT-016(TD)
+  repeated SecuritySale security_sales = 3;    // SFT-17-LES
+  repeated SecurityPurchase security_purchases = 4; // SFT-18
+}
+
+message BankInterest {
+  string info_code = 1;               // e.g., "SFT-016(SB)"
+  string info_description = 2;        // Description
+  string information_source = 3;      // Bank Name
+  string reported_on = 4;             // Upload date
+  string account_number = 5;          // Account Number
+  string account_type = 6;            // e.g., "Saving", "Time Deposit"
+  double interest_amount = 7;         // Actual interest accrued
+  string status = 8;                  // "Active"
+}
+
+message SecuritySale {
+  string info_code = 1;               // "SFT-17-LES(M)"
+  string info_description = 2;        // Description
+  string information_source = 3;      // e.g., CDSL, NSDL
+  string date_of_sale_transfer = 4;   // Trade date
+  string security_name = 5;           // Name of the stock / unit
+  string security_code_isin = 6;      // ISIN code
+  string security_class = 7;          // e.g., "Listed Equity Share"
+  string debit_type = 8;              // Trade channel
+  string credit_type = 9;             // Settlement type
+  string asset_type = 10;             // "Short term" or "Long term"
+  double quantity = 11;               // Quantity sold
+  double sale_price_per_unit = 12;    // Price unit
+  double sales_consideration = 13;    // Gross value
+  double cost_of_acquisition = 14;    // Buying cost
+  double unit_fmv = 15;               // Unit Fair Market Value
+  double fair_market_value = 16;      // Absolute FMV
+  double indexed_cost_of_acquisition = 17; // Indexed buying cost
+  string status = 18;                 // Transaction status
+}
+
+message SecurityPurchase {
+  string info_code = 1;               // "SFT-18(Pur)"
+  string info_description = 2;        // Description
+  string information_source = 3;      // Registrar / AMC name
+  string quarter = 4;                 // Purchase quarter
+  double total_purchase_amount = 5;   // Amount invested
+  double total_sales_value = 6;       // Any linked buyback
+  string client_id = 7;               // Folio or Client ID
+  string amc_name = 8;                // AMC Name
+  string holder_flag = 9;             // "First", "Joint"
+  string status = 10;                 // Entry status
+}
+
+// ==========================================
+// Part B3: Tax Payments (Challans)
+// ==========================================
+message TaxPayment {
+  string financial_year = 1;          // Assessment context
+  string major_head = 2;              // Major tax head
+  string minor_head = 3;              // Minor tax head
+  double tax_amount = 4;              // Base tax
+  double surcharge = 5;               // Surcharges paid
+  double education_cess = 6;          // Cess paid
+  double others = 7;                  // Fees / penalty interest
+  double total_amount_paid = 8;       // Total Challan value
+  string bsr_code = 9;                // Bank BSR
+  string date_of_deposit = 10;        // Payment date
+  int32 challan_serial_number = 11;   // Challan serial
+  string challan_identification_number = 12; // CIN string
+}
+
+// ==========================================
+// Part B4: Outstanding Demands / Refunds
+// ==========================================
+message DemandsAndRefunds {
+  repeated Refund refunds = 1;        // Processing refunds
+  repeated Demand demands = 2;        // Active department claims
+}
+
+message Refund {
+  string financial_year = 1;          // FY context
+  string mode = 2;                    // e.g., "Direct Credit"
+  string nature_of_refund = 3;        // Type of refund
+  double refund_amount = 4;           // Disbursed amount
+  string date_of_payment = 5;         // Dispatch date
+}
+
+message Demand {
+  string financial_year = 1;          // FY context
+  double outstanding_demand_amount = 2; // Total unpaid demand
+  string date_of_demand = 3;          // Notice issue date
+}
+
+// ==========================================
+// Part B7: Any Other Information
+// ==========================================
+message PartB7OtherInfo {
+  repeated OtherSalary salaries = 1;  // TDS Annexure II Salary reports
+}
+
+message OtherSalary {
+  string info_code = 1;               // "TDS-Ann II-SAL"
+  string info_description = 2;        // Description
+  string information_source = 3;      // Employer corporate details
+  string employment_start_date = 4;   // Joining date
+  string employment_end_date = 5;     // Exit date
+  double gross_salary_us_17_1 = 6;    // Base Salary
+  double value_of_perquisites_us_17_2 = 7; // Perks
+  double profits_in_lieu_of_salary_us_17_3 = 8; // Retiral payouts / bonuses
+  string gross_salary_status = 9;     // Status
+}

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package tax.common;
+
+import "google/protobuf/timestamp.proto";
+
+message DocumentMetadata {
+  string financial_year = 1;         // e.g., "2025-26"
+  optional string download_id = 2;   // e.g., "CYXPA6852K202607050242"
+  google.protobuf.Timestamp generation_date = 3; // Generation timestamp
+  optional string ip_address = 4;    // Client IP captured on download
+}
+
+message TaxpayerProfile {
+  string pan = 1;                     // Permanent Account Number
+  optional string aadhaar_masked = 2; // Masked Aadhaar (e.g., "XXXX XXXX 0899")
+  string name = 3;                    // Name of Assessee
+  string date_of_birth = 4;           // Format: DD/MM/YYYY or YYYY-MM-DD
+  optional string mobile_number = 5;  // 10-digit mobile number
+  optional string email_address = 6;  // Taxpayer email
+  optional string address = 7;        // Full residential address
+}

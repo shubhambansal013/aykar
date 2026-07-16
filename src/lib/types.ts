@@ -279,9 +279,9 @@ export interface AISData {
       informationSource: string;
       employmentStartDate: string;
       employmentEndDate: string;
-      grossSalaryUs_17_1: number;
-      valueOfPerquisitesUs_17_2: number;
-      profitsInLieuOfSalaryUs_17_3: number;
+      gross_salary_us_17_1: number;
+      value_of_perquisites_us_17_2: number;
+      profits_in_lieu_of_salary_us_17_3: number;
       grossSalaryStatus: string;
     }>;
   };

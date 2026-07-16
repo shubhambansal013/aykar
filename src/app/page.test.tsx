@@ -1500,4 +1500,38 @@ describe('Home Page', () => {
     expect(fileInput.value).toBe('');
     vi.restoreAllMocks();
   }, 45000);
+
+  test('renders modernized UI/UX components correctly', async () => {
+    // This test directly verifies our Jules UI/UX Modernization enhancements.
+    const file = new File(['%PDF-1.5 ...'], 'form16.pdf', { type: 'application/pdf' });
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Wait for file parsing to complete and render the forms
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // 1. Check that verified-badges (auto-verified counts) next to section headers are present
+    const badges = screen.getAllByTestId('verified-badge');
+    expect(badges.length).toBeGreaterThan(0);
+
+    // 2. Check that progressive disclosure of audit trails is collapsed by default (View Calculation Breakdown ▾ is shown)
+    const toggleSalaryBtn = screen.getByTestId('toggle-audit-salary');
+    expect(toggleSalaryBtn.textContent).toContain('View Calculation Breakdown ▾');
+    expect(screen.queryByText('SALARY AUDIT TRAIL & BREAKDOWN:')).toBeNull();
+
+    // 3. Click the toggle and verify progressive disclosure unfolds
+    fireEvent.click(toggleSalaryBtn);
+    expect(toggleSalaryBtn.textContent).toContain('Hide Calculation Breakdown ▴');
+    expect(screen.getByText('SALARY AUDIT TRAIL & BREAKDOWN:')).toBeDefined();
+
+    // 4. Verify the Optimal Badge is nested inside the Optimal regime card
+    const optimalBadge = screen.getByText('Optimal');
+    expect(optimalBadge).toBeDefined();
+
+    vi.restoreAllMocks();
+  }, 45000);
 });

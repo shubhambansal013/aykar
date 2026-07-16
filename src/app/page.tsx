@@ -57,8 +57,200 @@ import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-import { CueTextField } from '@/app/components/FieldCues';
+import { CueTextField, getSectionVerifiedCount } from '@/app/components/FieldCues';
 import { AssistantMessage } from '@/app/components/AssistantMessage';
+
+const SectionHeaderBadge = ({ count, mode }: { count: number; mode: 'light' | 'dark' }) => {
+  if (count === 0) return null;
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(2, 132, 199, 0.1)',
+        color: mode === 'dark' ? '#38bdf8' : '#0284c7',
+        fontWeight: 'bold',
+        fontSize: '0.725rem',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.5,
+        border: 'none',
+        verticalAlign: 'middle',
+        ml: 1.5,
+      }}
+      data-testid="verified-badge"
+    >
+      ✓ {count} fields auto-verified
+    </Paper>
+  );
+};
+
+interface SectionAuditTrailProps {
+  section: 'salary' | 'other' | 'deductions' | 'summary';
+  extractedData: Form16Data | null;
+  mode: 'light' | 'dark';
+  selectedRegime: 'OLD' | 'NEW';
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const SectionAuditTrail = ({
+  section,
+  extractedData,
+  mode,
+  selectedRegime,
+  isExpanded,
+  onToggle,
+}: SectionAuditTrailProps) => {
+  if (!extractedData) return null;
+
+  const recon = extractedData as ReconciledTaxData;
+  const salary = recon.salary || {};
+  const otherIncome = recon.otherIncome || {};
+  const tdsSalary = recon.taxCredits?.tdsSalary || 0;
+  const tdsOther = recon.taxCredits?.tdsOther || 0;
+  const tcs = recon.taxCredits?.tcs || 0;
+  const advanceTax = recon.taxCredits?.advanceTax || 0;
+  const selfAssessmentTax = recon.taxCredits?.selfAssessmentTax || 0;
+
+  const totalTaxesPaid = advanceTax + tdsSalary + tdsOther + tcs + selfAssessmentTax;
+  const taxPayable = extractedData.taxPayable || 0;
+  const balanceTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
+  const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
+
+  let innerContent = null;
+
+  if (section === 'salary') {
+    innerContent = (
+      <Paper variant="outlined" sx={{ p: 2, mt: 1, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+          SALARY AUDIT TRAIL & BREAKDOWN:
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Gross Salary:</strong> ₹{salary.grossSalary?.toLocaleString('en-IN')} [Source: <strong>Form-16 Part B / 17(1) + 17(2) + 17(3)</strong>]
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Exempt Allowances:</strong> ₹{salary.totalExemptAllowances?.toLocaleString('en-IN')} [Source: <strong>Form-16 Section 10 Exemptions</strong>] {selectedRegime === 'NEW' ? '(Zeroed-out under NEW regime)' : ''}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Net Salary:</strong> Gross (₹{salary.grossSalary?.toLocaleString('en-IN')}) - Exemptions (₹{salary.totalExemptAllowances?.toLocaleString('en-IN')}) = <strong>₹{salary.netSalary?.toLocaleString('en-IN')}</strong>
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Deductions u/s 16:</strong> ₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')} [Standard Deduction: ₹{salary.standardDeduction16ia?.toLocaleString('en-IN')} + Entertainment: ₹{salary.entertainmentAllowance16ii?.toLocaleString('en-IN')} + PTax: ₹{salary.professionalTax16iii?.toLocaleString('en-IN')}]
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+            • <strong>Final Chargeable Salary:</strong> Net Salary (₹{salary.netSalary?.toLocaleString('en-IN')}) - Deductions u/s 16 (₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')}) = <strong>₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}</strong>
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  } else if (section === 'other') {
+    innerContent = (
+      <Paper variant="outlined" sx={{ p: 2, mt: 1, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+          OTHER INCOME AUDIT TRAIL & BREAKDOWN:
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>House Property Income:</strong> ₹{otherIncome.houseProperty?.toLocaleString('en-IN')} [Source: <strong>Form-16 Interest on Home Loan</strong>] {selectedRegime === 'NEW' ? '(Blocked under NEW regime unless positive/let-out)' : ''}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Other Sources:</strong> ₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')} [Source: <strong>AIS / TIS Interest / Dividends</strong>]
+          </Typography>
+          <Box sx={{ pl: 2, display: 'flex', flexDirection: 'column' }}>
+            {(otherIncome.otherSources || []).map((os, idx) => (
+              <Typography key={idx} variant="caption" color="textSecondary">
+                - {os.nature}: ₹{os.amount?.toLocaleString('en-IN')}
+              </Typography>
+            ))}
+          </Box>
+          <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+            • <strong>Total HP & Other Income:</strong> HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{( (otherIncome.houseProperty || 0) + (otherIncome.totalOtherSources || 0) ).toLocaleString('en-IN')}</strong>
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  } else if (section === 'deductions') {
+    innerContent = (
+      <Paper variant="outlined" sx={{ p: 2, mt: 1, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+          CHAPTER VI-A DEDUCTIONS AUDIT TRAIL:
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Deductions Breakdowns:</strong> 80C: ₹{extractedData.deductions80C?.toLocaleString('en-IN')} | 80CCC: ₹{extractedData.deductions80CCC?.toLocaleString('en-IN')} | 80CCD(1B): ₹{extractedData.deductions80CCD1B?.toLocaleString('en-IN')} | 80CCD(2) Employer: ₹{extractedData.deductions80CCD2?.toLocaleString('en-IN')} | 80D Medical: ₹{extractedData.deductions80D?.toLocaleString('en-IN')} | 80TTA Interest: ₹{extractedData.deductions80TTA?.toLocaleString('en-IN')}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Sum of Invested Deductions:</strong> <strong>₹{extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')}</strong> [Source: <strong>Form-16 Section 80C/80D Declarations</strong>]
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+            • <strong>Allowed Deductions:</strong> {selectedRegime === 'NEW' ? `₹${(extractedData.deductions80CCD2 || 0).toLocaleString('en-IN')} (Only 80CCD(2) is permitted under New Regime)` : `₹${extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')} (All permitted under Old Regime)`}
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  } else if (section === 'summary') {
+    innerContent = (
+      <Paper variant="outlined" sx={{ p: 2, mt: 1, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+          TAX COMPUTATION & REFUND BREAKDOWN:
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Total Taxable Income:</strong> GTI (₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (extractedData.deductions80CCD2 || 0) : (extractedData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{extractedData.totalIncome?.toLocaleString('en-IN')}</strong>
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Calculated Tax Liability:</strong> <strong>₹{taxPayable?.toLocaleString('en-IN')}</strong> (includes slab taxes, cess, and rebates)
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            • <strong>Total Taxes Paid & Credits:</strong> TDS (₹{(tdsSalary + tdsOther).toLocaleString('en-IN')} [Source: <strong>Form-16/26AS/AIS</strong>]) + TCS (₹{tcs.toLocaleString('en-IN')} [Source: <strong>26AS</strong>]) + Advance Tax (₹{advanceTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) + Self-Assessment Tax (₹{selfAssessmentTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) = <strong>₹{totalTaxesPaid.toLocaleString('en-IN')}</strong>
+          </Typography>
+          {refundDue > 0 ? (
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'success.main', mt: 0.5 }}>
+              • <strong>Refund Due Calculation:</strong> Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) - Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) = <strong>₹{refundDue.toLocaleString('en-IN')} (Eligible for Refund)</strong>
+            </Typography>
+          ) : (
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'error.main', mt: 0.5 }}>
+              • <strong>Balance Tax Payable Calculation:</strong> Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) - Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) = <strong>₹{balanceTaxPayable.toLocaleString('en-IN')} (Payable)</strong>
+            </Typography>
+          )}
+        </Box>
+      </Paper>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 1.5, mb: 1 }}>
+      <Button
+        size="small"
+        variant="text"
+        onClick={onToggle}
+        sx={{
+          fontSize: '0.725rem',
+          color: 'primary.main',
+          p: 0,
+          minWidth: 0,
+          textTransform: 'none',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          fontWeight: 600,
+          '&:hover': { background: 'none', textDecoration: 'underline' }
+        }}
+        data-testid={`toggle-audit-${section}`}
+      >
+        {isExpanded ? 'Hide Calculation Breakdown ▴' : 'View Calculation Breakdown ▾'}
+      </Button>
+      {isExpanded && innerContent}
+    </Box>
+  );
+};
 
 interface Attachment {
   name: string;
@@ -77,6 +269,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
   const [selectedRegime, setSelectedRegime] = useState<'OLD' | 'NEW'>('NEW');
+  const [expandedTrails, setExpandedTrails] = useState<Record<string, boolean>>({});
 
   // Baseline trackings for audit and status highlights
   const [originalParsedData, setOriginalParsedData] = useState<Form16Data | null>(null);
@@ -201,6 +394,24 @@ export default function Home() {
     const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
     return geminiProvider ? geminiProvider.models : [];
   }, []);
+
+  const salaryDiscrepancies = useMemo(() => {
+    if (!extractedData) return [];
+    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
+    return disc.filter(d => d.toLowerCase().includes('salary') || d.toLowerCase().includes('income discrepancy'));
+  }, [extractedData]);
+
+  const tdsDiscrepancies = useMemo(() => {
+    if (!extractedData) return [];
+    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
+    return disc.filter(d => d.toLowerCase().includes('tds') || d.toLowerCase().includes('tan'));
+  }, [extractedData]);
+
+  const otherDiscrepancies = useMemo(() => {
+    if (!extractedData) return [];
+    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
+    return disc.filter(d => !d.toLowerCase().includes('salary') && !d.toLowerCase().includes('income discrepancy') && !d.toLowerCase().includes('tds') && !d.toLowerCase().includes('tan'));
+  }, [extractedData]);
 
   // MUI Theme Memo
   const theme = useMemo(
@@ -698,136 +909,6 @@ export default function Home() {
     setIsDragging(true);
   };
 
-  // Visual audit trail / calculation breakdown component helper
-  const SectionAuditTrail = ({ section }: { section: 'salary' | 'other' | 'deductions' | 'summary' }) => {
-    if (!extractedData) return null;
-
-    const recon = extractedData as ReconciledTaxData;
-    const salary = recon.salary || {};
-    const otherIncome = recon.otherIncome || {};
-    const tdsSalary = recon.taxCredits?.tdsSalary || 0;
-    const tdsOther = recon.taxCredits?.tdsOther || 0;
-    const tcs = recon.taxCredits?.tcs || 0;
-    const advanceTax = recon.taxCredits?.advanceTax || 0;
-    const selfAssessmentTax = recon.taxCredits?.selfAssessmentTax || 0;
-
-    const totalTaxesPaid = advanceTax + tdsSalary + tdsOther + tcs + selfAssessmentTax;
-    const taxPayable = extractedData.taxPayable || 0;
-    const balanceTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
-    const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
-
-    if (section === 'salary') {
-      return (
-        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
-            SALARY AUDIT TRAIL & BREAKDOWN:
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Gross Salary:</strong> ₹{salary.grossSalary?.toLocaleString('en-IN')} [Source: <strong>Form-16 Part B / 17(1) + 17(2) + 17(3)</strong>]
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Exempt Allowances:</strong> ₹{salary.totalExemptAllowances?.toLocaleString('en-IN')} [Source: <strong>Form-16 Section 10 Exemptions</strong>] {selectedRegime === 'NEW' ? '(Zeroed-out under NEW regime)' : ''}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Net Salary:</strong> Gross (₹{salary.grossSalary?.toLocaleString('en-IN')}) - Exemptions (₹{salary.totalExemptAllowances?.toLocaleString('en-IN')}) = <strong>₹{salary.netSalary?.toLocaleString('en-IN')}</strong>
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Deductions u/s 16:</strong> ₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')} [Standard Deduction: ₹{salary.standardDeduction16ia?.toLocaleString('en-IN')} + Entertainment: ₹{salary.entertainmentAllowance16ii?.toLocaleString('en-IN')} + PTax: ₹{salary.professionalTax16iii?.toLocaleString('en-IN')}]
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-              • <strong>Final Chargeable Salary:</strong> Net Salary (₹{salary.netSalary?.toLocaleString('en-IN')}) - Deductions u/s 16 (₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')}) = <strong>₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}</strong>
-            </Typography>
-          </Box>
-        </Paper>
-      );
-    }
-
-    if (section === 'other') {
-      return (
-        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
-            OTHER INCOME AUDIT TRAIL & BREAKDOWN:
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>House Property Income:</strong> ₹{otherIncome.houseProperty?.toLocaleString('en-IN')} [Source: <strong>Form-16 Interest on Home Loan</strong>] {selectedRegime === 'NEW' ? '(Blocked under NEW regime unless positive/let-out)' : ''}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Other Sources:</strong> ₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')} [Source: <strong>AIS / TIS Interest / Dividends</strong>]
-            </Typography>
-            <Box sx={{ pl: 2, display: 'flex', flexDirection: 'column' }}>
-              {(otherIncome.otherSources || []).map((os, idx) => (
-                <Typography key={idx} variant="caption" color="textSecondary">
-                  - {os.nature}: ₹{os.amount?.toLocaleString('en-IN')}
-                </Typography>
-              ))}
-            </Box>
-            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-              • <strong>Total HP & Other Income:</strong> HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{( (otherIncome.houseProperty || 0) + (otherIncome.totalOtherSources || 0) ).toLocaleString('en-IN')}</strong>
-            </Typography>
-          </Box>
-        </Paper>
-      );
-    }
-
-    if (section === 'deductions') {
-      return (
-        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
-            CHAPTER VI-A DEDUCTIONS AUDIT TRAIL:
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Deductions Breakdowns:</strong> 80C: ₹{extractedData.deductions80C?.toLocaleString('en-IN')} | 80CCC: ₹{extractedData.deductions80CCC?.toLocaleString('en-IN')} | 80CCD(1B): ₹{extractedData.deductions80CCD1B?.toLocaleString('en-IN')} | 80CCD(2) Employer: ₹{extractedData.deductions80CCD2?.toLocaleString('en-IN')} | 80D Medical: ₹{extractedData.deductions80D?.toLocaleString('en-IN')} | 80TTA Interest: ₹{extractedData.deductions80TTA?.toLocaleString('en-IN')}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Sum of Invested Deductions:</strong> <strong>₹{extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')}</strong> [Source: <strong>Form-16 Section 80C/80D Declarations</strong>]
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-              • <strong>Allowed Deductions:</strong> {selectedRegime === 'NEW' ? `₹${(extractedData.deductions80CCD2 || 0).toLocaleString('en-IN')} (Only 80CCD(2) is permitted under New Regime)` : `₹${extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')} (All permitted under Old Regime)`}
-            </Typography>
-          </Box>
-        </Paper>
-      );
-    }
-
-    if (section === 'summary') {
-      return (
-        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
-            TAX COMPUTATION & REFUND BREAKDOWN:
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Total Taxable Income:</strong> GTI (₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (extractedData.deductions80CCD2 || 0) : (extractedData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{extractedData.totalIncome?.toLocaleString('en-IN')}</strong>
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Calculated Tax Liability:</strong> <strong>₹{taxPayable?.toLocaleString('en-IN')}</strong> (includes slab taxes, cess, and rebates)
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block' }}>
-              • <strong>Total Taxes Paid & Credits:</strong> TDS (₹{(tdsSalary + tdsOther).toLocaleString('en-IN')} [Source: <strong>Form-16/26AS/AIS</strong>]) + TCS (₹{tcs.toLocaleString('en-IN')} [Source: <strong>26AS</strong>]) + Advance Tax (₹{advanceTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) + Self-Assessment Tax (₹{selfAssessmentTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) = <strong>₹{totalTaxesPaid.toLocaleString('en-IN')}</strong>
-            </Typography>
-            {refundDue > 0 ? (
-              <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'success.main', mt: 0.5 }}>
-                • <strong>Refund Due Calculation:</strong> Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) - Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) = <strong>₹{refundDue.toLocaleString('en-IN')} (Eligible for Refund)</strong>
-              </Typography>
-            ) : (
-              <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'error.main', mt: 0.5 }}>
-                • <strong>Balance Tax Payable Calculation:</strong> Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) - Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) = <strong>₹{balanceTaxPayable.toLocaleString('en-IN')} (Payable)</strong>
-              </Typography>
-            )}
-          </Box>
-        </Paper>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -934,12 +1015,12 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Reconciliation Alerts */}
-              {extractedData && (extractedData as ReconciledTaxData).discrepancies && ((extractedData as ReconciledTaxData).discrepancies?.length ?? 0) > 0 && (
+              {/* Miscellaneous/Other Reconciliation Alerts */}
+              {extractedData && otherDiscrepancies.length > 0 && (
                 <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
                   <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
                   <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                    {(extractedData as ReconciledTaxData).discrepancies?.map((disc, i) => (
+                    {otherDiscrepancies.map((disc, i) => (
                       <li key={i}>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
                       </li>
@@ -1026,16 +1107,39 @@ export default function Home() {
                           <Paper variant="outlined" sx={{
                             p: 2,
                             borderRadius: 1.5,
-                            borderColor: selectedRegime === 'OLD' ? 'primary.main' : 'divider',
-                            borderWidth: selectedRegime === 'OLD' ? 2 : 1,
-                            bgcolor: selectedRegime === 'OLD' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
-                            cursor: 'pointer'
+                            borderColor: selectedRegime === 'OLD' ? 'primary.main' : (comparison.optimalRegime === 'OLD' ? 'success.light' : 'divider'),
+                            borderWidth: selectedRegime === 'OLD' ? 2 : (comparison.optimalRegime === 'OLD' ? 1.5 : 1),
+                            bgcolor: selectedRegime === 'OLD'
+                              ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)')
+                              : (comparison.optimalRegime === 'OLD'
+                                  ? (mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.03)')
+                                  : 'background.paper'
+                                ),
+                            cursor: 'pointer',
+                            opacity: selectedRegime === 'OLD' ? 1 : 0.6,
+                            transition: 'opacity 0.2s, border-color 0.2s',
                           }} onClick={() => {
                             setSelectedRegime('OLD');
                             setExtractedData((prev) => prev ? recalculateAllFormFields(prev, 'OLD') : null);
                           }} data-testid="select-old-regime">
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Old Tax Regime</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Old Tax Regime</Typography>
+                                {comparison.optimalRegime === 'OLD' && (
+                                  <Paper variant="outlined" sx={{
+                                    px: 1,
+                                    py: 0.1,
+                                    borderRadius: 1,
+                                    bgcolor: 'success.main',
+                                    color: 'success.contrastText',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.65rem',
+                                    border: 'none',
+                                  }}>
+                                    Optimal
+                                  </Paper>
+                                )}
+                              </Box>
                               <Checkbox checked={selectedRegime === 'OLD'} readOnly size="small" />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1073,16 +1177,39 @@ export default function Home() {
                           <Paper variant="outlined" sx={{
                             p: 2,
                             borderRadius: 1.5,
-                            borderColor: selectedRegime === 'NEW' ? 'primary.main' : 'divider',
-                            borderWidth: selectedRegime === 'NEW' ? 2 : 1,
-                            bgcolor: selectedRegime === 'NEW' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
-                            cursor: 'pointer'
+                            borderColor: selectedRegime === 'NEW' ? 'primary.main' : (comparison.optimalRegime === 'NEW' ? 'success.light' : 'divider'),
+                            borderWidth: selectedRegime === 'NEW' ? 2 : (comparison.optimalRegime === 'NEW' ? 1.5 : 1),
+                            bgcolor: selectedRegime === 'NEW'
+                              ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)')
+                              : (comparison.optimalRegime === 'NEW'
+                                  ? (mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.03)')
+                                  : 'background.paper'
+                                ),
+                            cursor: 'pointer',
+                            opacity: selectedRegime === 'NEW' ? 1 : 0.6,
+                            transition: 'opacity 0.2s, border-color 0.2s',
                           }} onClick={() => {
                             setSelectedRegime('NEW');
                             setExtractedData((prev) => prev ? recalculateAllFormFields(prev, 'NEW') : null);
                           }} data-testid="select-new-regime">
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>New Tax Regime</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>New Tax Regime</Typography>
+                                {comparison.optimalRegime === 'NEW' && (
+                                  <Paper variant="outlined" sx={{
+                                    px: 1,
+                                    py: 0.1,
+                                    borderRadius: 1,
+                                    bgcolor: 'success.main',
+                                    color: 'success.contrastText',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.65rem',
+                                    border: 'none',
+                                  }}>
+                                    Optimal
+                                  </Paper>
+                                )}
+                              </Box>
                               <Checkbox checked={selectedRegime === 'NEW'} readOnly size="small" />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1157,8 +1284,9 @@ export default function Home() {
                       <Grid container spacing={2}>
                         {/* 1. General & Filer Information */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             General & Filer Information
+                            <SectionHeaderBadge count={getSectionVerifiedCount('general', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1202,9 +1330,22 @@ export default function Home() {
 
                         {/* 2. Detailed Salary & Deductions u/s 16 */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             Salary Income Details (₹)
+                            <SectionHeaderBadge count={getSectionVerifiedCount('salary', extractedData)} mode={mode} />
                           </Typography>
+                          {salaryDiscrepancies.length > 0 && (
+                            <Alert severity="warning" variant="outlined" sx={{ mb: 2, borderRadius: 1.5, py: 0.5 }}>
+                              <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Section Discrepancy Alert:</AlertTitle>
+                              <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
+                                {salaryDiscrepancies.map((disc, i) => (
+                                  <li key={i}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
+                                  </li>
+                                ))}
+                              </ul>
+                            </Alert>
+                          )}
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
                               <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
@@ -1240,13 +1381,21 @@ export default function Home() {
                               <CueTextField label="Income Chargeable under head Salaries" type="number" path="salary.incomeChargeableUnderHeadSalaries" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.incomeChargeableUnderHeadSalaries', v)} />
                             </Grid>
                           </Grid>
-                          <SectionAuditTrail section="salary" />
+                          <SectionAuditTrail
+                            section="salary"
+                            extractedData={extractedData}
+                            mode={mode}
+                            selectedRegime={selectedRegime}
+                            isExpanded={!!expandedTrails['salary']}
+                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, salary: !prev['salary'] }))}
+                          />
                         </Grid>
 
                         {/* 3. Other Income */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             Other Income Details (₹)
+                            <SectionHeaderBadge count={getSectionVerifiedCount('other', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1256,13 +1405,21 @@ export default function Home() {
                               <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
                             </Grid>
                           </Grid>
-                          <SectionAuditTrail section="other" />
+                          <SectionAuditTrail
+                            section="other"
+                            extractedData={extractedData}
+                            mode={mode}
+                            selectedRegime={selectedRegime}
+                            isExpanded={!!expandedTrails['other']}
+                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, other: !prev['other'] }))}
+                          />
                         </Grid>
 
                         {/* 4. Chapter VI-A Deductions */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             Chapter VI-A Deductions (₹)
+                            <SectionHeaderBadge count={getSectionVerifiedCount('deductions', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1296,14 +1453,34 @@ export default function Home() {
                               <CueTextField label="Total Chapter VI-A Deductions" type="number" path="totalChapterVIADeductions" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('totalChapterVIADeductions', v)} />
                             </Grid>
                           </Grid>
-                          <SectionAuditTrail section="deductions" />
+                          <SectionAuditTrail
+                            section="deductions"
+                            extractedData={extractedData}
+                            mode={mode}
+                            selectedRegime={selectedRegime}
+                            isExpanded={!!expandedTrails['deductions']}
+                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, deductions: !prev['deductions'] }))}
+                          />
                         </Grid>
 
                         {/* 5. Tax Paid & Credits */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             Taxes Paid & Credits (₹)
+                            <SectionHeaderBadge count={getSectionVerifiedCount('taxCredits', extractedData)} mode={mode} />
                           </Typography>
+                          {tdsDiscrepancies.length > 0 && (
+                            <Alert severity="warning" variant="outlined" sx={{ mb: 2, borderRadius: 1.5, py: 0.5 }}>
+                              <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Section Discrepancy Alert:</AlertTitle>
+                              <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
+                                {tdsDiscrepancies.map((disc, i) => (
+                                  <li key={i}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
+                                  </li>
+                                ))}
+                              </ul>
+                            </Alert>
+                          )}
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
                               <CueTextField label="TDS on Salary (u/s 192)" type="number" path="taxCredits.tdsSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tdsSalary', v)} />
@@ -1325,8 +1502,9 @@ export default function Home() {
 
                         {/* 6. Summary */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             Tax Computation Summary (₹)
+                            <SectionHeaderBadge count={getSectionVerifiedCount('summary', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1339,7 +1517,14 @@ export default function Home() {
                               <CueTextField label="Tax Payable" type="number" path="taxPayable" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxPayable', v)} />
                             </Grid>
                           </Grid>
-                          <SectionAuditTrail section="summary" />
+                          <SectionAuditTrail
+                            section="summary"
+                            extractedData={extractedData}
+                            mode={mode}
+                            selectedRegime={selectedRegime}
+                            isExpanded={!!expandedTrails['summary']}
+                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, summary: !prev['summary'] }))}
+                          />
                         </Grid>
                       </Grid>
 

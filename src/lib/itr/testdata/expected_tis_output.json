@@ -1,0 +1,146 @@
+{
+  "metadata": {
+    "financial_year": "2025-26",
+    "assessment_year": "2026-27"
+  },
+  "profile": {
+    "pan": "CYXPA6852K",
+    "name": "TARUSH ARORA",
+    "address": "7/90, GEETA COLONY, DELHI, 110031, DELHI"
+  },
+  "categories": [
+    {
+      "category_name": "Salary",
+      "processed_by_system": 1833722.0,
+      "accepted_by_taxpayer": 1833722.0
+    },
+    {
+      "category_name": "Interest from savings bank",
+      "processed_by_system": 1829.0,
+      "accepted_by_taxpayer": 1829.0
+    },
+    {
+      "category_name": "Interest from deposit",
+      "processed_by_system": 2620.0,
+      "accepted_by_taxpayer": 2620.0
+    },
+    {
+      "category_name": "Sale of securities and units of mutual fund",
+      "processed_by_system": 52840.0,
+      "accepted_by_taxpayer": 52840.0
+    },
+    {
+      "category_name": "Purchase of securities and units of mutual funds",
+      "processed_by_system": 13499.0,
+      "accepted_by_taxpayer": 13499.0
+    }
+  ],
+  "details": [
+    {
+      "parent_category": "Salary",
+      "part": "Other",
+      "information_description": "Salary (TDS Annexure II)",
+      "information_source": "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)",
+      "amount_description": "Gross Salary Received",
+      "reported_by_source": 984690.0,
+      "processed_by_system": 984690.0,
+      "accepted_by_taxpayer": 984690.0
+    },
+    {
+      "parent_category": "Salary",
+      "part": "TDS/TCS",
+      "information_description": "Salary received (Section 192)",
+      "information_source": "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)",
+      "amount_description": "Amount paid/ credited",
+      "reported_by_source": 984690.0
+    },
+    {
+      "parent_category": "Salary",
+      "part": "Other",
+      "information_description": "Salary (TDS Annexure II)",
+      "information_source": "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)",
+      "amount_description": "Gross Salary Received",
+      "reported_by_source": 849032.0,
+      "processed_by_system": 849032.0,
+      "accepted_by_taxpayer": 849032.0
+    },
+    {
+      "parent_category": "Salary",
+      "part": "TDS/TCS",
+      "information_description": "Salary received (Section 192)",
+      "information_source": "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)",
+      "amount_description": "Amount paid/ credited",
+      "reported_by_source": 849032.0
+    },
+    {
+      "parent_category": "Interest from savings bank",
+      "part": "SFT",
+      "information_description": "Interest income (SFT-016) Savings",
+      "information_source": "HDFC BANK LIMITED (AAACH2702H.AB772)",
+      "amount_description": "Interest",
+      "reported_by_source": 1191.0,
+      "processed_by_system": 1191.0,
+      "accepted_by_taxpayer": 1191.0
+    },
+    {
+      "parent_category": "Interest from savings bank",
+      "part": "SFT",
+      "information_description": "Interest income (SFT-016) Savings",
+      "information_source": "STATE BANK OF INDIA (AAACS8577K.AB703)",
+      "amount_description": "Interest",
+      "reported_by_source": 280.0,
+      "processed_by_system": 280.0,
+      "accepted_by_taxpayer": 280.0
+    },
+    {
+      "parent_category": "Interest from savings bank",
+      "part": "SFT",
+      "information_description": "Interest income (SFT-016) Savings",
+      "information_source": "BANK OF BARODA (AAACB1534F.AB566)",
+      "amount_description": "Interest",
+      "reported_by_source": 229.0,
+      "processed_by_system": 229.0,
+      "accepted_by_taxpayer": 229.0
+    },
+    {
+      "parent_category": "Interest from savings bank",
+      "part": "SFT",
+      "information_description": "Interest income (SFT-016) Savings",
+      "information_source": "PUNJAB AND SIND BANK (AAACP1206G.AB770)",
+      "amount_description": "Interest",
+      "reported_by_source": 129.0,
+      "processed_by_system": 129.0,
+      "accepted_by_taxpayer": 129.0
+    },
+    {
+      "parent_category": "Interest from deposit",
+      "part": "SFT",
+      "information_description": "Interest income (SFT-016)-Term Deposit",
+      "information_source": "HDFC BANK LIMITED (AAACH2702H.AB772)",
+      "amount_description": "Interest",
+      "reported_by_source": 2620.0,
+      "processed_by_system": 2620.0,
+      "accepted_by_taxpayer": 2620.0
+    },
+    {
+      "parent_category": "Sale of securities and units of mutual fund",
+      "part": "SFT",
+      "information_description": "Sale of listed equity share (Depository)",
+      "information_source": "CENTRAL DEPOSITORY SERVICES(I) LIMITED (AAACC6233AMUMC09975A)",
+      "amount_description": "Value of consideration",
+      "reported_by_source": 52840.0,
+      "processed_by_system": 52840.0,
+      "accepted_by_taxpayer": 52840.0
+    },
+    {
+      "parent_category": "Purchase of securities and units of mutual funds",
+      "part": "SFT",
+      "information_description": "Purchase of mutual funds (SFT-018)",
+      "information_source": "Computer Age Management Services Limited - ICICI Prudential Mutual Fund(P) (AAACC3035G.AZ670)",
+      "amount_description": "Total purchase amount",
+      "reported_by_source": 13499.0,
+      "processed_by_system": 13499.0,
+      "accepted_by_taxpayer": 13499.0
+    }
+  ]
+}

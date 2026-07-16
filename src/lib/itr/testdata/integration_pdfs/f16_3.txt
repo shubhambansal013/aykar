@@ -1,0 +1,146 @@
+FORM NO. 16
+ PART B
+ Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
+of specified senior citizen under section 194P
+ Certificate No.    UXBGJYA  Last updated on   17-May-2026
+Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
+ PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED
+16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD,
+ TARUSH ARORA
+BANGALORE - 560025
+7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
+Karnataka
++(91)80-8197124546
+SHCHOUDHARY@PTC.COM
+ PAN of the Deductor   TAN of the Deductor   PAN of the Employee/Specified senior citizen
+ AABCP2629J   BLRP15144D   CYXPA6852K
+ CIT (TDS)   Assessment Year   Period with the Employer
+ From To
+ The Commissioner of Income Tax (TDS)
+Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road ,   2026-27  27-Oct-2025  31-Mar-2026
+Ganganagar, Bangalore - 560032
+ Annexure - I
+ Details of Salary Paid and any other income and tax deducted
+A Whether opting out of taxation u/s 115BAC(1A)?     No
+1.   Gross Salary  Rs.   Rs.
+(a)   Salary as per provisions contained in section 17(1)  849032.00
+Value of perquisites under section 17(2) (as per Form No. 12BA,
+(b)    0.00
+wherever applicable)
+Profits in lieu of salary under section 17(3) (as per Form No.
+(c)    0.00
+12BA, wherever applicable)
+(d)   Total    849032.00
+(e)   Reported total amount of salary received from other employer(s)     0.00
+2.   Less: Allowances to the extent exempt under section 10
+(a) Travel concession or assistance under section 10(5)  0.00
+(b) Death-cum-retirement gratuity under section 10(10)  0.00
+(c) Commuted value of pension under section 10(10A)  0.00
+Cash equivalent of leave salary encashment under section 10
+(d)  0.00
+(10AA)
+(e)   House rent allowance under section 10(13A)  0.00
+(f)   Other special allowances under section 10(14)     0.00
+ Page 1 of 3
+Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
+ [Note: Break-up to be prepared by employer and issued to the
+(g)
+employee, where applicable, before furnishing of Part B to the
+employee]
+ (h) Total amount of any other exemption under section 10  0.00
+Total amount of exemption claimed under section 10
+(i)  0.00
+[2(a)+2(b)+2(c)+2(d)+2(e)+2(f)+2(h)]
+Total amount of salary received from current employer
+3.    849032.00
+[1(d)-2(i)]
+4.   Less: Deductions under section 16
+(a)   Standard deduction under section 16(ia)  75000.00
+(b) Entertainment allowance under section 16(ii)  0.00
+(c) Tax on employment under section 16(iii)     0.00
+5. Total amount of deductions under section 16 [4(a)+4(b)+4(c)]  75000.00
+6. Income chargeable under the head "Salaries" [(3+1(e)-5]  774032.00
+7. Add: Any other income reported by the employee under as per section 192 (2B)
+Income (or admissible loss) from house property reported by
+(a)    0.00
+employee offered for TDS
+(b) Income under the head Other Sources offered for TDS  0.00
+Total amount of other income reported by the employee
+8.  0.00
+[7(a)+7(b)]
+9. Gross total income (6+8)   774032.00
+10. Deductions under Chapter VI-A  Gross Amount   Deductible Amount
+Deduction in respect of life insurance premia, contributions to
+(a)  0.00 0.00
+provident fund etc. under section 80C
+Deduction in respect of contribution to certain pension funds
+(b)  0.00 0.00
+under section 80CCC
+Deduction in respect of contribution by taxpayer to pension
+(c)  0.00 0.00
+scheme under section 80CCD (1)
+(d) Total deduction under section 80C, 80CCC and 80CCD(1)  0.00 0.00
+Deductions in respect of amount paid/deposited to notified
+(e)  0.00 0.00
+pension scheme under section 80CCD (1B)
+Deduction in respect of contribution by Employer to pension
+(f)  0.00 0.00
+scheme under section 80CCD (2)
+Deduction in respect of health insurance premia under section
+(g)  0.00 0.00
+80D
+ Page 2 of 3
+Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Deduction in respect of interest on loan taken for higher
+(h)    0.00 0.00
+education under section 80E
+ Deduction in respect of contribution by the employee to Agnipath
+ (i)  0.00 0.00
+Scheme under section 80CCH
+Deduction in respect of contribution by the Central Government
+(j)  0.00 0.00
+to Agnipath Scheme under section 80CCH
+Gross Qualifying Deductible
+Amount Amount Amount
+ Total Deduction in respect of donations to certain funds,
+(k)  0.00   0.00 0.00
+charitable institutions, etc. under section 80G
+Deduction in respect of interest on deposits in savings account
+(l)  0.00   0.00 0.00
+under section 80TTA
+Amount Deductible under any other provision (s) of Chapter VI-A
+ [Note: Break-up to be prepared by employer and issued to the
+(m)
+employee, where applicable , before furnishing of Part B to the
+employee]
+Total of amount deductible under any other provision(s) of
+(n)    0.00 0.00 0.00
+Chapter VI-A
+Aggregate of deductible amount under Chapter VI-A
+11.  0.00
+[10(d)+10(e)+10(f)+10(g)+10(h)+10(i)+10(j)+10(k)+10(l)+10(n)]
+12. Total taxable income (9-11)   774032.00
+13. Tax on total income  18701.60
+14. Rebate under section 87A, if applicable     18701.60
+15.    Surcharge, wherever applicable  0.00
+16.   Health and education cess  0.00
+17. Tax payable (13+15+16-14)  0.00
+18. Less: Relief under section 89 (attach details)  0.00
+Less: Tax deducted at source as per Form No. 12BAA submitted
+19.
+under provisions of section 192(2B)
+0.00
+Less: Tax collected at source as per Form No. 12BAA submitted
+20.
+under provisions of section 192(2B)
+21.    Net tax payable (17-18-19-20)  0.00
+ Verification
+ I, ARVIND LAXMAN BODGAL, son/daughter of LAXMAN RAMCHANDRA BODGAL .Working in the capacity of GROUP
+LEAD ACCOUNTING (Designation) do hereby certify that the information given above is true, complete and correct and is based on
+the books of account, documents, TDS statements, and other available records.
+ Place  BANGALORE  (Signature of person responsible for deduction of tax)
+ Full
+Date   03-Jun-2026   ARVIND LAXMAN BODGAL
+Name:
+ Page 3 of 3

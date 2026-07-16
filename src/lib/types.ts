@@ -177,6 +177,114 @@ export interface AISData {
     section: string;
     amount: number;
   }>;
+  // Expanded fields
+  metadata?: {
+    financialYear: string;
+    assessmentYear: string;
+  };
+  profile?: {
+    pan: string;
+    name: string;
+    address: string;
+  };
+  tdsTcsInfo?: {
+    records: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      totalCount: number;
+      totalAmount: number;
+      transactions: Array<{
+        quarter: string;
+        dateOfPaymentCredit: string;
+        amountPaidCredited: number;
+        tdsDeducted: number;
+        tdsDeposited: number;
+        status: string;
+      }>;
+    }>;
+  };
+  sftInfo?: {
+    savingsInterest: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      reportedOn: string;
+      accountNumber: string;
+      accountType: string;
+      interestAmount: number;
+      status: string;
+    }>;
+    depositInterest: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      reportedOn: string;
+      accountNumber: string;
+      accountType: string;
+      interestAmount: number;
+      status: string;
+    }>;
+    securitySales: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      dateOfSaleTransfer: string;
+      securityName: string;
+      securityCodeIsin: string;
+      securityClass: string;
+      debitType: string;
+      creditType: string;
+      assetType: string;
+      quantity: number;
+      salePricePerUnit: number;
+      salesConsideration: number;
+      costOfAcquisition: number;
+      unitFmv: number;
+      fairMarketValue: number;
+      indexedCostOfAcquisition: number;
+      status: string;
+    }>;
+    securityPurchases: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      quarter: string;
+      totalPurchaseAmount: number;
+      totalSalesValue: number;
+      clientId: string;
+      amcName: string;
+      holderFlag: string;
+      status: string;
+    }>;
+  };
+  taxPayments?: Array<{
+    financialYear: string;
+    majorHead: string;
+    minorHead: string;
+    taxAmount: number;
+    surcharge: number;
+    educationCess: number;
+    others: number;
+    totalAmountPaid: number;
+    bsrCode: string;
+    dateOfDeposit: string;
+    challanSerialNumber: number;
+    challanIdentificationNumber: string;
+  }>;
+  otherInfo?: {
+    salaries: Array<{
+      infoCode: string;
+      infoDescription: string;
+      informationSource: string;
+      employmentStartDate: string;
+      employmentEndDate: string;
+      grossSalaryUs_17_1: number;
+      valueOfPerquisitesUs_17_2: number;
+      profitsInLieuOfSalaryUs_17_3: number;
+      grossSalaryStatus: string;
+    }>;
+  };
 }
 
 export interface TISData {
@@ -184,6 +292,31 @@ export interface TISData {
   interestSavings: number;
   interestDeposit: number;
   dividendIncome: number;
+  // Expanded fields
+  metadata?: {
+    financialYear: string;
+    assessmentYear: string;
+  };
+  profile?: {
+    pan: string;
+    name: string;
+    address: string;
+  };
+  categories?: Array<{
+    categoryName: string;
+    processedBySystem: number;
+    acceptedByTaxpayer: number;
+  }>;
+  details?: Array<{
+    parentCategory: string;
+    part: string;
+    informationDescription: string;
+    informationSource: string;
+    amountDescription: string;
+    reportedBySource: number;
+    processedBySystem?: number;
+    acceptedByTaxpayer?: number;
+  }>;
 }
 
 export interface Form26ASData {
@@ -214,6 +347,16 @@ export interface Form26ASData {
     challanNo: string;
     amount: number;
   }>;
+  // Expanded fields
+  metadata?: {
+    financialYear: string;
+    assessmentYear: string;
+  };
+  profile?: {
+    pan: string;
+    name: string;
+    address: string;
+  };
 }
 
 export interface ReconciledTaxData extends Form16Data {

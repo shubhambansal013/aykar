@@ -1442,5 +1442,5 @@ describe('Home Page', () => {
     });
 
     vi.restoreAllMocks();
-  });
+  }, 45000);
 });

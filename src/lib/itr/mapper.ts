@@ -1,16 +1,18 @@
 import { Form16Data, ITR1_JSON, ReconciledTaxData } from '../types';
+import { calculateOldRegime, calculateNewRegime } from './taxEngine';
 
-export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
+export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW'): ITR1_JSON {
   const now = new Date().toISOString().split('T')[0];
   const activeData = data || {} as Form16Data;
   const employee = activeData.employee || {};
   const employeeName = employee.name || {};
   const salary = activeData.salary || {};
-  const exemptAllowancesUs10 = salary.exemptAllowancesUs10 || [];
   const otherIncome = activeData.otherIncome || {};
 
-  const recon = activeData as ReconciledTaxData;
+  // Compute regime-specific values using our Tax Engine
+  const computed = regime === 'NEW' ? calculateNewRegime(activeData) : calculateOldRegime(activeData);
 
+  const recon = activeData as ReconciledTaxData;
   const credits = recon.taxCredits || {
     tdsSalary: 0,
     tdsOther: 0,
@@ -21,9 +23,38 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
 
   const totalTDS = (credits.tdsSalary || 0) + (credits.tdsOther || 0);
   const totalTaxesPaid = (credits.advanceTax || 0) + totalTDS + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
-  const taxPayable = activeData.taxPayable || 0;
+  const taxPayable = computed.totalTaxPayable;
   const balTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
   const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
+
+  // Set up exempt allowances based on regime
+  const exemptAllowancesUs10 = regime === 'OLD' ? (salary.exemptAllowancesUs10 || []) : [];
+  const totalExemptAllowances = regime === 'OLD' ? (salary.totalExemptAllowances || 0) : 0;
+
+  // Set up Chapter VI-A deductions based on regime
+  const DeductUndChapVIA = regime === 'OLD' ? {
+    Section80C: activeData.deductions80C || 0,
+    Section80CCC: activeData.deductions80CCC || 0,
+    Section80CCDEmployeeOrSE: activeData.deductions80CCD1 || 0,
+    Section80CCD1B: activeData.deductions80CCD1B || 0,
+    Section80CCDEmployer: activeData.deductions80CCD2 || 0,
+    Section80D: activeData.deductions80D || 0,
+    Section80E: activeData.deductions80E || 0,
+    Section80G: activeData.deductions80G || 0,
+    Section80TTA: activeData.deductions80TTA || 0,
+    TotalChapVIADeductions: activeData.totalChapterVIADeductions || 0,
+  } : {
+    Section80C: 0,
+    Section80CCC: 0,
+    Section80CCDEmployeeOrSE: 0,
+    Section80CCD1B: 0,
+    Section80CCDEmployer: activeData.deductions80CCD2 || 0,
+    Section80D: 0,
+    Section80E: 0,
+    Section80G: 0,
+    Section80TTA: 0,
+    TotalChapVIADeductions: activeData.deductions80CCD2 || 0,
+  };
 
   return {
     ITR: {
@@ -66,12 +97,12 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
         },
         FilingStatus: {
           ReturnFileSec: 11,
-          OptOutNewTaxRegime: 'N',
+          OptOutNewTaxRegime: regime === 'OLD' ? 'Y' : 'N',
           AsseseeRepFlg: 'N',
           ItrFilingDueDate: '2026-07-31',
         },
         ITR1_IncomeDeductions: {
-          GrossSalary: salary.grossSalary || 0,
+          GrossSalary: computed.grossSalary,
           Salary: salary.salaryAsPer17_1 || 0,
           PerquisitesValue: salary.perquisites17_2 || 0,
           ProfitsInSalary: salary.profitsInLieu17_3 || 0,
@@ -80,40 +111,29 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
               SalNatureDesc: item ? (item.code || item.nature || '') : '',
               SalOthAmount: item ? (item.amount || 0) : 0,
             })),
-            TotalAllwncExemptUs10: salary.totalExemptAllowances || 0,
+            TotalAllwncExemptUs10: totalExemptAllowances,
           },
-          NetSalary: salary.netSalary || 0,
-          DeductionUs16ia: salary.standardDeduction16ia || 0,
-          EntertainmentAlw16ii: salary.entertainmentAllowance16ii || 0,
-          ProfessionalTaxUs16iii: salary.professionalTax16iii || 0,
-          DeductionUs16: salary.totalDeductionsUs16 || 0,
-          IncomeFromSal: salary.incomeChargeableUnderHeadSalaries || 0,
-          TotalIncomeChargeableUnHP: otherIncome.houseProperty || 0,
-          IncomeOthSrc: otherIncome.totalOtherSources || 0,
-          GrossTotIncome: activeData.grossTotalIncome || 0,
-          GrossTotIncomeIncLTCG112A: activeData.grossTotalIncome || 0,
-          DeductUndChapVIA: {
-            Section80C: activeData.deductions80C || 0,
-            Section80CCC: activeData.deductions80CCC || 0,
-            Section80CCDEmployeeOrSE: activeData.deductions80CCD1 || 0,
-            Section80CCD1B: activeData.deductions80CCD1B || 0,
-            Section80CCDEmployer: activeData.deductions80CCD2 || 0,
-            Section80D: activeData.deductions80D || 0,
-            Section80E: activeData.deductions80E || 0,
-            Section80G: activeData.deductions80G || 0,
-            Section80TTA: activeData.deductions80TTA || 0,
-            TotalChapVIADeductions: activeData.totalChapterVIADeductions || 0,
-          },
-          TotalIncome: activeData.totalIncome || 0,
+          NetSalary: computed.netSalary,
+          DeductionUs16ia: computed.standardDeduction,
+          EntertainmentAlw16ii: regime === 'OLD' ? (salary.entertainmentAllowance16ii || 0) : 0,
+          ProfessionalTaxUs16iii: regime === 'OLD' ? (salary.professionalTax16iii || 0) : 0,
+          DeductionUs16: computed.standardDeduction + (regime === 'OLD' ? (salary.entertainmentAllowance16ii || 0) + (salary.professionalTax16iii || 0) : 0),
+          IncomeFromSal: computed.incomeFromSalaries,
+          TotalIncomeChargeableUnHP: computed.housePropertyIncome,
+          IncomeOthSrc: computed.otherSourcesIncome,
+          GrossTotIncome: computed.grossTotalIncome,
+          GrossTotIncomeIncLTCG112A: computed.grossTotalIncome,
+          DeductUndChapVIA,
+          TotalIncome: computed.totalIncome,
         },
         ITR1_TaxComputation: {
           TotalTaxPayable: taxPayable,
-          Rebate87A: 0,
+          Rebate87A: computed.rebate87A,
           TaxPayableOnRebate: 0,
-          EducationCess: 0,
-          GrossTaxLiability: 0,
+          EducationCess: computed.cess,
+          GrossTaxLiability: computed.taxBeforeRebate,
           Section89: 0,
-          NetTaxLiability: 0,
+          NetTaxLiability: taxPayable,
           TotalIntrstPay: 0,
           IntrstPay: {
             IntrstPayUs234A: 0,
@@ -121,7 +141,7 @@ export function mapForm16ToITR1(data: Form16Data): ITR1_JSON {
             IntrstPayUs234C: 0,
             LateFilingFee234F: 0,
           },
-          TotTaxPlusIntrstPay: 0,
+          TotTaxPlusIntrstPay: taxPayable,
         },
         TaxPaid: {
           TaxesPaid: {

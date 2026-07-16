@@ -9,6 +9,7 @@ import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
+import { compareTaxRegimes } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData } from '@/lib/types';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
@@ -75,6 +76,7 @@ export default function Home() {
   // Document Files & Data State
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
+  const [selectedRegime, setSelectedRegime] = useState<'OLD' | 'NEW'>('NEW');
 
   const [aisFile, setAisFile] = useState<File | null>(null);
   const [tisFile, setTisFile] = useState<File | null>(null);
@@ -445,6 +447,9 @@ export default function Home() {
       setRawText(text);
       const parsed = parseForm16Text(text);
       const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, form26asData || undefined);
+      // Automatically set the recommended regime based on the comparison
+      const comparison = compareTaxRegimes(reconciled);
+      setSelectedRegime(comparison.optimalRegime);
       setExtractedData(reconciled);
       setErrors(validateForm16Data(reconciled));
     } catch (err) {
@@ -470,6 +475,8 @@ export default function Home() {
 
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, parsed, tisData || undefined, form26asData || undefined);
+        const comparison = compareTaxRegimes(reconciled);
+        setSelectedRegime(comparison.optimalRegime);
         setExtractedData(reconciled);
         setErrors(validateForm16Data(reconciled));
       }
@@ -496,6 +503,8 @@ export default function Home() {
 
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, parsed, form26asData || undefined);
+        const comparison = compareTaxRegimes(reconciled);
+        setSelectedRegime(comparison.optimalRegime);
         setExtractedData(reconciled);
         setErrors(validateForm16Data(reconciled));
       }
@@ -522,6 +531,8 @@ export default function Home() {
 
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, tisData || undefined, parsed);
+        const comparison = compareTaxRegimes(reconciled);
+        setSelectedRegime(comparison.optimalRegime);
         setExtractedData(reconciled);
         setErrors(validateForm16Data(reconciled));
       }
@@ -564,7 +575,7 @@ export default function Home() {
         body: JSON.stringify({
           messages: updatedMessages,
           itrData: sendOnlyRawData ? null : extractedData,
-          itrJson: sendOnlyRawData ? null : (extractedData ? mapForm16ToITR1(extractedData) : null),
+          itrJson: sendOnlyRawData ? null : (extractedData ? mapForm16ToITR1(extractedData, selectedRegime) : null),
           rawText: rawText,
           aisRawText: aisRawText,
           tisRawText: tisRawText,
@@ -827,6 +838,138 @@ export default function Home() {
                 </Card>
               )}
 
+              {/* Tax Regime Comparison Card */}
+              {extractedData && (() => {
+                const comparison = compareTaxRegimes(extractedData);
+                const savings = Math.abs(comparison.oldRegime.totalTaxPayable - comparison.newRegime.totalTaxPayable);
+                const optimalText = comparison.optimalRegime === 'OLD' ? 'Old Tax Regime' : 'New Tax Regime';
+                const recommendation = savings > 0
+                  ? `Based on your data, the ${optimalText} is the most tax-efficient choice, saving you ₹${savings.toLocaleString('en-IN')}.`
+                  : `Both regimes result in the exact same tax liability. You can choose either.`;
+
+                return (
+                  <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 2 }} data-testid="tax-comparison-card">
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
+                          Tax Regime Comparison & Selection
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Paper variant="outlined" sx={{
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1.5,
+                            bgcolor: 'success.main',
+                            color: 'success.contrastText',
+                            fontWeight: 'bold',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            border: 'none'
+                          }} data-testid="efficiency-badge">
+                            {comparison.optimalRegime === 'NEW' ? 'New Regime Optimal' : 'Old Regime Optimal'}
+                          </Paper>
+                        </Box>
+                      </Box>
+
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2, display: 'block', fontWeight: 500 }}>
+                        {recommendation}
+                      </Typography>
+
+                      <Grid container spacing={2}>
+                        {/* Old Regime Summary */}
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Paper variant="outlined" sx={{
+                            p: 2,
+                            borderRadius: 1.5,
+                            borderColor: selectedRegime === 'OLD' ? 'primary.main' : 'divider',
+                            borderWidth: selectedRegime === 'OLD' ? 2 : 1,
+                            bgcolor: selectedRegime === 'OLD' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
+                            cursor: 'pointer'
+                          }} onClick={() => setSelectedRegime('OLD')} data-testid="select-old-regime">
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Old Tax Regime</Typography>
+                              <Checkbox checked={selectedRegime === 'OLD'} readOnly size="small" />
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.grossTotalIncome.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Deductions (Chapter VI-A):</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.chapterVIADeductions.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.totalIncome.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Divider sx={{ my: 0.5 }} />
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Total Tax Payable:</Typography>
+                                <Typography variant="body1" color={comparison.optimalRegime === 'OLD' ? 'success.main' : 'text.primary'} sx={{ fontWeight: 'bold' }}>
+                                  ₹{comparison.oldRegime.totalTaxPayable.toLocaleString('en-IN')}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="caption" color="textSecondary">Refund Due:</Typography>
+                                <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
+                                  ₹{comparison.oldRegime.refundDue.toLocaleString('en-IN')}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Paper>
+                        </Grid>
+
+                        {/* New Regime Summary */}
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <Paper variant="outlined" sx={{
+                            p: 2,
+                            borderRadius: 1.5,
+                            borderColor: selectedRegime === 'NEW' ? 'primary.main' : 'divider',
+                            borderWidth: selectedRegime === 'NEW' ? 2 : 1,
+                            bgcolor: selectedRegime === 'NEW' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
+                            cursor: 'pointer'
+                          }} onClick={() => setSelectedRegime('NEW')} data-testid="select-new-regime">
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>New Tax Regime</Typography>
+                              <Checkbox checked={selectedRegime === 'NEW'} readOnly size="small" />
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.grossTotalIncome.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Deductions (80CCD(2)):</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.chapterVIADeductions.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.totalIncome.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Divider sx={{ my: 0.5 }} />
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Total Tax Payable:</Typography>
+                                <Typography variant="body1" color={comparison.optimalRegime === 'NEW' ? 'success.main' : 'text.primary'} sx={{ fontWeight: 'bold' }}>
+                                  ₹{comparison.newRegime.totalTaxPayable.toLocaleString('en-IN')}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="caption" color="textSecondary">Refund Due:</Typography>
+                                <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
+                                  ₹{comparison.newRegime.refundDue.toLocaleString('en-IN')}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               {extractedData && (
                 <>
                   {/* Validation warnings */}
@@ -1061,15 +1204,16 @@ export default function Home() {
                           color="success"
                           startIcon={<DownloadIcon fontSize="small" />}
                           onClick={() => {
-                            const itrJson = mapForm16ToITR1(extractedData);
+                            const itrJson = mapForm16ToITR1(extractedData, selectedRegime);
                             const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = `ITR1_${extractedData.employee.pan || 'data'}.json`;
+                            a.download = `ITR1_${extractedData.employee.pan || 'data'}_${selectedRegime}.json`;
                             a.click();
                           }}
                           size="small"
+                          data-testid="download-itr-button"
                         >
                           Download ITR JSON
                         </Button>

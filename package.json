@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --coverage",
+    "proto:generate": "mkdir -p src/generated && protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_out=src/generated/ -I proto proto/common/common.proto proto/sources/*.proto proto/platform/*.proto",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "deploy:staging": "opennextjs-cloudflare build && opennextjs-cloudflare deploy --env staging",
@@ -43,6 +44,7 @@
     "eslint-config-next": "^15.0.0",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
+    "ts-proto": "^2.6.1",
     "typescript": "^5",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"

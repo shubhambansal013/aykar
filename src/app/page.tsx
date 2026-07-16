@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { extractTextFromPDF } from '@/lib/form16/extractor';
-import { parseForm16Text } from '@/lib/form16/parser';
+import { parseForm16Text, mergeForm16Data } from '@/lib/form16/parser';
 import { parseAISText } from '@/lib/ais/parser';
 import { parseTISText } from '@/lib/tis/parser';
 import { parseForm26ASText } from '@/lib/form26as/parser';
@@ -266,7 +266,8 @@ interface Message {
 
 export default function Home() {
   // Document Files & Data State
-  const [file, setFile] = useState<File | null>(null);
+  const [form16List, setForm16List] = useState<Array<{ file: File; rawText: string; data: Form16Data }>>([]);
+  const file = form16List[0]?.file || null;
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
   const [selectedRegime, setSelectedRegime] = useState<'OLD' | 'NEW'>('NEW');
   const [expandedTrails, setExpandedTrails] = useState<Record<string, boolean>>({});
@@ -641,28 +642,66 @@ export default function Home() {
     });
   };
 
+  // Re-reconcile the current Form-16 list with optional new documents
+  const reRunReconciliation = (
+    currentForm16s: Array<{ file: File; rawText: string; data: Form16Data }> = form16List,
+    currentAis: AISData | null = aisData,
+    currentTis: TISData | null = tisData,
+    current26as: Form26ASData | null = form26asData
+  ) => {
+    if (currentForm16s.length === 0) {
+      setExtractedData(null);
+      setOriginalParsedData(null);
+      setRawText('');
+      setErrors([]);
+      return;
+    }
+
+    const mergedRawText = currentForm16s.map(item => item.rawText).join('\n\n');
+    setRawText(mergedRawText);
+
+    const mergedData = mergeForm16Data(currentForm16s.map(item => item.data));
+    const reconciled = reconcileAllDocuments(
+      mergedData,
+      currentAis || undefined,
+      currentTis || undefined,
+      current26as || undefined
+    );
+
+    const comparison = compareTaxRegimes(reconciled);
+    const activeRegime = comparison.optimalRegime;
+    setSelectedRegime(activeRegime);
+
+    const recalculated = recalculateAllFormFields(reconciled, activeRegime);
+    setExtractedData(recalculated);
+    setOriginalParsedData(JSON.parse(JSON.stringify(recalculated)));
+    setErrors(validateForm16Data(recalculated));
+  };
+
+  const handleRemoveForm16 = (index: number) => {
+    const newList = form16List.filter((_, i) => i !== index);
+    setForm16List(newList);
+    reRunReconciliation(newList);
+  };
+
   // Upload Handlers
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-    setFile(selectedFile);
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
     setLoading(true);
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const text = await extractTextFromPDF(arrayBuffer);
-      setRawText(text);
-      const parsed = parseForm16Text(text);
-      const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, form26asData || undefined);
-      // Automatically set the recommended regime based on the comparison
-      const comparison = compareTaxRegimes(reconciled);
-      const activeRegime = comparison.optimalRegime;
-      setSelectedRegime(activeRegime);
+      const newList = [...form16List];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const selectedFile = selectedFiles[i];
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const text = await extractTextFromPDF(arrayBuffer);
+        const parsed = parseForm16Text(text);
+        newList.push({ file: selectedFile, rawText: text, data: parsed });
+      }
 
-      const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-      setExtractedData(recalculated);
-      setOriginalParsedData(JSON.parse(JSON.stringify(recalculated)));
-      setErrors(validateForm16Data(recalculated));
+      setForm16List(newList);
+      reRunReconciliation(newList);
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
@@ -684,17 +723,7 @@ export default function Home() {
       setAisRawText(text);
       const parsed = parseAISText(text);
       setAisData(parsed);
-
-      if (extractedData) {
-        const reconciled = reconcileAllDocuments(extractedData, parsed, tisData || undefined, form26asData || undefined);
-        const comparison = compareTaxRegimes(reconciled);
-        const activeRegime = comparison.optimalRegime;
-        setSelectedRegime(activeRegime);
-
-        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-        setExtractedData(recalculated);
-        setErrors(validateForm16Data(recalculated));
-      }
+      reRunReconciliation(form16List, parsed, tisData, form26asData);
     } catch (err) {
       console.error('Error processing AIS PDF:', err);
       alert('Failed to process AIS PDF.');
@@ -716,17 +745,7 @@ export default function Home() {
       setTisRawText(text);
       const parsed = parseTISText(text);
       setTisData(parsed);
-
-      if (extractedData) {
-        const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, parsed, form26asData || undefined);
-        const comparison = compareTaxRegimes(reconciled);
-        const activeRegime = comparison.optimalRegime;
-        setSelectedRegime(activeRegime);
-
-        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-        setExtractedData(recalculated);
-        setErrors(validateForm16Data(recalculated));
-      }
+      reRunReconciliation(form16List, aisData, parsed, form26asData);
     } catch (err) {
       console.error('Error processing TIS PDF:', err);
       alert('Failed to process TIS PDF.');
@@ -748,17 +767,7 @@ export default function Home() {
       setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
       setForm26asData(parsed);
-
-      if (extractedData) {
-        const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, tisData || undefined, parsed);
-        const comparison = compareTaxRegimes(reconciled);
-        const activeRegime = comparison.optimalRegime;
-        setSelectedRegime(activeRegime);
-
-        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-        setExtractedData(recalculated);
-        setErrors(validateForm16Data(recalculated));
-      }
+      reRunReconciliation(form16List, aisData, tisData, parsed);
     } catch (err) {
       console.error('Error processing Form 26AS PDF:', err);
       alert('Failed to process Form 26AS PDF.');
@@ -958,11 +967,24 @@ export default function Home() {
                         <Typography id="file-upload-label" variant="subtitle2" component="label" htmlFor="file-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
                           1. Upload Form-16 PDF
                         </Typography>
-                        <input id="file-upload" type="file" accept=".pdf" onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
+                        <input id="file-upload" type="file" accept=".pdf" multiple onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
                         <Button component="label" htmlFor="file-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                          {file ? 'Uploaded' : 'Upload'}
+                          {form16List.length > 0 ? `${form16List.length} Uploaded` : 'Upload'}
                         </Button>
-                        {file && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{file.name}</Typography>}
+                        {form16List.length > 0 && (
+                          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5, textAlign: 'left', width: '100%' }}>
+                            {form16List.map((item, idx) => (
+                              <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'action.hover', p: 0.5, px: 1, borderRadius: 1, gap: 1 }}>
+                                <Typography variant="caption" sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flexGrow: 1, fontSize: '0.7rem' }}>
+                                  {item.file.name}
+                                </Typography>
+                                <IconButton size="small" onClick={(evt) => { evt.preventDefault(); handleRemoveForm16(idx); }} aria-label={`delete form16 file ${idx}`} sx={{ p: 0.25 }}>
+                                  <CloseIcon sx={{ fontSize: 12 }} />
+                                </IconButton>
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
                         {loading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
                       </Box>
                     </Grid>
@@ -1770,17 +1792,17 @@ export default function Home() {
                   )}
 
                   {/* Form-16 Context */}
-                  {file && (
-                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="form16-badge">
+                  {form16List.map((item, idx) => (
+                    <Paper key={idx} variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid={idx === 0 ? "form16-badge" : `form16-badge-${idx}`}>
                       <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                        {file.name}
+                        {item.file.name}
                       </Typography>
-                      <IconButton size="small" onClick={() => { setFile(null); setExtractedData(null); setRawText(''); setErrors([]); }} aria-label="remove form16 context">
+                      <IconButton size="small" onClick={() => handleRemoveForm16(idx)} aria-label={idx === 0 ? "remove form16 context" : `remove form16 context ${idx}`}>
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
-                  )}
+                  ))}
 
                   {/* AIS Context */}
                   {aisFile && (
@@ -1789,7 +1811,7 @@ export default function Home() {
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {aisFile.name}
                       </Typography>
-                      <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, undefined, tisData || undefined, form26asData || undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove ais context">
+                      <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData); }} aria-label="remove ais context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -1802,7 +1824,7 @@ export default function Home() {
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {tisFile.name}
                       </Typography>
-                      <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, aisData || undefined, undefined, form26asData || undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove tis context">
+                      <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData); }} aria-label="remove tis context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>
@@ -1815,7 +1837,7 @@ export default function Home() {
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {form26asFile.name}
                       </Typography>
-                      <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); if (rawText) { const parsed = parseForm16Text(rawText); const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, undefined); setExtractedData(reconciled); setErrors(validateForm16Data(reconciled)); } }} aria-label="remove form26as context">
+                      <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null); }} aria-label="remove form26as context">
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>

@@ -1,44 +1,13 @@
 import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import { mapForm16ToITR1 } from './mapper';
 import { Form16Data } from '../types';
 
 describe('mapForm16ToITR1', () => {
-  const mockData: Form16Data = {
-    employer: { name: 'Test Corp', tan: 'MUMT12345A', pan: 'MUMC12345A', address: 'Mumbai' },
-    employee: { name: { firstName: 'John', middleName: '', lastName: 'Doe' }, pan: 'ABCDE1234F', address: 'Delhi' },
-    assessmentYear: '2026',
-    period: { from: '2025-04-01', to: '2026-03-31' },
-    salary: {
-      grossSalary: 1000000,
-      salaryAsPer17_1: 900000,
-      perquisites17_2: 100000,
-      profitsInLieu17_3: 0,
-      exemptAllowancesUs10: [
-        { code: '10(13A)', nature: 'HRA', amount: 50000 }
-      ],
-      totalExemptAllowances: 50000,
-      netSalary: 950000,
-      standardDeduction16ia: 50000,
-      entertainmentAllowance16ii: 0,
-      professionalTax16iii: 0,
-      totalDeductionsUs16: 50000,
-      incomeChargeableUnderHeadSalaries: 900000,
-    },
-    otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
-    grossTotalIncome: 900000,
-    deductions80C: 150000,
-    deductions80CCC: 0,
-    deductions80CCD1: 0,
-    deductions80CCD1B: 0,
-    deductions80CCD2: 20000,
-    deductions80D: 25000,
-    deductions80E: 0,
-    deductions80G: 0,
-    deductions80TTA: 0,
-    totalChapterVIADeductions: 195000,
-    totalIncome: 705000,
-    taxPayable: 50000,
-  };
+  // Read mockData from external JSON testdata file for clean human readability
+  const testdataPath = path.resolve(__dirname, './testdata/mock_form16_mapper_input.json');
+  const mockData: Form16Data = JSON.parse(fs.readFileSync(testdataPath, 'utf-8'));
 
   it('should map Form16Data to ITR1_JSON structure under OLD Tax Regime', () => {
     const dataWithCredits = {

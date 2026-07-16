@@ -4,6 +4,10 @@ import { TextField, Tooltip, InputAdornment } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
+import { EngineMapper } from '@/lib/proto/mappers/engineMapper';
+import { Form16Mapper } from '@/lib/proto/mappers/form16Mapper';
+import { EngineReconciliationResult } from '@/generated/platform/engine';
+import { Form16Bundle } from '@/generated/sources/form16';
 
 export interface FieldCue {
   status: 'success' | 'warning' | 'error' | 'none';
@@ -13,7 +17,19 @@ export interface FieldCue {
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const TAN_REGEX = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
 
-export function getFieldCue(path: string, data: Form16Data | null): FieldCue {
+export function ensureForm16Data(obj: any): Form16Data | null {
+  if (!obj) return null;
+  if ('form16Data' in obj || 'discrepancies' in obj) {
+    return EngineMapper.toDomain(obj as EngineReconciliationResult);
+  }
+  if ('certificates' in obj && 'taxpayerProfile' in obj) {
+    return Form16Mapper.toDomain(obj as Form16Bundle);
+  }
+  return obj as Form16Data;
+}
+
+export function getFieldCue(path: string, dataInput: any): FieldCue {
+  const data = ensureForm16Data(dataInput);
   if (!data) {
     return { status: 'none', message: 'No data' };
   }
@@ -292,10 +308,10 @@ interface CueTextFieldProps {
   isMonospace?: boolean;
   uppercase?: boolean;
   startAdornment?: React.ReactNode;
-  data: Form16Data;
+  data: any;
   onChange: (value: any) => void;
-  originalData?: Form16Data | null;
-  appliedAiSuggestions?: Form16Data | null;
+  originalData?: any;
+  appliedAiSuggestions?: any;
 }
 
 export function CueTextField({
@@ -305,12 +321,17 @@ export function CueTextField({
   isMonospace = false,
   uppercase = false,
   startAdornment,
-  data,
+  data: dataInput,
   onChange,
   originalData = null,
   appliedAiSuggestions = null,
 }: CueTextFieldProps) {
+  const data = ensureForm16Data(dataInput);
+  const originalDataDomain = ensureForm16Data(originalData);
+  const appliedDomain = ensureForm16Data(appliedAiSuggestions);
+
   const getNestedValue = (obj: any, keyPath: string): any => {
+    if (!obj) return '';
     const keys = keyPath.split('.');
     let current = obj;
     for (const key of keys) {
@@ -321,18 +342,16 @@ export function CueTextField({
   };
 
   const val = getNestedValue(data, path);
-  const cue = getFieldCue(path, data);
+  const cue = getFieldCue(path, dataInput);
 
   const isNone = cue.status === 'none';
 
   // Compare values to determine state modification indicators
-  const originalVal = originalData ? getNestedValue(originalData, path) : undefined;
-  const aiSuggestedVal = appliedAiSuggestions ? getNestedValue(appliedAiSuggestions, path) : undefined;
+  const originalVal = originalDataDomain ? getNestedValue(originalDataDomain, path) : undefined;
+  const aiSuggestedVal = appliedDomain ? getNestedValue(appliedDomain, path) : undefined;
 
   let modificationLabel = '';
   let modificationColor = 'text.secondary';
-
-  const emptyOrZero = (v: any) => v === undefined || v === null || v === '' || v === 0;
 
   if (aiSuggestedVal !== undefined && val === aiSuggestedVal && val !== originalVal) {
     modificationLabel = 'Applied from AI recommendation';
@@ -532,7 +551,7 @@ export const sectionFields = {
   ],
 };
 
-export function getSectionVerifiedCount(section: keyof typeof sectionFields, data: Form16Data | null): number {
+export function getSectionVerifiedCount(section: keyof typeof sectionFields, data: any): number {
   if (!data) return 0;
   const paths = sectionFields[section];
   return paths.reduce((count, path) => {

@@ -2,12 +2,11 @@ import React from 'react';
 import { Box, Typography, Grid, Paper } from '@mui/material';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CodeIcon from '@mui/icons-material/Code';
-import { Form16Data } from '@/lib/types';
 
 interface DebugInfoSectionProps {
   mode: 'light' | 'dark';
   combinedRawText: string;
-  extractedData: Form16Data | null;
+  extractedData: any;
 }
 
 export default function DebugInfoSection({

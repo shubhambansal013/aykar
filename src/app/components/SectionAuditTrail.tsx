@@ -1,10 +1,11 @@
 import React from 'react';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { Form16Data, ReconciledTaxData } from '@/lib/types';
+import { ensureForm16Data } from './FieldCues';
 
 interface SectionAuditTrailProps {
   section: 'salary' | 'other' | 'deductions' | 'summary';
-  extractedData: Form16Data | null;
+  extractedData: any;
   mode: 'light' | 'dark';
   selectedRegime: 'OLD' | 'NEW';
   isExpanded: boolean;
@@ -19,9 +20,10 @@ export default function SectionAuditTrail({
   isExpanded,
   onToggle,
 }: SectionAuditTrailProps) {
-  if (!extractedData) return null;
+  const domainData = ensureForm16Data(extractedData);
+  if (!domainData) return null;
 
-  const recon = extractedData as ReconciledTaxData;
+  const recon = domainData as ReconciledTaxData;
   const salary = recon.salary || {};
   const otherIncome = recon.otherIncome || {};
   const tdsSalary = recon.taxCredits?.tdsSalary || 0;
@@ -31,7 +33,7 @@ export default function SectionAuditTrail({
   const selfAssessmentTax = recon.taxCredits?.selfAssessmentTax || 0;
 
   const totalTaxesPaid = advanceTax + tdsSalary + tdsOther + tcs + selfAssessmentTax;
-  const taxPayable = extractedData.taxPayable || 0;
+  const taxPayable = domainData.taxPayable || 0;
   const balanceTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
   const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
 
@@ -96,13 +98,13 @@ export default function SectionAuditTrail({
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • <strong>Deductions Breakdowns:</strong> 80C: ₹{extractedData.deductions80C?.toLocaleString('en-IN')} | 80CCC: ₹{extractedData.deductions80CCC?.toLocaleString('en-IN')} | 80CCD(1B): ₹{extractedData.deductions80CCD1B?.toLocaleString('en-IN')} | 80CCD(2) Employer: ₹{extractedData.deductions80CCD2?.toLocaleString('en-IN')} | 80D Medical: ₹{extractedData.deductions80D?.toLocaleString('en-IN')} | 80TTA Interest: ₹{extractedData.deductions80TTA?.toLocaleString('en-IN')}
+            • <strong>Deductions Breakdowns:</strong> 80C: ₹{domainData.deductions80C?.toLocaleString('en-IN')} | 80CCC: ₹{domainData.deductions80CCC?.toLocaleString('en-IN')} | 80CCD(1B): ₹{domainData.deductions80CCD1B?.toLocaleString('en-IN')} | 80CCD(2) Employer: ₹{domainData.deductions80CCD2?.toLocaleString('en-IN')} | 80D Medical: ₹{domainData.deductions80D?.toLocaleString('en-IN')} | 80TTA Interest: ₹{domainData.deductions80TTA?.toLocaleString('en-IN')}
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • <strong>Sum of Invested Deductions:</strong> <strong>₹{extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')}</strong> [Source: <strong>Form-16 Section 80C/80D Declarations</strong>]
+            • <strong>Sum of Invested Deductions:</strong> <strong>₹{domainData.totalChapterVIADeductions?.toLocaleString('en-IN')}</strong> [Source: <strong>Form-16 Section 80C/80D Declarations</strong>]
           </Typography>
           <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-            • <strong>Allowed Deductions:</strong> {selectedRegime === 'NEW' ? `₹${(extractedData.deductions80CCD2 || 0).toLocaleString('en-IN')} (Only 80CCD(2) is permitted under New Regime)` : `₹${extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')} (All permitted under Old Regime)`}
+            • <strong>Allowed Deductions:</strong> {selectedRegime === 'NEW' ? `₹${(domainData.deductions80CCD2 || 0).toLocaleString('en-IN')} (Only 80CCD(2) is permitted under New Regime)` : `₹${domainData.totalChapterVIADeductions?.toLocaleString('en-IN')} (All permitted under Old Regime)`}
           </Typography>
         </Box>
       </Paper>
@@ -115,10 +117,10 @@ export default function SectionAuditTrail({
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
+            • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{domainData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • <strong>Total Taxable Income:</strong> GTI (₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (extractedData.deductions80CCD2 || 0) : (extractedData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{extractedData.totalIncome?.toLocaleString('en-IN')}</strong>
+            • <strong>Total Taxable Income:</strong> GTI (₹{domainData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (domainData.deductions80CCD2 || 0) : (domainData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{domainData.totalIncome?.toLocaleString('en-IN')}</strong>
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
             • <strong>Calculated Tax Liability:</strong> <strong>₹{taxPayable?.toLocaleString('en-IN')}</strong> (includes slab taxes, cess, and rebates)

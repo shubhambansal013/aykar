@@ -13,6 +13,18 @@ import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData } from '@/lib/types';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
+import { EngineMapper } from '@/lib/proto/mappers/engineMapper';
+import { Form16Mapper } from '@/lib/proto/mappers/form16Mapper';
+import { AisMapper } from '@/lib/proto/mappers/aisMapper';
+import { TisMapper } from '@/lib/proto/mappers/tisMapper';
+import { Form26asMapper } from '@/lib/proto/mappers/form26asMapper';
+
+import { EngineReconciliationResult } from '@/generated/platform/engine';
+import { Form16Bundle } from '@/generated/sources/form16';
+import { AnnualInformationStatement } from '@/generated/sources/ais';
+import { TaxpayerInformationSummary } from '@/generated/sources/tis';
+import { Form26AS } from '@/generated/sources/form26as';
+
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {
@@ -48,7 +60,6 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import BugReportIcon from '@mui/icons-material/BugReport';
 import ChatIcon from '@mui/icons-material/Chat';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import CloseIcon from '@mui/icons-material/Close';
@@ -76,24 +87,24 @@ interface Message {
 }
 
 export default function Home() {
-  // Document Files & Data State
-  const [form16List, setForm16List] = useState<Array<{ file: File; rawText: string; data: Form16Data }>>([]);
+  // Document Files & Data State (holding defined Proto types)
+  const [form16List, setForm16List] = useState<Array<{ file: File; rawText: string; data: Form16Bundle }>>([]);
   const file = form16List[0]?.file || null;
-  const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
+  const [extractedData, setExtractedData] = useState<EngineReconciliationResult | null>(null);
   const [selectedRegime, setSelectedRegime] = useState<'OLD' | 'NEW'>('NEW');
   const [expandedTrails, setExpandedTrails] = useState<Record<string, boolean>>({});
 
   // Baseline trackings for audit and status highlights
-  const [originalParsedData, setOriginalParsedData] = useState<Form16Data | null>(null);
-  const [appliedAiSuggestions, setAppliedAiSuggestions] = useState<Form16Data | null>(null);
+  const [originalParsedData, setOriginalParsedData] = useState<EngineReconciliationResult | null>(null);
+  const [appliedAiSuggestions, setAppliedAiSuggestions] = useState<EngineReconciliationResult | null>(null);
 
   const [aisFile, setAisFile] = useState<File | null>(null);
   const [tisFile, setTisFile] = useState<File | null>(null);
   const [form26asFile, setForm26asFile] = useState<File | null>(null);
 
-  const [aisData, setAisData] = useState<AISData | null>(null);
-  const [tisData, setTisData] = useState<TISData | null>(null);
-  const [form26asData, setForm26asData] = useState<Form26ASData | null>(null);
+  const [aisData, setAisData] = useState<AnnualInformationStatement | null>(null);
+  const [tisData, setTisData] = useState<TaxpayerInformationSummary | null>(null);
+  const [form26asData, setForm26asData] = useState<Form26AS | null>(null);
 
   const [aisLoading, setAisLoading] = useState(false);
   const [tisLoading, setTisLoading] = useState(false);
@@ -123,7 +134,7 @@ export default function Home() {
   // AI Proposal States
   const [acceptedMessages, setAcceptedMessages] = useState<Record<number, boolean>>({});
   const [rejectedMessages, setRejectedMessages] = useState<Record<number, boolean>>({});
-  const [proposalBackups, setProposalBackups] = useState<Record<number, Form16Data | null>>({});
+  const [proposalBackups, setProposalBackups] = useState<Record<number, EngineReconciliationResult | null>>({});
 
   // Chat Resizing States
   const [chatWidth, setChatWidth] = useState(400);
@@ -207,23 +218,28 @@ export default function Home() {
     return geminiProvider ? geminiProvider.models : [];
   }, []);
 
-  const salaryDiscrepancies = useMemo(() => {
-    if (!extractedData) return [];
-    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
-    return disc.filter(d => d.toLowerCase().includes('salary') || d.toLowerCase().includes('income discrepancy'));
+  // Derived Domain Object for computation
+  const extractedDataDomain = useMemo(() => {
+    return extractedData ? EngineMapper.toDomain(extractedData) : null;
   }, [extractedData]);
+
+  const salaryDiscrepancies = useMemo(() => {
+    if (!extractedDataDomain) return [];
+    const disc = extractedDataDomain.discrepancies || [];
+    return disc.filter(d => d.toLowerCase().includes('salary') || d.toLowerCase().includes('income discrepancy'));
+  }, [extractedDataDomain]);
 
   const tdsDiscrepancies = useMemo(() => {
-    if (!extractedData) return [];
-    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
+    if (!extractedDataDomain) return [];
+    const disc = extractedDataDomain.discrepancies || [];
     return disc.filter(d => d.toLowerCase().includes('tds') || d.toLowerCase().includes('tan'));
-  }, [extractedData]);
+  }, [extractedDataDomain]);
 
   const otherDiscrepancies = useMemo(() => {
-    if (!extractedData) return [];
-    const disc = (extractedData as ReconciledTaxData).discrepancies || [];
+    if (!extractedDataDomain) return [];
+    const disc = extractedDataDomain.discrepancies || [];
     return disc.filter(d => !d.toLowerCase().includes('salary') && !d.toLowerCase().includes('income discrepancy') && !d.toLowerCase().includes('tds') && !d.toLowerCase().includes('tan'));
-  }, [extractedData]);
+  }, [extractedDataDomain]);
 
   // MUI Theme Memo
   const theme = useMemo(
@@ -310,7 +326,8 @@ export default function Home() {
   const updateNestedValue = (path: string, val: any) => {
     setExtractedData((prev) => {
       if (!prev) return prev;
-      const next = JSON.parse(JSON.stringify(prev));
+      const domain = EngineMapper.toDomain(prev);
+      const next = JSON.parse(JSON.stringify(domain));
       const parts = path.split('.');
       let current = next;
       for (let i = 0; i < parts.length - 1; i++) {
@@ -323,7 +340,7 @@ export default function Home() {
 
       // Auto-recalculate dependents using the recalculateAllFormFields tool
       const updated = recalculateAllFormFields(next, selectedRegime, path);
-      return updated;
+      return EngineMapper.toProto(updated);
     });
   };
 
@@ -418,8 +435,9 @@ export default function Home() {
     const sanitized = sanitizeForm16Data(updatedData);
     // Recalculate everything for safety
     const recalculated = recalculateAllFormFields(sanitized, selectedRegime);
-    setExtractedData(recalculated);
-    setAppliedAiSuggestions(recalculated);
+    const protoData = EngineMapper.toProto(recalculated);
+    setExtractedData(protoData);
+    setAppliedAiSuggestions(protoData);
     setErrors(validateForm16Data(recalculated));
   };
 
@@ -433,7 +451,7 @@ export default function Home() {
       if (backup) {
         setExtractedData(backup);
         setAppliedAiSuggestions(null);
-        setErrors(validateForm16Data(backup));
+        setErrors(validateForm16Data(EngineMapper.toDomain(backup)));
       }
     }
     setAcceptedMessages((prev) => {
@@ -455,10 +473,10 @@ export default function Home() {
 
   // Re-reconcile the current Form-16 list with optional new documents
   const reRunReconciliation = (
-    currentForm16s: Array<{ file: File; rawText: string; data: Form16Data }> = form16List,
-    currentAis: AISData | null = aisData,
-    currentTis: TISData | null = tisData,
-    current26as: Form26ASData | null = form26asData
+    currentForm16s: Array<{ file: File; rawText: string; data: Form16Bundle }> = form16List,
+    currentAis: AnnualInformationStatement | null = aisData,
+    currentTis: TaxpayerInformationSummary | null = tisData,
+    current26as: Form26AS | null = form26asData
   ) => {
     if (currentForm16s.length === 0) {
       setExtractedData(null);
@@ -471,12 +489,14 @@ export default function Home() {
     const mergedRawText = currentForm16s.map(item => item.rawText).join('\n\n');
     setRawText(mergedRawText);
 
-    const mergedData = mergeForm16Data(currentForm16s.map(item => item.data));
+    const domainForm16s = currentForm16s.map(item => Form16Mapper.toDomain(item.data));
+    const mergedData = mergeForm16Data(domainForm16s);
+
     const reconciled = reconcileAllDocuments(
       mergedData,
-      currentAis || undefined,
-      currentTis || undefined,
-      current26as || undefined
+      currentAis ? AisMapper.toDomain(currentAis) : undefined,
+      currentTis ? TisMapper.toDomain(currentTis) : undefined,
+      current26as ? Form26asMapper.toDomain(current26as) : undefined
     );
 
     const comparison = compareTaxRegimes(reconciled);
@@ -484,8 +504,10 @@ export default function Home() {
     setSelectedRegime(activeRegime);
 
     const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-    setExtractedData(recalculated);
-    setOriginalParsedData(JSON.parse(JSON.stringify(recalculated)));
+    const protoResult = EngineMapper.toProto(recalculated);
+
+    setExtractedData(protoResult);
+    setOriginalParsedData(JSON.parse(JSON.stringify(protoResult)));
     setErrors(validateForm16Data(recalculated));
   };
 
@@ -508,11 +530,12 @@ export default function Home() {
         const arrayBuffer = await selectedFile.arrayBuffer();
         const text = await extractTextFromPDF(arrayBuffer);
         const parsed = parseForm16Text(text);
-        newList.push({ file: selectedFile, rawText: text, data: parsed });
+        const protoBundle = Form16Mapper.toProto(parsed);
+        newList.push({ file: selectedFile, rawText: text, data: protoBundle });
       }
 
       setForm16List(newList);
-      reRunReconciliation(newList);
+      reRunReconciliation(newList, aisData, tisData, form26asData);
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
@@ -533,8 +556,9 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setAisRawText(text);
       const parsed = parseAISText(text);
-      setAisData(parsed);
-      reRunReconciliation(form16List, parsed, tisData, form26asData);
+      const protoAis = AisMapper.toProto(parsed);
+      setAisData(protoAis);
+      reRunReconciliation(form16List, protoAis, tisData, form26asData);
     } catch (err) {
       console.error('Error processing AIS PDF:', err);
       alert('Failed to process AIS PDF.');
@@ -555,8 +579,9 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setTisRawText(text);
       const parsed = parseTISText(text);
-      setTisData(parsed);
-      reRunReconciliation(form16List, aisData, parsed, form26asData);
+      const protoTis = TisMapper.toProto(parsed);
+      setTisData(protoTis);
+      reRunReconciliation(form16List, aisData, protoTis, form26asData);
     } catch (err) {
       console.error('Error processing TIS PDF:', err);
       alert('Failed to process TIS PDF.');
@@ -577,8 +602,9 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
-      setForm26asData(parsed);
-      reRunReconciliation(form16List, aisData, tisData, parsed);
+      const proto26as = Form26asMapper.toProto(parsed);
+      setForm26asData(proto26as);
+      reRunReconciliation(form16List, aisData, tisData, proto26as);
     } catch (err) {
       console.error('Error processing Form 26AS PDF:', err);
       alert('Failed to process Form 26AS PDF.');
@@ -611,6 +637,7 @@ export default function Home() {
     setChatOpen(true);
 
     try {
+      const domainData = extractedData ? EngineMapper.toDomain(extractedData) : null;
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -618,8 +645,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           messages: updatedMessages,
-          itrData: sendOnlyRawData ? null : extractedData,
-          itrJson: sendOnlyRawData ? null : (extractedData ? mapForm16ToITR1(extractedData, selectedRegime) : null),
+          itrData: sendOnlyRawData ? null : domainData,
+          itrJson: sendOnlyRawData ? null : (domainData ? mapForm16ToITR1(domainData, selectedRegime) : null),
           rawText: rawText,
           aisRawText: aisRawText,
           tisRawText: tisRawText,
@@ -863,7 +890,7 @@ export default function Home() {
               )}
 
               {/* Supplementary Income */}
-              {extractedData && (extractedData as ReconciledTaxData).detectedIncomeSources && ((extractedData as ReconciledTaxData).detectedIncomeSources?.length ?? 0) > 0 && (
+              {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
                 <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
@@ -873,7 +900,7 @@ export default function Home() {
                       The following additional incomes were found in the uploaded AIS/TIS documents and have been successfully merged into your other sources to prevent under-reporting:
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                      {(extractedData as ReconciledTaxData).detectedIncomeSources?.map((item, i) => {
+                      {extractedDataDomain.detectedIncomeSources?.map((item, i) => {
                         let catLabel = 'Other';
                         if (item.category === 'interestSavings') catLabel = 'Savings bank interest';
                         if (item.category === 'interestDeposit') catLabel = 'Interest on deposit';
@@ -904,7 +931,11 @@ export default function Home() {
                   mode={mode}
                   onSelectRegime={(regime) => {
                     setSelectedRegime(regime);
-                    setExtractedData((prev) => prev ? recalculateAllFormFields(prev, regime) : null);
+                    setExtractedData((prev) => {
+                      if (!prev) return null;
+                      const recalculated = recalculateAllFormFields(EngineMapper.toDomain(prev), regime);
+                      return EngineMapper.toProto(recalculated);
+                    });
                   }}
                 />
               )}
@@ -1195,7 +1226,11 @@ export default function Home() {
                           variant="outlined"
                           color="secondary"
                           startIcon={<RefreshIcon fontSize="small" />}
-                          onClick={() => setErrors(validateForm16Data(extractedData))}
+                          onClick={() => {
+                            if (extractedDataDomain) {
+                              setErrors(validateForm16Data(extractedDataDomain));
+                            }
+                          }}
                           size="small"
                         >
                           Re-validate Data
@@ -1205,13 +1240,15 @@ export default function Home() {
                           color="success"
                           startIcon={<DownloadIcon fontSize="small" />}
                           onClick={() => {
-                            const itrJson = mapForm16ToITR1(extractedData, selectedRegime);
-                            const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `ITR1_${extractedData.employee.pan || 'data'}_${selectedRegime}.json`;
-                            a.click();
+                            if (extractedDataDomain) {
+                              const itrJson = mapForm16ToITR1(extractedDataDomain, selectedRegime);
+                              const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `ITR1_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
+                              a.click();
+                            }
                           }}
                           size="small"
                           data-testid="download-itr-button"

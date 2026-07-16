@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Form16Data } from '@/lib/types';
 import { Box, Card, CardContent, Typography, Alert, AlertTitle, Button } from '@mui/material';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { getForm16Differences } from './FormDifferences';
 import { parseMarkdown } from './MarkdownUtils';
+import { ensureForm16Data } from './FieldCues';
 
 interface AssistantMessageProps {
   content: string;
@@ -13,7 +13,7 @@ interface AssistantMessageProps {
   onAccept: (msgIdx: number, data: any) => void;
   onReject: (msgIdx: number) => void;
   onUndo?: (msgIdx: number) => void;
-  currentData?: Form16Data | null;
+  currentData?: any;
 }
 
 export function AssistantMessage({
@@ -49,7 +49,7 @@ export function AssistantMessage({
   const updatedData = json ? json.updatedForm16Data : null;
 
   const diffs = useMemo(() => {
-    return getForm16Differences(currentData, updatedData);
+    return getForm16Differences(ensureForm16Data(currentData), updatedData);
   }, [currentData, updatedData]);
 
   if (!parsed.json) {

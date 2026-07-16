@@ -1,0 +1,59 @@
+{
+  "employer": {
+    "name": "OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED",
+    "tan": "HYDQ00152F",
+    "pan": "AAACQ2188G",
+    "address": "5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana"
+  },
+  "employee": {
+    "name": {
+      "firstName": "MANAK",
+      "middleName": "JEET",
+      "lastName": "SINGH"
+    },
+    "pan": "AFNPS1912F",
+    "address": "1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana"
+  },
+  "assessmentYear": "2026-27",
+  "period": {
+    "from": "01-Apr-2025",
+    "to": "31-Mar-2026"
+  },
+  "salary": {
+    "grossSalary": 7280536,
+    "salaryAsPer17_1": 7275532,
+    "perquisites17_2": 5004,
+    "profitsInLieu17_3": 0,
+    "exemptAllowancesUs10": [
+      {
+        "nature": "House rent allowance under section 10(13A)",
+        "amount": 1226539
+      }
+    ],
+    "totalExemptAllowances": 1226539,
+    "netSalary": 6053997,
+    "standardDeduction16ia": 50000,
+    "entertainmentAllowance16ii": 0,
+    "professionalTax16iii": 2400,
+    "totalDeductionsUs16": 52400,
+    "incomeChargeableUnderHeadSalaries": 6001597
+  },
+  "otherIncome": {
+    "houseProperty": 0,
+    "otherSources": [],
+    "totalOtherSources": 0
+  },
+  "grossTotalIncome": 6001597,
+  "deductions80C": 150000,
+  "deductions80CCC": 0,
+  "deductions80CCD1": 0,
+  "deductions80CCD1B": 49705,
+  "deductions80CCD2": 0,
+  "deductions80D": 22184,
+  "deductions80E": 0,
+  "deductions80G": 0,
+  "deductions80TTA": 0,
+  "totalChapterVIADeductions": 221889,
+  "totalIncome": 5779708,
+  "taxPayable": 1769096
+}

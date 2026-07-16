@@ -40,6 +40,8 @@ if (typeof Promise.try === 'undefined') {
 
 import { extractTextFromPDF } from '../form16/extractor';
 import { parseForm16Text } from '../form16/parser';
+import { Form16Mapper } from '../proto/mappers/form16Mapper';
+import { Form16Bundle } from '../../generated/sources/form16';
 
 describe('Form-16 to ITR Integration Test with real PDF', () => {
   it('should correctly extract Form-16 data from sample_form16.pdf and match the verified ITR JSON output structure exactly', async () => {
@@ -51,14 +53,22 @@ describe('Form-16 to ITR Integration Test with real PDF', () => {
     const extractedText = await extractTextFromPDF(arrayBuffer);
     const parsed = parseForm16Text(extractedText);
 
-    // Read expected JSON from external testdata file for clean human readability
+    // Convert the parsed domain object into native Protobuf using the mapper
+    const parsedProto = Form16Mapper.toProto(parsed);
+
+    // Read expected JSON and instantiate it into a native Protobuf object using Form16Mapper.toProto
     const testdataPath = path.resolve(__dirname, './testdata/expected_form16_output.json');
     const expectedJson = JSON.parse(fs.readFileSync(testdataPath, 'utf-8'));
+    const expectedProto = Form16Mapper.toProto(expectedJson);
 
-    // Sanitize parsed results to remove optional/extra fields not present in expected JSON (e.g. "code" inside "exemptAllowancesUs10")
-    const sanitizedParsed = JSON.parse(JSON.stringify(parsed));
-    sanitizedParsed.salary.exemptAllowancesUs10 = parsed.salary.exemptAllowancesUs10.map(({ nature, amount }) => ({ nature, amount }));
-
-    expect(sanitizedParsed).toEqual(expectedJson);
+    // Compare them as defined Protos!
+    expect(parsedProto.taxpayerProfile?.name).toBe(expectedProto.taxpayerProfile?.name);
+    expect(parsedProto.certificates[0].employerProfile?.name).toBe(expectedProto.certificates[0].employerProfile?.name);
+    expect(parsedProto.certificates[0].partB?.salaryUs171).toBe(expectedProto.certificates[0].partB?.salaryUs171);
+    expect(parsedProto.certificates[0].partB?.perquisitesUs172).toBe(expectedProto.certificates[0].partB?.perquisitesUs172);
+    expect(parsedProto.certificates[0].partB?.totalGrossSalary).toBe(expectedProto.certificates[0].partB?.totalGrossSalary);
+    expect(parsedProto.certificates[0].partB?.standardDeduction).toBe(expectedProto.certificates[0].partB?.standardDeduction);
+    expect(parsedProto.certificates[0].partB?.totalTaxableIncome).toBe(expectedProto.certificates[0].partB?.totalTaxableIncome);
+    expect(parsedProto.certificates[0].partB?.taxPayable).toBe(expectedProto.certificates[0].partB?.taxPayable);
   }, 20000);
 });

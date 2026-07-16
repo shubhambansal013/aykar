@@ -2,6 +2,14 @@
 
 This project is a Next.js application designed to run on Cloudflare Workers using the OpenNext adapter. Refer ARCHITECTURE.md on the high level architecture and the working of this app.
 
+## Clean Code & Readability Guidelines
+
+All code modifications and refactoring in this repository must strictly adhere to the guidelines outlined in [READABILITY.md](READABILITY.md). Ensure that:
+- Any React page or component remains small and adheres to the Single Responsibility Principle (SRP).
+- Deeply nested or bloated helper logic is broken down into separate modular utilities and components.
+- Functions are clean, minimal, and do exactly one thing.
+- Full test coverage is maintained (minimum 80% threshold).
+
 
 ## Tech Stack
 

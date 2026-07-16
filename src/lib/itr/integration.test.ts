@@ -46,8 +46,8 @@ describe('Form-16 to ITR Integration Test with real PDF', () => {
     const pdfPath = path.resolve(process.cwd(), 'sample_form16.pdf');
     const pdfBuffer = fs.readFileSync(pdfPath);
 
-    // Convert Buffer to Uint8Array
-    const arrayBuffer = new Uint8Array(pdfBuffer);
+    // Convert Buffer to ArrayBuffer
+    const arrayBuffer = new Uint8Array(pdfBuffer).buffer;
     const extractedText = await extractTextFromPDF(arrayBuffer);
     const parsed = parseForm16Text(extractedText);
 

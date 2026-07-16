@@ -1798,7 +1798,7 @@ export default function Home() {
                       <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                         {item.file.name}
                       </Typography>
-                      <IconButton size="small" onClick={() => handleRemoveForm16(idx)} aria-label={`remove form16 context ${idx}`}>
+                      <IconButton size="small" onClick={() => handleRemoveForm16(idx)} aria-label={idx === 0 ? "remove form16 context" : `remove form16 context ${idx}`}>
                         <CloseIcon sx={{ fontSize: 12 }} />
                       </IconButton>
                     </Paper>

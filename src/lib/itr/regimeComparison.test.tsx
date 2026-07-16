@@ -7,7 +7,13 @@ import * as validator from '@/lib/itr/validator';
 import * as mapper from '@/lib/itr/mapper';
 
 vi.mock('@/lib/form16/extractor');
-vi.mock('@/lib/form16/parser');
+vi.mock('@/lib/form16/parser', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/form16/parser')>('@/lib/form16/parser');
+  return {
+    ...actual,
+    parseForm16Text: vi.fn(),
+  };
+});
 vi.mock('@/lib/itr/validator');
 vi.mock('@/lib/itr/mapper');
 

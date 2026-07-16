@@ -695,7 +695,7 @@ describe('Home Page', () => {
     expect(screen.getByDisplayValue('ABCDE1234F')).toBeDefined();
     expect(screen.getByDisplayValue('John')).toBeDefined();
     expect(screen.getByDisplayValue('Doe')).toBeDefined();
-    expect(screen.getByDisplayValue('1000000')).toBeDefined();
+    expect(screen.getAllByDisplayValue('1000000')[0]).toBeDefined();
 
     // Trigger AI Review
     const reviewBtn = screen.getByText('AI Review');
@@ -780,11 +780,11 @@ describe('Home Page', () => {
     fireEvent.change(screen.getByDisplayValue('Name'), { target: { value: 'NewLast' } });
     expect(screen.getByDisplayValue('NewLast')).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('100'), { target: { value: '200' } });
-    expect(screen.getByDisplayValue('200')).toBeDefined();
+    fireEvent.change(screen.getAllByDisplayValue('100')[0], { target: { value: '200' } });
+    expect(screen.getAllByDisplayValue('200')[0]).toBeDefined();
 
-    fireEvent.change(screen.getByDisplayValue('50'), { target: { value: '150' } });
-    expect(screen.getByDisplayValue('150')).toBeDefined();
+    fireEvent.change(screen.getAllByDisplayValue('50')[0], { target: { value: '150' } });
+    expect(screen.getAllByDisplayValue('150')[0]).toBeDefined();
 
     fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '11' } });
     expect(screen.getByDisplayValue('11')).toBeDefined();
@@ -1037,7 +1037,7 @@ describe('Home Page', () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue('UPDATED_PAN')).toBeDefined();
       expect(screen.getByDisplayValue('UpdatedJohn')).toBeDefined();
-      expect(screen.getByDisplayValue('1100000')).toBeDefined();
+      expect(screen.getAllByDisplayValue('1100000')[0]).toBeDefined();
     });
 
     // Verify Applied Successfully confirmation is shown

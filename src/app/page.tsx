@@ -9,7 +9,7 @@ import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
-import { compareTaxRegimes } from '@/lib/itr/taxEngine';
+import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData } from '@/lib/types';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
@@ -77,6 +77,10 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [extractedData, setExtractedData] = useState<Form16Data | null>(null);
   const [selectedRegime, setSelectedRegime] = useState<'OLD' | 'NEW'>('NEW');
+
+  // Baseline trackings for audit and status highlights
+  const [originalParsedData, setOriginalParsedData] = useState<Form16Data | null>(null);
+  const [appliedAiSuggestions, setAppliedAiSuggestions] = useState<Form16Data | null>(null);
 
   const [aisFile, setAisFile] = useState<File | null>(null);
   const [tisFile, setTisFile] = useState<File | null>(null);
@@ -294,21 +298,9 @@ export default function Home() {
       }
       current[parts[parts.length - 1]] = val;
 
-      if (path.startsWith('deductions') || path === 'totalChapterVIADeductions') {
-        if (path !== 'totalChapterVIADeductions') {
-          next.totalChapterVIADeductions =
-            (next.deductions80C || 0) +
-            (next.deductions80CCC || 0) +
-            (next.deductions80CCD1 || 0) +
-            (next.deductions80CCD1B || 0) +
-            (next.deductions80CCD2 || 0) +
-            (next.deductions80D || 0) +
-            (next.deductions80E || 0) +
-            (next.deductions80G || 0) +
-            (next.deductions80TTA || 0);
-        }
-      }
-      return next;
+      // Auto-recalculate dependents using the recalculateAllFormFields tool
+      const updated = recalculateAllFormFields(next, selectedRegime, path);
+      return updated;
     });
   };
 
@@ -401,8 +393,11 @@ export default function Home() {
     }
     setAcceptedMessages((prev) => ({ ...prev, [msgIdx]: true }));
     const sanitized = sanitizeForm16Data(updatedData);
-    setExtractedData(sanitized);
-    setErrors(validateForm16Data(sanitized));
+    // Recalculate everything for safety
+    const recalculated = recalculateAllFormFields(sanitized, selectedRegime);
+    setExtractedData(recalculated);
+    setAppliedAiSuggestions(recalculated);
+    setErrors(validateForm16Data(recalculated));
   };
 
   const handleRejectProposal = (msgIdx: number) => {
@@ -414,6 +409,7 @@ export default function Home() {
       const backup = proposalBackups[msgIdx];
       if (backup) {
         setExtractedData(backup);
+        setAppliedAiSuggestions(null);
         setErrors(validateForm16Data(backup));
       }
     }
@@ -449,9 +445,13 @@ export default function Home() {
       const reconciled = reconcileAllDocuments(parsed, aisData || undefined, tisData || undefined, form26asData || undefined);
       // Automatically set the recommended regime based on the comparison
       const comparison = compareTaxRegimes(reconciled);
-      setSelectedRegime(comparison.optimalRegime);
-      setExtractedData(reconciled);
-      setErrors(validateForm16Data(reconciled));
+      const activeRegime = comparison.optimalRegime;
+      setSelectedRegime(activeRegime);
+
+      const recalculated = recalculateAllFormFields(reconciled, activeRegime);
+      setExtractedData(recalculated);
+      setOriginalParsedData(JSON.parse(JSON.stringify(recalculated)));
+      setErrors(validateForm16Data(recalculated));
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
@@ -477,9 +477,12 @@ export default function Home() {
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, parsed, tisData || undefined, form26asData || undefined);
         const comparison = compareTaxRegimes(reconciled);
-        setSelectedRegime(comparison.optimalRegime);
-        setExtractedData(reconciled);
-        setErrors(validateForm16Data(reconciled));
+        const activeRegime = comparison.optimalRegime;
+        setSelectedRegime(activeRegime);
+
+        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
+        setExtractedData(recalculated);
+        setErrors(validateForm16Data(recalculated));
       }
     } catch (err) {
       console.error('Error processing AIS PDF:', err);
@@ -506,9 +509,12 @@ export default function Home() {
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, parsed, form26asData || undefined);
         const comparison = compareTaxRegimes(reconciled);
-        setSelectedRegime(comparison.optimalRegime);
-        setExtractedData(reconciled);
-        setErrors(validateForm16Data(reconciled));
+        const activeRegime = comparison.optimalRegime;
+        setSelectedRegime(activeRegime);
+
+        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
+        setExtractedData(recalculated);
+        setErrors(validateForm16Data(recalculated));
       }
     } catch (err) {
       console.error('Error processing TIS PDF:', err);
@@ -535,9 +541,12 @@ export default function Home() {
       if (extractedData) {
         const reconciled = reconcileAllDocuments(extractedData, aisData || undefined, tisData || undefined, parsed);
         const comparison = compareTaxRegimes(reconciled);
-        setSelectedRegime(comparison.optimalRegime);
-        setExtractedData(reconciled);
-        setErrors(validateForm16Data(reconciled));
+        const activeRegime = comparison.optimalRegime;
+        setSelectedRegime(activeRegime);
+
+        const recalculated = recalculateAllFormFields(reconciled, activeRegime);
+        setExtractedData(recalculated);
+        setErrors(validateForm16Data(recalculated));
       }
     } catch (err) {
       console.error('Error processing Form 26AS PDF:', err);
@@ -687,6 +696,136 @@ export default function Home() {
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
+  };
+
+  // Visual audit trail / calculation breakdown component helper
+  const SectionAuditTrail = ({ section }: { section: 'salary' | 'other' | 'deductions' | 'summary' }) => {
+    if (!extractedData) return null;
+
+    const recon = extractedData as ReconciledTaxData;
+    const salary = recon.salary || {};
+    const otherIncome = recon.otherIncome || {};
+    const tdsSalary = recon.taxCredits?.tdsSalary || 0;
+    const tdsOther = recon.taxCredits?.tdsOther || 0;
+    const tcs = recon.taxCredits?.tcs || 0;
+    const advanceTax = recon.taxCredits?.advanceTax || 0;
+    const selfAssessmentTax = recon.taxCredits?.selfAssessmentTax || 0;
+
+    const totalTaxesPaid = advanceTax + tdsSalary + tdsOther + tcs + selfAssessmentTax;
+    const taxPayable = extractedData.taxPayable || 0;
+    const balanceTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
+    const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
+
+    if (section === 'salary') {
+      return (
+        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+            SALARY AUDIT TRAIL & BREAKDOWN:
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Gross Salary:</strong> ₹{salary.grossSalary?.toLocaleString('en-IN')} [Source: <strong>Form-16 Part B / 17(1) + 17(2) + 17(3)</strong>]
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Exempt Allowances:</strong> ₹{salary.totalExemptAllowances?.toLocaleString('en-IN')} [Source: <strong>Form-16 Section 10 Exemptions</strong>] {selectedRegime === 'NEW' ? '(Zeroed-out under NEW regime)' : ''}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Net Salary:</strong> Gross (₹{salary.grossSalary?.toLocaleString('en-IN')}) - Exemptions (₹{salary.totalExemptAllowances?.toLocaleString('en-IN')}) = <strong>₹{salary.netSalary?.toLocaleString('en-IN')}</strong>
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Deductions u/s 16:</strong> ₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')} [Standard Deduction: ₹{salary.standardDeduction16ia?.toLocaleString('en-IN')} + Entertainment: ₹{salary.entertainmentAllowance16ii?.toLocaleString('en-IN')} + PTax: ₹{salary.professionalTax16iii?.toLocaleString('en-IN')}]
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+              • <strong>Final Chargeable Salary:</strong> Net Salary (₹{salary.netSalary?.toLocaleString('en-IN')}) - Deductions u/s 16 (₹{salary.totalDeductionsUs16?.toLocaleString('en-IN')}) = <strong>₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}</strong>
+            </Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    if (section === 'other') {
+      return (
+        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+            OTHER INCOME AUDIT TRAIL & BREAKDOWN:
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>House Property Income:</strong> ₹{otherIncome.houseProperty?.toLocaleString('en-IN')} [Source: <strong>Form-16 Interest on Home Loan</strong>] {selectedRegime === 'NEW' ? '(Blocked under NEW regime unless positive/let-out)' : ''}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Other Sources:</strong> ₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')} [Source: <strong>AIS / TIS Interest / Dividends</strong>]
+            </Typography>
+            <Box sx={{ pl: 2, display: 'flex', flexDirection: 'column' }}>
+              {(otherIncome.otherSources || []).map((os, idx) => (
+                <Typography key={idx} variant="caption" color="textSecondary">
+                  - {os.nature}: ₹{os.amount?.toLocaleString('en-IN')}
+                </Typography>
+              ))}
+            </Box>
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+              • <strong>Total HP & Other Income:</strong> HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{( (otherIncome.houseProperty || 0) + (otherIncome.totalOtherSources || 0) ).toLocaleString('en-IN')}</strong>
+            </Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    if (section === 'deductions') {
+      return (
+        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+            CHAPTER VI-A DEDUCTIONS AUDIT TRAIL:
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Deductions Breakdowns:</strong> 80C: ₹{extractedData.deductions80C?.toLocaleString('en-IN')} | 80CCC: ₹{extractedData.deductions80CCC?.toLocaleString('en-IN')} | 80CCD(1B): ₹{extractedData.deductions80CCD1B?.toLocaleString('en-IN')} | 80CCD(2) Employer: ₹{extractedData.deductions80CCD2?.toLocaleString('en-IN')} | 80D Medical: ₹{extractedData.deductions80D?.toLocaleString('en-IN')} | 80TTA Interest: ₹{extractedData.deductions80TTA?.toLocaleString('en-IN')}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Sum of Invested Deductions:</strong> <strong>₹{extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')}</strong> [Source: <strong>Form-16 Section 80C/80D Declarations</strong>]
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
+              • <strong>Allowed Deductions:</strong> {selectedRegime === 'NEW' ? `₹${(extractedData.deductions80CCD2 || 0).toLocaleString('en-IN')} (Only 80CCD(2) is permitted under New Regime)` : `₹${extractedData.totalChapterVIADeductions?.toLocaleString('en-IN')} (All permitted under Old Regime)`}
+            </Typography>
+          </Box>
+        </Paper>
+      );
+    }
+
+    if (section === 'summary') {
+      return (
+        <Paper variant="outlined" sx={{ p: 2, mt: 1.5, mb: 1, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)', borderColor: 'primary.light' }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'primary.main' }}>
+            TAX COMPUTATION & REFUND BREAKDOWN:
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Total Taxable Income:</strong> GTI (₹{extractedData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (extractedData.deductions80CCD2 || 0) : (extractedData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{extractedData.totalIncome?.toLocaleString('en-IN')}</strong>
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Calculated Tax Liability:</strong> <strong>₹{taxPayable?.toLocaleString('en-IN')}</strong> (includes slab taxes, cess, and rebates)
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block' }}>
+              • <strong>Total Taxes Paid & Credits:</strong> TDS (₹{(tdsSalary + tdsOther).toLocaleString('en-IN')} [Source: <strong>Form-16/26AS/AIS</strong>]) + TCS (₹{tcs.toLocaleString('en-IN')} [Source: <strong>26AS</strong>]) + Advance Tax (₹{advanceTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) + Self-Assessment Tax (₹{selfAssessmentTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) = <strong>₹{totalTaxesPaid.toLocaleString('en-IN')}</strong>
+            </Typography>
+            {refundDue > 0 ? (
+              <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'success.main', mt: 0.5 }}>
+                • <strong>Refund Due Calculation:</strong> Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) - Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) = <strong>₹{refundDue.toLocaleString('en-IN')} (Eligible for Refund)</strong>
+              </Typography>
+            ) : (
+              <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'error.main', mt: 0.5 }}>
+                • <strong>Balance Tax Payable Calculation:</strong> Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) - Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) = <strong>₹{balanceTaxPayable.toLocaleString('en-IN')} (Payable)</strong>
+              </Typography>
+            )}
+          </Box>
+        </Paper>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -891,7 +1030,10 @@ export default function Home() {
                             borderWidth: selectedRegime === 'OLD' ? 2 : 1,
                             bgcolor: selectedRegime === 'OLD' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
                             cursor: 'pointer'
-                          }} onClick={() => setSelectedRegime('OLD')} data-testid="select-old-regime">
+                          }} onClick={() => {
+                            setSelectedRegime('OLD');
+                            setExtractedData((prev) => prev ? recalculateAllFormFields(prev, 'OLD') : null);
+                          }} data-testid="select-old-regime">
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Old Tax Regime</Typography>
                               <Checkbox checked={selectedRegime === 'OLD'} readOnly size="small" />
@@ -935,7 +1077,10 @@ export default function Home() {
                             borderWidth: selectedRegime === 'NEW' ? 2 : 1,
                             bgcolor: selectedRegime === 'NEW' ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)') : 'background.paper',
                             cursor: 'pointer'
-                          }} onClick={() => setSelectedRegime('NEW')} data-testid="select-new-regime">
+                          }} onClick={() => {
+                            setSelectedRegime('NEW');
+                            setExtractedData((prev) => prev ? recalculateAllFormFields(prev, 'NEW') : null);
+                          }} data-testid="select-new-regime">
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>New Tax Regime</Typography>
                               <Checkbox checked={selectedRegime === 'NEW'} readOnly size="small" />
@@ -1017,40 +1162,40 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Assessment Year" path="assessmentYear" data={extractedData} onChange={(v) => updateNestedValue('assessmentYear', v)} />
+                              <CueTextField label="Assessment Year" path="assessmentYear" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('assessmentYear', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Period From (YYYY-MM-DD)" path="period.from" data={extractedData} onChange={(v) => updateNestedValue('period.from', v)} />
+                              <CueTextField label="Period From (YYYY-MM-DD)" path="period.from" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('period.from', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Period To (YYYY-MM-DD)" path="period.to" data={extractedData} onChange={(v) => updateNestedValue('period.to', v)} />
+                              <CueTextField label="Period To (YYYY-MM-DD)" path="period.to" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('period.to', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer Name" path="employer.name" data={extractedData} onChange={(v) => updateNestedValue('employer.name', v)} />
+                              <CueTextField label="Employer Name" path="employer.name" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.name', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer PAN" path="employer.pan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employer.pan', v)} />
+                              <CueTextField label="Employer PAN" path="employer.pan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.pan', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer TAN" path="employer.tan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employer.tan', v)} />
+                              <CueTextField label="Employer TAN" path="employer.tan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.tan', v)} />
                             </Grid>
                             <Grid size={{ xs: 12 }}>
-                              <CueTextField label="Employer Address" path="employer.address" data={extractedData} onChange={(v) => updateNestedValue('employer.address', v)} />
+                              <CueTextField label="Employer Address" path="employer.address" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.address', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee First Name" path="employee.name.firstName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.firstName', v)} />
+                              <CueTextField label="Employee First Name" path="employee.name.firstName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.firstName', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee Middle Name" path="employee.name.middleName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.middleName', v)} />
+                              <CueTextField label="Employee Middle Name" path="employee.name.middleName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.middleName', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee Last Name" path="employee.name.lastName" data={extractedData} onChange={(v) => updateNestedValue('employee.name.lastName', v)} />
+                              <CueTextField label="Employee Last Name" path="employee.name.lastName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.lastName', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee PAN" path="employee.pan" isMonospace uppercase data={extractedData} onChange={(v) => updateNestedValue('employee.pan', v)} />
+                              <CueTextField label="Employee PAN" path="employee.pan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.pan', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 8 }}>
-                              <CueTextField label="Employee Address" path="employee.address" data={extractedData} onChange={(v) => updateNestedValue('employee.address', v)} />
+                              <CueTextField label="Employee Address" path="employee.address" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.address', v)} />
                             </Grid>
                           </Grid>
                         </Grid>
@@ -1062,39 +1207,40 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
+                              <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Perquisites u/s 17(2)" type="number" path="salary.perquisites17_2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.perquisites17_2', v)} />
+                              <CueTextField label="Perquisites u/s 17(2)" type="number" path="salary.perquisites17_2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.perquisites17_2', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Profits in lieu u/s 17(3)" type="number" path="salary.profitsInLieu17_3" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.profitsInLieu17_3', v)} />
+                              <CueTextField label="Profits in lieu u/s 17(3)" type="number" path="salary.profitsInLieu17_3" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.profitsInLieu17_3', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Gross Salary" type="number" path="salary.grossSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.grossSalary', v)} />
+                              <CueTextField label="Gross Salary" type="number" path="salary.grossSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.grossSalary', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Total Exempt Allowances u/s 10" type="number" path="salary.totalExemptAllowances" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.totalExemptAllowances', v)} />
+                              <CueTextField label="Total Exempt Allowances u/s 10" type="number" path="salary.totalExemptAllowances" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.totalExemptAllowances', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Net Salary" type="number" path="salary.netSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.netSalary', v)} />
+                              <CueTextField label="Net Salary" type="number" path="salary.netSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.netSalary', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Standard Deduction (u/s 16ia)" type="number" path="salary.standardDeduction16ia" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.standardDeduction16ia', v)} />
+                              <CueTextField label="Standard Deduction (u/s 16ia)" type="number" path="salary.standardDeduction16ia" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.standardDeduction16ia', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Entertainment Allowance (16ii)" type="number" path="salary.entertainmentAllowance16ii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.entertainmentAllowance16ii', v)} />
+                              <CueTextField label="Entertainment Allowance (16ii)" type="number" path="salary.entertainmentAllowance16ii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.entertainmentAllowance16ii', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Professional Tax (16iii)" type="number" path="salary.professionalTax16iii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.professionalTax16iii', v)} />
+                              <CueTextField label="Professional Tax (16iii)" type="number" path="salary.professionalTax16iii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.professionalTax16iii', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Total Deductions u/s 16" type="number" path="salary.totalDeductionsUs16" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.totalDeductionsUs16', v)} />
+                              <CueTextField label="Total Deductions u/s 16" type="number" path="salary.totalDeductionsUs16" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.totalDeductionsUs16', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Income Chargeable under head Salaries" type="number" path="salary.incomeChargeableUnderHeadSalaries" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('salary.incomeChargeableUnderHeadSalaries', v)} />
+                              <CueTextField label="Income Chargeable under head Salaries" type="number" path="salary.incomeChargeableUnderHeadSalaries" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.incomeChargeableUnderHeadSalaries', v)} />
                             </Grid>
                           </Grid>
+                          <SectionAuditTrail section="salary" />
                         </Grid>
 
                         {/* 3. Other Income */}
@@ -1104,12 +1250,13 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="House Property Income" type="number" path="otherIncome.houseProperty" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('otherIncome.houseProperty', v)} />
+                              <CueTextField label="House Property Income" type="number" path="otherIncome.houseProperty" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.houseProperty', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
+                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
                             </Grid>
                           </Grid>
+                          <SectionAuditTrail section="other" />
                         </Grid>
 
                         {/* 4. Chapter VI-A Deductions */}
@@ -1119,36 +1266,37 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80C" type="number" path="deductions80C" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80C', v)} />
+                              <CueTextField label="Section 80C" type="number" path="deductions80C" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80C', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCC" type="number" path="deductions80CCC" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCC', v)} />
+                              <CueTextField label="Section 80CCC" type="number" path="deductions80CCC" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCC', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(1)" type="number" path="deductions80CCD1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD1', v)} />
+                              <CueTextField label="Section 80CCD(1)" type="number" path="deductions80CCD1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD1', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(1B)" type="number" path="deductions80CCD1B" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD1B', v)} />
+                              <CueTextField label="Section 80CCD(1B)" type="number" path="deductions80CCD1B" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD1B', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(2)" type="number" path="deductions80CCD2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80CCD2', v)} />
+                              <CueTextField label="Section 80CCD(2)" type="number" path="deductions80CCD2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD2', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80D" type="number" path="deductions80D" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80D', v)} />
+                              <CueTextField label="Section 80D" type="number" path="deductions80D" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80D', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80E" type="number" path="deductions80E" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80E', v)} />
+                              <CueTextField label="Section 80E" type="number" path="deductions80E" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80E', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80G" type="number" path="deductions80G" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80G', v)} />
+                              <CueTextField label="Section 80G" type="number" path="deductions80G" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80G', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80TTA" type="number" path="deductions80TTA" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('deductions80TTA', v)} />
+                              <CueTextField label="Section 80TTA" type="number" path="deductions80TTA" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80TTA', v)} />
                             </Grid>
                             <Grid size={{ xs: 12 }}>
-                              <CueTextField label="Total Chapter VI-A Deductions" type="number" path="totalChapterVIADeductions" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('totalChapterVIADeductions', v)} />
+                              <CueTextField label="Total Chapter VI-A Deductions" type="number" path="totalChapterVIADeductions" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('totalChapterVIADeductions', v)} />
                             </Grid>
                           </Grid>
+                          <SectionAuditTrail section="deductions" />
                         </Grid>
 
                         {/* 5. Tax Paid & Credits */}
@@ -1158,19 +1306,19 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TDS on Salary (u/s 192)" type="number" path="taxCredits.tdsSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tdsSalary', v)} />
+                              <CueTextField label="TDS on Salary (u/s 192)" type="number" path="taxCredits.tdsSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tdsSalary', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TDS on Other Income" type="number" path="taxCredits.tdsOther" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tdsOther', v)} />
+                              <CueTextField label="TDS on Other Income" type="number" path="taxCredits.tdsOther" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tdsOther', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TCS (Tax Collected)" type="number" path="taxCredits.tcs" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.tcs', v)} />
+                              <CueTextField label="TCS (Tax Collected)" type="number" path="taxCredits.tcs" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tcs', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Advance Tax Paid" type="number" path="taxCredits.advanceTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.advanceTax', v)} />
+                              <CueTextField label="Advance Tax Paid" type="number" path="taxCredits.advanceTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.advanceTax', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Self-Assessment Tax Paid" type="number" path="taxCredits.selfAssessmentTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxCredits.selfAssessmentTax', v)} />
+                              <CueTextField label="Self-Assessment Tax Paid" type="number" path="taxCredits.selfAssessmentTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.selfAssessmentTax', v)} />
                             </Grid>
                           </Grid>
                         </Grid>
@@ -1182,15 +1330,16 @@ export default function Home() {
                           </Typography>
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Gross Total Income" type="number" path="grossTotalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('grossTotalIncome', v)} />
+                              <CueTextField label="Gross Total Income" type="number" path="grossTotalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('grossTotalIncome', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Total Taxable Income" type="number" path="totalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('totalIncome', v)} />
+                              <CueTextField label="Total Taxable Income" type="number" path="totalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('totalIncome', v)} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Tax Payable" type="number" path="taxPayable" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} onChange={(v) => updateNestedValue('taxPayable', v)} />
+                              <CueTextField label="Tax Payable" type="number" path="taxPayable" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxPayable', v)} />
                             </Grid>
                           </Grid>
+                          <SectionAuditTrail section="summary" />
                         </Grid>
                       </Grid>
 

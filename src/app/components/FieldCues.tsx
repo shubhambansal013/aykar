@@ -294,6 +294,8 @@ interface CueTextFieldProps {
   startAdornment?: React.ReactNode;
   data: Form16Data;
   onChange: (value: any) => void;
+  originalData?: Form16Data | null;
+  appliedAiSuggestions?: Form16Data | null;
 }
 
 export function CueTextField({
@@ -305,6 +307,8 @@ export function CueTextField({
   startAdornment,
   data,
   onChange,
+  originalData = null,
+  appliedAiSuggestions = null,
 }: CueTextFieldProps) {
   const getNestedValue = (obj: any, keyPath: string): any => {
     const keys = keyPath.split('.');
@@ -320,6 +324,28 @@ export function CueTextField({
   const cue = getFieldCue(path, data);
 
   const isNone = cue.status === 'none';
+
+  // Compare values to determine state modification indicators
+  const originalVal = originalData ? getNestedValue(originalData, path) : undefined;
+  const aiSuggestedVal = appliedAiSuggestions ? getNestedValue(appliedAiSuggestions, path) : undefined;
+
+  let modificationLabel = '';
+  let modificationColor = 'text.secondary';
+
+  const emptyOrZero = (v: any) => v === undefined || v === null || v === '' || v === 0;
+
+  if (aiSuggestedVal !== undefined && val === aiSuggestedVal && val !== originalVal) {
+    modificationLabel = 'Applied from AI recommendation';
+    modificationColor = 'success.main';
+  } else if (originalVal !== undefined && val !== originalVal) {
+    if (aiSuggestedVal !== undefined && val !== aiSuggestedVal) {
+      modificationLabel = 'Modified after AI suggestion';
+      modificationColor = 'warning.main';
+    } else {
+      modificationLabel = 'Manually edited';
+      modificationColor = 'info.main';
+    }
+  }
 
   let color = '#2e7d32'; // success (green)
   let Icon = CheckCircleIcon;
@@ -344,6 +370,12 @@ export function CueTextField({
         },
       };
 
+  const helperText = modificationLabel ? (
+    <span style={{ fontSize: '0.675rem', fontWeight: 600 }}>
+      {modificationLabel}
+    </span>
+  ) : undefined;
+
   const inputComponent = (
     <TextField
       fullWidth
@@ -358,7 +390,15 @@ export function CueTextField({
         onChange(v);
       }}
       variant="outlined"
-      sx={customSx}
+      sx={{
+        ...customSx,
+        '& .MuiFormHelperText-root': {
+          color: `${modificationColor} !important`,
+          mx: 0.5,
+          mt: 0.25,
+        }
+      }}
+      helperText={helperText}
       slotProps={{
         input: {
           startAdornment: startAdornment,

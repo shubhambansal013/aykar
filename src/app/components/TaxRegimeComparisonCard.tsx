@@ -2,9 +2,10 @@ import React from 'react';
 import { Card, CardContent, Box, Typography, Paper, Grid, Checkbox, Divider } from '@mui/material';
 import { compareTaxRegimes } from '@/lib/itr/taxEngine';
 import { Form16Data } from '@/lib/types';
+import { ensureForm16Data } from './FieldCues';
 
 interface TaxRegimeComparisonCardProps {
-  extractedData: Form16Data;
+  extractedData: any;
   selectedRegime: 'OLD' | 'NEW';
   mode: 'light' | 'dark';
   onSelectRegime: (regime: 'OLD' | 'NEW') => void;
@@ -16,7 +17,10 @@ export default function TaxRegimeComparisonCard({
   mode,
   onSelectRegime,
 }: TaxRegimeComparisonCardProps) {
-  const comparison = compareTaxRegimes(extractedData);
+  const domainData = ensureForm16Data(extractedData);
+  if (!domainData) return null;
+
+  const comparison = compareTaxRegimes(domainData);
   const savings = Math.abs(comparison.oldRegime.totalTaxPayable - comparison.newRegime.totalTaxPayable);
   const optimalText = comparison.optimalRegime === 'OLD' ? 'Old Tax Regime' : 'New Tax Regime';
   const recommendation = savings > 0

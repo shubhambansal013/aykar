@@ -52,6 +52,20 @@ export function AssistantMessage({
     return getForm16Differences(ensureForm16Data(currentData), updatedData);
   }, [currentData, updatedData]);
 
+  const { profileDiffs, incomeDiffs } = useMemo(() => {
+    const profile: any[] = [];
+    const income: any[] = [];
+    diffs.forEach(diff => {
+      const p = diff.path;
+      if (p.startsWith('employer') || p.startsWith('employee') || p.startsWith('assessmentYear') || p.startsWith('period')) {
+        profile.push(diff);
+      } else {
+        income.push(diff);
+      }
+    });
+    return { profileDiffs: profile, incomeDiffs: income };
+  }, [diffs]);
+
   if (!parsed.json) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -104,26 +118,58 @@ export function AssistantMessage({
             </Typography>
 
             {/* List of differences */}
-            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '0.725rem' }}>
                 Proposed Changes:
               </Typography>
-              {diffs.map((diff, dIdx) => (
-                <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.25 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
-                    {diff.label}:
+
+              {profileDiffs.length > 0 && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '0.7rem', display: 'block', mb: 0.5 }}>
+                    Profile Info (Name, Address)
                   </Typography>
-                  <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
-                    {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                    →
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
-                    {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
-                  </Typography>
+                  {profileDiffs.map((diff, dIdx) => (
+                    <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
+                        {diff.label}:
+                      </Typography>
+                      <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
+                        {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                        →
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
+                        {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
+              )}
+
+              {incomeDiffs.length > 0 && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '0.7rem', display: 'block', mb: 0.5 }}>
+                    Income Details (Gross Total, Other Sources)
+                  </Typography>
+                  {incomeDiffs.map((diff, dIdx) => (
+                    <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
+                        {diff.label}:
+                      </Typography>
+                      <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
+                        {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                        →
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
+                        {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
 
             {!isAccepted && !isRejected ? (

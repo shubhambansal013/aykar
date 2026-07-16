@@ -1014,6 +1014,14 @@ describe('Home Page', () => {
     const optimalBadge = screen.getByText('Optimal');
     expect(optimalBadge).toBeDefined();
 
+    // 5. Verify the "Inspect Source Data" button opens the drawer
+    const inspectBtn = screen.getByTestId('inspect-source-button');
+    expect(inspectBtn).toBeDefined();
+
+    // Clicking should open drawer
+    fireEvent.click(inspectBtn);
+    expect(screen.getByTestId('inspect-source-drawer')).toBeDefined();
+
     vi.restoreAllMocks();
   }, 45000);
 

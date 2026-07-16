@@ -46,6 +46,7 @@ import {
   InputAdornment,
   Grid,
   Divider,
+  Drawer,
   Fab,
   Select,
   MenuItem,
@@ -102,6 +103,9 @@ export default function Home() {
   const [tisFile, setTisFile] = useState<File | null>(null);
   const [form26asFile, setForm26asFile] = useState<File | null>(null);
 
+  const anyFilesUploaded = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
+  const totalUploadedCount = (form16List.length > 0 ? 1 : 0) + (aisFile ? 1 : 0) + (tisFile ? 1 : 0) + (form26asFile ? 1 : 0);
+
   const [aisData, setAisData] = useState<AnnualInformationStatement | null>(null);
   const [tisData, setTisData] = useState<TaxpayerInformationSummary | null>(null);
   const [form26asData, setForm26asData] = useState<Form26AS | null>(null);
@@ -120,6 +124,9 @@ export default function Home() {
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [uploadSectionExpanded, setUploadSectionExpanded] = useState(false);
+  const [warningsExpanded, setWarningsExpanded] = useState(false);
+  const [debugDrawerOpen, setDebugDrawerOpen] = useState(false);
 
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
@@ -793,11 +800,66 @@ export default function Home() {
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
               {/* Document Upload section */}
-              <Card variant="outlined" sx={{ mb: 2.5 }}>
+              {anyFilesUploaded && !uploadSectionExpanded && (
+                <Card variant="outlined" sx={{ mb: 2.5, bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }} data-testid="compact-upload-bar">
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }} data-testid="compact-upload-status">
+                        Compact Upload Status: {totalUploadedCount}/4 Docs Ready
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, ml: 1, flexWrap: 'wrap' }}>
+                        {form16List.length > 0 && (
+                          <Paper variant="outlined" sx={{ px: 1, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 'bold' }}>
+                            Form-16 ({form16List.length})
+                          </Paper>
+                        )}
+                        {aisFile && (
+                          <Paper variant="outlined" sx={{ px: 1, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 'bold' }}>
+                            AIS
+                          </Paper>
+                        )}
+                        {tisFile && (
+                          <Paper variant="outlined" sx={{ px: 1, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 'bold' }}>
+                            TIS
+                          </Paper>
+                        )}
+                        {form26asFile && (
+                          <Paper variant="outlined" sx={{ px: 1, py: 0.1, borderRadius: 1, fontSize: '0.65rem', fontWeight: 'bold' }}>
+                            26AS
+                          </Paper>
+                        )}
+                      </Box>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setUploadSectionExpanded(true)}
+                      data-testid="manage-files-button"
+                    >
+                      Manage Files
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card variant="outlined" sx={{ mb: 2.5, display: (uploadSectionExpanded || !anyFilesUploaded) ? 'block' : 'none' }} data-testid="expanded-upload-card">
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 'bold' }}>
-                    1. Upload Financial Documents
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
+                      1. Upload Financial Documents
+                    </Typography>
+                    {anyFilesUploaded && (
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => setUploadSectionExpanded(false)}
+                        data-testid="collapse-upload-button"
+                      >
+                        Minimize
+                      </Button>
+                    )}
+                  </Box>
                   <Grid container spacing={2}>
                     {/* Form-16 */}
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -1221,7 +1283,7 @@ export default function Home() {
                         </Grid>
                       </Grid>
 
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
                         <Button
                           variant="outlined"
                           color="secondary"
@@ -1234,6 +1296,16 @@ export default function Home() {
                           size="small"
                         >
                           Re-validate Data
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          startIcon={<ReceiptLongIcon fontSize="small" />}
+                          onClick={() => setDebugDrawerOpen(true)}
+                          size="small"
+                          data-testid="inspect-source-button"
+                        >
+                          Inspect Source Data
                         </Button>
                         <Button
                           variant="contained"
@@ -1259,12 +1331,28 @@ export default function Home() {
                     </CardContent>
                   </Card>
 
-                  {/* Debug Information */}
-                  <DebugInfoSection
-                    mode={mode}
-                    combinedRawText={combinedRawText}
-                    extractedData={extractedData}
-                  />
+                  {/* Debug Info Drawer */}
+                  <Drawer
+                    anchor="right"
+                    open={debugDrawerOpen}
+                    onClose={() => setDebugDrawerOpen(false)}
+                    slotProps={{ paper: { sx: { width: { xs: '100%', sm: 600 }, p: 3 } } }}
+                    data-testid="inspect-source-drawer"
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        Source Code & Extracted Protos
+                      </Typography>
+                      <IconButton onClick={() => setDebugDrawerOpen(false)} size="small" aria-label="close debug drawer">
+                        <CloseIcon />
+                      </IconButton>
+                    </Box>
+                    <DebugInfoSection
+                      mode={mode}
+                      combinedRawText={combinedRawText}
+                      extractedData={extractedData}
+                    />
+                  </Drawer>
                 </>
               )}
             </Container>

@@ -1,0 +1,355 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/app[39m
+
+Not implemented: Window's alert() method
+[90mstdout[2m | src/app/page.test.tsx[2m > [22m[2mHome Page[2m > [22m[2mhandles file upload and displays data plus AI Review
+[22m[39mDEBUG_MERGED_DATA: {
+  currentForm16sCount: [33m1[39m,
+  currentForm16sDatas: [
+    {
+      employee: [36m[Object][39m,
+      salary: [36m[Object][39m,
+      deductions80C: [33m150000[39m,
+      deductions80D: [33m25000[39m,
+      deductions80TTA: [33m10000[39m
+    }
+  ],
+  mergedData: [90mundefined[39m
+}
+
+[90mstderr[2m | src/app/page.test.tsx[2m > [22m[2mHome Page[2m > [22m[2mhandles file upload and displays data plus AI Review
+[22m[39mError processing PDF: TypeError: Cannot read properties of undefined (reading 'taxPayable')
+    at reconcileAllDocuments [90m(/app/[39msrc/lib/itr/reconciliation.ts:148:32[90m)[39m
+    at reRunReconciliation [90m(/app/[39msrc/app/page.tsx:669:24[90m)[39m
+    at handleFileUpload [90m(/app/[39msrc/app/page.tsx:709:7[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+
+ [31m❯[39m src/app/page.test.tsx [2m([22m[2m53 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m52 skipped[39m[2m)[22m[33m 1523[2mms[22m[39m
+     [2m[90m↓[39m[22m renders raw text if no JSON code block is present
+     [2m[90m↓[39m[22m renders recommendations and proposal card correctly with Accept action
+     [2m[90m↓[39m[22m calls onReject when Reject button is clicked
+     [2m[90m↓[39m[22m displays accepted status correctly
+     [2m[90m↓[39m[22m displays rejected status correctly
+     [2m[90m↓[39m[22m handles malformed JSON inside code block gracefully
+     [2m[90m↓[39m[22m renders CueTextField correctly for string values and calls onChange
+     [2m[90m↓[39m[22m renders CueTextField correctly for number values and calls onChange
+     [2m[90m↓[39m[22m handles status colors correctly for warning/error/success/none
+     [2m[90m↓[39m[22m handles null data
+     [2m[90m↓[39m[22m checks employer.name
+     [2m[90m↓[39m[22m checks employer.pan
+     [2m[90m↓[39m[22m checks employer.tan
+     [2m[90m↓[39m[22m checks employer.address
+     [2m[90m↓[39m[22m checks employee name fields
+     [2m[90m↓[39m[22m checks employee.pan
+     [2m[90m↓[39m[22m checks employee.address
+     [2m[90m↓[39m[22m checks assessmentYear
+     [2m[90m↓[39m[22m checks period dates
+     [2m[90m↓[39m[22m checks grossSalary consistency
+     [2m[90m↓[39m[22m checks negatives and basic verified fields
+     [2m[90m↓[39m[22m checks totalExemptAllowances consistency
+     [2m[90m↓[39m[22m checks netSalary consistency
+     [2m[90m↓[39m[22m checks standardDeduction limits
+     [2m[90m↓[39m[22m checks other salary deductions
+     [2m[90m↓[39m[22m checks totalDeductionsUs16 consistency
+     [2m[90m↓[39m[22m checks incomeChargeableUnderHeadSalaries consistency
+     [2m[90m↓[39m[22m checks otherIncome HP & totalOtherSources
+     [2m[90m↓[39m[22m checks grossTotalIncome consistency
+     [2m[90m↓[39m[22m checks chapter VIA deductions
+     [2m[90m↓[39m[22m checks totalChapterVIADeductions consistency
+     [2m[90m↓[39m[22m checks totalIncome and taxPayable
+     [2m[90m↓[39m[22m renders Form-16 parser title and AI Chat elements with correct default model
+     [2m[90m↓[39m[22m displays Form-16 context in chat above input and removes it on close click
+     [2m[90m↓[39m[22m toggles color mode between light and dark
+     [2m[90m↓[39m[22m opens AI Chat Drawer when requested
+     [2m[90m↓[39m[22m handles AI Chat submission successfully
+[31m     [31m×[31m handles file upload and displays data plus AI Review[39m[33m 1519[2mms[22m[39m
+     [2m[90m↓[39m[22m handles validation errors
+     [2m[90m↓[39m[22m updates data on input change
+     [2m[90m↓[39m[22m handles file upload with no files selected
+     [2m[90m↓[39m[22m handles attaching and removing files in AI Chat
+     [2m[90m↓[39m[22m handles chat resizing drag
+     [2m[90m↓[39m[22m handles sendOnlyRawData state toggling and affects fetch payload
+     [2m[90m↓[39m[22m handles AI updates proposal accept and reject end-to-end in Home page
+     [2m[90m↓[39m[22m handles AI updates proposal reject end-to-end in Home page
+     [2m[90m↓[39m[22m handles AI updates proposal accept and undo end-to-end in Home page
+     [2m[90m↓[39m[22m correctly renders markdown elements using parseMarkdown and renderInlineMarkdown
+     [2m[90m↓[39m[22m displays AIS, TIS, and 26AS attachment badges in chat panel context area and allows independent removal
+     [2m[90m↓[39m[22m handles end-to-end user document reconciliation, validation cues, and AI advisory flow
+     [2m[90m↓[39m[22m handles uploading a form again after removal by clearing the input target value
+     [2m[90m↓[39m[22m renders modernized UI/UX components correctly
+     [2m[90m↓[39m[22m handles multiple Form-16 uploads, badges rendering, and deletion dynamically
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/app/page.test.tsx[2m > [22mHome Page[2m > [22mhandles file upload and displays data plus AI Review
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: /2. Review & Edit Extracted Information/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"MuiBox-root css-124wx2"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 MuiAppBar-root MuiAppBar-colorInherit MuiAppBar-positionStatic css-1kxtqvx-MuiPaper-root-MuiAppBar-root"[39m
+        [33mstyle[39m=[32m"--Paper-shadow: none;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"MuiToolbar-root MuiToolbar-gutters MuiToolbar-dense css-s3ewxw-MuiToolbar-root"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1ji50j0-MuiSvgIcon-root"[39m
+            [33mdata-testid[39m=[32m"ReceiptLongIcon"[39m
+            [33mfocusable[39m=[32m"false"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M19.5 3.5 18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2v14H3v3c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3V2zM19 19c0 .55-.45 1-1 1s-1-.45-1-1v-3H8V5h11z"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M9 7h6v2H9zm7 0h2v2h-2zm-7 3h6v2H9zm7 0h2v2h-2z"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"MuiTypography-root MuiTypography-h6 css-4u8gwz-MuiTypography-root"[39m
+          [36m>[39m
+            [0mITR Assist[0m
+          [36m</div>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"open ai chat"[39m
+            [33mclass[39m=[32m"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeMedium css-h7cjts-MuiButtonBase-root-MuiIconButton-root"[39m
+            [33mdata-mui-internal-clone-element[39m=[32m"true"[39m
+            [33mtabindex[39m=[32m"0"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-120dh41-MuiSvgIcon-root"[39m
+              [33mdata-testid[39m=[32m"ChatIcon"[39m
+              [33mfocusable[39m=[32m"false"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M6 9h12v2H6zm8 5H6v-2h8zm4-6H6V6h12z"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"toggle color mode"[39m
+            [33mclass[39m=[32m"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeMedium css-h7cjts-MuiButtonBase-root-MuiIconButton-root"[39m
+            [33mdata-mui-internal-clone-element[39m=[32m"true"[39m
+            [33mtabindex[39m=[32m"0"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-120dh41-MuiSvgIcon-root"[39m
+              [33mdata-testid[39m=[32m"DarkModeIcon"[39m
+              [33mfocusable[39m=[32m"false"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"MuiBox-root css-18ag3ml"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"MuiBox-root css-1u00yvg"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"MuiContainer-root MuiContainer-maxWidthMd css-1o116p1-MuiContainer-root"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"MuiPaper-root MuiPaper-outlined MuiPaper-rounded MuiCard-root css-1rxd30i-MuiPaper-root-MuiCard-root"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"MuiCardContent-root css-1vfyqek-MuiCardContent-root"[39m
+              [36m>[39m
+                [36m<h6[39m
+                  [33mclass[39m=[32m"MuiTypography-root MuiTypography-h6 css-148y679-MuiTypography-root"[39m
+                [36m>[39m
+                  [0m1. Upload Financial Documents[0m
+                [36m</h6>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"MuiGrid-root MuiGrid-container MuiGrid-direction-xs-row MuiGrid-spacing-xs-2 css-zjhuaj-MuiGrid-root"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"MuiGrid-root MuiGrid-direction-xs-row MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-3 css-17hq2y0-MuiGrid-root"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"MuiBox-root css-rkiky6"[39m
+                    [36m>[39m
+                      [36m<label[39m
+                        [33mclass[39m=[32m"MuiTypography-root MuiTypography-subtitle2 css-b2k18u-MuiTypography-root"[39m
+                        [33mfor[39m=[32m"file-upload"[39m
+                        [33mid[39m=[32m"file-upload-label"[39m
+                      [36m>[39m
+                        [0m1. Upload Form-16 PDF[0m
+                      [36m</label>[39m
+                      [36m<input[39m
+                        [33maccept[39m=[32m".pdf"[39m
+                        [33maria-labelledby[39m=[32m"file-upload-label"[39m
+                        [33mid[39m=[32m"file-upload"[39m
+                        [33mmultiple[39m=[32m""[39m
+                        [33mstyle[39m=[32m"display: none;"[39m
+                        [33mtype[39m=[32m"file"[39m
+                      [36m/>[39m
+                      [36m<label[39m
+                        [33mclass[39m=[32m"MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-sizeSmall MuiButton-colorPrimary css-eijlbu-MuiButtonBase-root-MuiButton-root"[39m
+                        [33mfor[39m=[32m"file-upload"[39m
+                        [33mrole[39m=[32m"button"[39m
+                        [33mtabindex[39m=[32m"0"[39m
+                      [36m>[39m
+                        [36m<span[39m
+                          [33mclass[39m=[32m"MuiButton-icon MuiButton-startIcon css-1ko2l2g-MuiButton-startIcon"[39m
+                        [36m>[39m
+                          [36m<svg[...
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m""[39m
+      [33mname[39m=[32m"emotion-insertion-point"[39m
+    [36m/>[39m
+  [36m</head>[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"MuiBox-root css-124wx2"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 MuiAppBar-root MuiAppBar-colorInherit MuiAppBar-positionStatic css-1kxtqvx-MuiPaper-root-MuiAppBar-root"[39m
+          [33mstyle[39m=[32m"--Paper-shadow: none;"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"MuiToolbar-root MuiToolbar-gutters MuiToolbar-dense css-s3ewxw-MuiToolbar-root"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-colorPrimary MuiSvgIcon-fontSizeMedium css-1ji50j0-MuiSvgIcon-root"[39m
+              [33mdata-testid[39m=[32m"ReceiptLongIcon"[39m
+              [33mfocusable[39m=[32m"false"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M19.5 3.5 18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2v14H3v3c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3V2zM19 19c0 .55-.45 1-1 1s-1-.45-1-1v-3H8V5h11z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M9 7h6v2H9zm7 0h2v2h-2zm-7 3h6v2H9zm7 0h2v2h-2z"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"MuiTypography-root MuiTypography-h6 css-4u8gwz-MuiTypography-root"[39m
+            [36m>[39m
+              [0mITR Assist[0m
+            [36m</div>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"open ai chat"[39m
+              [33mclass[39m=[32m"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeMedium css-h7cjts-MuiButtonBase-root-MuiIconButton-root"[39m
+              [33mdata-mui-internal-clone-element[39m=[32m"true"[39m
+              [33mtabindex[39m=[32m"0"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-120dh41-MuiSvgIcon-root"[39m
+                [33mdata-testid[39m=[32m"ChatIcon"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M6 9h12v2H6zm8 5H6v-2h8zm4-6H6V6h12z"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"toggle color mode"[39m
+              [33mclass[39m=[32m"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeMedium css-h7cjts-MuiButtonBase-root-MuiIconButton-root"[39m
+              [33mdata-mui-internal-clone-element[39m=[32m"true"[39m
+              [33mtabindex[39m=[32m"0"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-120dh41-MuiSvgIcon-root"[39m
+                [33mdata-testid[39m=[32m"DarkModeIcon"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</header>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"MuiBox-root css-18ag3ml"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"MuiBox-root css-1u00yvg"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"MuiContainer-root MuiContainer-maxWidthMd css-1o116p1-MuiContainer-root"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"MuiPaper-root MuiPaper-outlined MuiPaper-rounded MuiCard-root css-1rxd30i-MuiPaper-root-MuiCard-root"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"MuiCardContent-root css-1vfyqek-MuiCardContent-root"[39m
+                [36m>[39m
+                  [36m<h6[39m
+                    [33mclass[39m=[32m"MuiTypography-root MuiTypography-h6 css-148y679-MuiTypography-root"[39m
+                  [36m>[39m
+                    [0m1. Upload Financial Documents[0m
+                  [36m</h6>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"MuiGrid-root MuiGrid-container MuiGrid-direction-xs-row MuiGrid-spacing-xs-2 css-zjhuaj-MuiGrid-root"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"MuiGrid-root MuiGrid-direction-xs-row MuiGrid-grid-xs-12 MuiGrid-grid-sm-6 MuiGrid-grid-md-3 css-17hq2y0-MuiGrid-root"[39m
+                    [36m>[39m
+                      [36m<div[39m
+                        [33mclass[39m=[32m"MuiBox-root css-rkiky6"[39m
+                      [36m>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"MuiTypography-root MuiTypography-subtitle2 css-b2k18u-MuiTypography-root"[39m
+                          [33mfor[39m=[32m"file-upload"[39m
+                          [33mid[39m=[32m"file-upload-label"[39m
+                        [36m>[39m
+                          [0m1. Upload Form-16 PDF[0m
+                        [36m</label>[39m
+                        [36m<input[39m
+                          [33maccept[39m=[32m".pdf"[39m
+                          [33maria-labelledby[39m=[32m"file-upload-label"[39m
+                          [33mid[39m=[32m"file-upload"[39m
+                          [33mmultiple[39m=[32m""[39m
+                          [33mstyle[39m=[32m"display: none;"[39m
+                          [33mtype[39m=[32m"file"[39m
+                        [36m/>[39m
+                        [36m<label[39m
+                          [33mclass[39m=[32m"MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-sizeSmall MuiButton-colorPrimary css-eijlbu-MuiButtonBase-root-MuiButton-root"[39m
+                        ...
+[90m [2m❯[22m Proxy.waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:[2m163:27[22m[39m
+[36m [2m❯[22m src/app/page.test.tsx:[2m691:11[22m[39m
+    [90m689|[39m     fireEvent[33m.[39m[34mchange[39m(fileInput[33m,[39m { target[33m:[39m { files[33m:[39m [file] } })[33m;[39m
+    [90m690|[39m
+    [90m691|[39m     [35mawait[39m [34mwaitFor[39m(() [33m=>[39m {
+    [90m   |[39m           [31m^[39m
+    [90m692|[39m       expect(screen.getByText(/2. Review & Edit Extracted Information/…
+    [90m693|[39m     })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m52 skipped[39m[90m (53)[39m
+[2m   Start at [22m 17:03:35
+[2m   Duration [22m 4.68s[2m (transform 626ms, setup 0ms, import 2.04s, tests 1.52s, environment 928ms)[22m

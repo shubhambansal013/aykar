@@ -8,7 +8,13 @@ import * as mapper from '@/lib/itr/mapper';
 
 // Mock the libraries
 vi.mock('@/lib/form16/extractor');
-vi.mock('@/lib/form16/parser');
+vi.mock('@/lib/form16/parser', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/form16/parser')>('@/lib/form16/parser');
+  return {
+    ...actual,
+    parseForm16Text: vi.fn(),
+  };
+});
 vi.mock('@/lib/itr/validator');
 vi.mock('@/lib/itr/mapper');
 vi.mock('@/lib/ais/parser', () => ({
@@ -1531,6 +1537,116 @@ describe('Home Page', () => {
     // 4. Verify the Optimal Badge is nested inside the Optimal regime card
     const optimalBadge = screen.getByText('Optimal');
     expect(optimalBadge).toBeDefined();
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  it('handles multiple Form-16 uploads, badges rendering, and deletion dynamically', async () => {
+    const mockText1 = 'Employer Acme Corp Gross Salary 500,000.00';
+    const mockText2 = 'Employer Beta Inc Gross Salary 700,000.00';
+
+    const mockData1 = {
+      employer: { name: 'Acme Corp', tan: 'TAN1', pan: 'PAN1', address: 'Addr1' },
+      employee: { name: { firstName: 'John', middleName: '', lastName: 'Doe' }, pan: 'ABCDE1234F', address: 'Addr' },
+      assessmentYear: '2026-27',
+      period: { from: '01-Apr-2025', to: '31-Aug-2025' },
+      salary: {
+        grossSalary: 500000,
+        salaryAsPer17_1: 500000,
+        perquisites17_2: 0,
+        profitsInLieu17_3: 0,
+        exemptAllowancesUs10: [],
+        totalExemptAllowances: 0,
+        netSalary: 500000,
+        standardDeduction16ia: 75000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 75000,
+        incomeChargeableUnderHeadSalaries: 425000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 425000,
+      totalChapterVIADeductions: 0,
+      totalIncome: 350000,
+      taxPayable: 5000,
+    };
+
+    const mockData2 = {
+      employer: { name: 'Beta Inc', tan: 'TAN2', pan: 'PAN2', address: 'Addr2' },
+      employee: { name: { firstName: 'John', middleName: '', lastName: 'Doe' }, pan: 'ABCDE1234F', address: 'Addr' },
+      assessmentYear: '2026-27',
+      period: { from: '01-Sep-2025', to: '31-Mar-2026' },
+      salary: {
+        grossSalary: 700000,
+        salaryAsPer17_1: 700000,
+        perquisites17_2: 0,
+        profitsInLieu17_3: 0,
+        exemptAllowancesUs10: [],
+        totalExemptAllowances: 0,
+        netSalary: 700000,
+        standardDeduction16ia: 75000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 75000,
+        incomeChargeableUnderHeadSalaries: 625000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 625000,
+      totalChapterVIADeductions: 0,
+      totalIncome: 550000,
+      taxPayable: 15000,
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF')
+      .mockResolvedValueOnce(mockText1)
+      .mockResolvedValueOnce(mockText2);
+
+    vi.spyOn(parser, 'parseForm16Text')
+      .mockReturnValueOnce(mockData1 as any)
+      .mockReturnValueOnce(mockData2 as any);
+
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const { container } = render(<Home />);
+
+    // Open chat
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    // Upload first Form-16
+    const file1 = new File(['dummy1'], 'form16-1.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file1, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const fileInput = container.querySelector('#file-upload');
+    expect(fileInput).not.toBeNull();
+    fireEvent.change(fileInput!, { target: { files: [file1] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('form16-badge')).toBeDefined();
+      expect(screen.getByText('1 Uploaded')).toBeDefined();
+    });
+
+    // Upload second Form-16
+    const file2 = new File(['dummy2'], 'form16-2.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file2, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    fireEvent.change(fileInput!, { target: { files: [file2] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('form16-badge-1')).toBeDefined();
+      expect(screen.getByText('2 Uploaded')).toBeDefined();
+    });
+
+    // Verify merging values in UI (e.g. gross salary = 1,200,000)
+    expect(screen.getByDisplayValue('Acme Corp / Beta Inc')).toBeDefined();
+
+    // Remove first Form-16 from the main list panel
+    const deleteBtn = screen.getByLabelText('delete form16 file 0');
+    fireEvent.click(deleteBtn);
+
+    // Verify it is updated to "1 Uploaded" and employer name is now only Beta Inc
+    await waitFor(() => {
+      expect(screen.getByText('1 Uploaded')).toBeDefined();
+      expect(screen.getByDisplayValue('Beta Inc')).toBeDefined();
+    });
 
     vi.restoreAllMocks();
   }, 45000);

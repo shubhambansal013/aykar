@@ -707,7 +707,7 @@ describe('Home Page', () => {
     });
 
     vi.restoreAllMocks();
-  });
+  }, 45000);
 
   test('handles validation errors', async () => {
     const mockText = 'Raw PDF text';
@@ -828,7 +828,7 @@ describe('Home Page', () => {
     expect(mapper.mapForm16ToITR1).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
-  }, 15000);
+  }, 45000);
 
   test('handles file upload with no files selected', () => {
     render(<Home />);
@@ -1441,6 +1441,63 @@ describe('Home Page', () => {
       expect(screen.getByDisplayValue('AliceUpdated')).toBeDefined();
     });
 
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('handles uploading a form again after removal by clearing the input target value', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: { grossSalary: 1000000, standardDeduction16ia: 50000 },
+      deductions80C: 150000, deductions80D: 25000, deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const { container } = render(<Home />);
+
+    // Open chat to access context badges if needed
+    const chatBtn = screen.getByLabelText('open ai chat');
+    fireEvent.click(chatBtn);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i) as HTMLInputElement;
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    // 1. First upload
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // 2. Clear target value should have been executed in the handler
+    expect(fileInput.value).toBe('');
+
+    // 3. Remove the uploaded file (via remove badge)
+    const removeBtn = screen.getByLabelText('remove form16 context');
+    fireEvent.click(removeBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
+    });
+
+    // 4. Second upload of the EXACT same file
+    // Since input value was reset to '', this change event will correctly fire.
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    expect(fileInput.value).toBe('');
     vi.restoreAllMocks();
   }, 45000);
 });

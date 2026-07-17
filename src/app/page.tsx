@@ -651,6 +651,7 @@ export default function Home() {
     setAttachments([]);
     setChatLoading(true);
     setChatOpen(true);
+    setRightPanelTab('chat');
 
     try {
       const domainData = extractedData ? EngineMapper.toDomain(extractedData) : null;
@@ -784,7 +785,23 @@ export default function Home() {
               ITR Assist
             </Typography>
             <Tooltip title="Ask AI / Chat">
-              <IconButton onClick={() => setChatOpen((prev) => !prev)} color="inherit" aria-label="open ai chat">
+              <IconButton
+                onClick={() => {
+                  setChatOpen((prev) => {
+                    if (!prev) {
+                      setRightPanelTab('chat');
+                      return true;
+                    }
+                    if (rightPanelTab !== 'chat') {
+                      setRightPanelTab('chat');
+                      return true;
+                    }
+                    return false;
+                  });
+                }}
+                color="inherit"
+                aria-label="open ai chat"
+              >
                 <ChatIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -1223,7 +1240,10 @@ export default function Home() {
                           variant="contained"
                           color="secondary"
                           startIcon={<SmartToyIcon fontSize="small" />}
-                          onClick={() => handleSendMessage(true)}
+                          onClick={() => {
+                            setRightPanelTab('chat');
+                            handleSendMessage(true);
+                          }}
                           size="small"
                         >
                           AI Review
@@ -1566,27 +1586,38 @@ export default function Home() {
             height: '100%',
             zIndex: 5,
           }}>
-            {/* Header with Switcher Tabs */}
-            <Box sx={{ p: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            {/* Header with Title and Close Action */}
+            <Box sx={{ px: 1.5, pt: 0.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Tabs
                   value={rightPanelTab}
-                  onChange={(e: React.SyntheticEvent, v: 'chat' | 'inspect') => setRightPanelTab(v)}
-                  aria-label="right panel tabs"
-                  sx={{
-                    minHeight: 0,
-                    '& .MuiTab-root': {
-                      minHeight: 0,
-                      py: 0.75,
-                      px: 1.5,
-                      fontSize: '0.8rem',
-                      textTransform: 'none',
-                      fontWeight: 'bold',
-                    }
-                  }}
+                  onChange={(_, val) => setRightPanelTab(val)}
+                  textColor="primary"
+                  indicatorColor="primary"
+                  sx={{ minHeight: 36 }}
                 >
-                  <Tab label="AI Chat" value="chat" data-testid="right-panel-tab-chat" />
-                  <Tab label="Inspect Documents" value="inspect" data-testid="right-panel-tab-inspect" />
+                  <Tab
+                    value="chat"
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <SmartToyIcon sx={{ fontSize: 16 }} />
+                        AI Assistant
+                      </Box>
+                    }
+                    sx={{ minHeight: 36, py: 0.5, textTransform: 'none', fontWeight: 'bold', fontSize: '0.8rem' }}
+                    data-testid="right-panel-chat-tab"
+                  />
+                  <Tab
+                    value="inspect"
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CodeIcon sx={{ fontSize: 16 }} />
+                        Verify Documents
+                      </Box>
+                    }
+                    sx={{ minHeight: 36, py: 0.5, textTransform: 'none', fontWeight: 'bold', fontSize: '0.8rem' }}
+                    data-testid="right-panel-inspect-tab"
+                  />
                 </Tabs>
                 <IconButton onClick={() => setChatOpen(false)} color="inherit" size="small" aria-label="close right panel">
                   <CloseIcon fontSize="small" />
@@ -1886,7 +1917,15 @@ export default function Home() {
 
         {/* Floating AI Chat Button */}
         {!chatOpen && (
-          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => setChatOpen(true)}>
+          <Fab
+            color="primary"
+            aria-label="open ai chat window"
+            sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }}
+            onClick={() => {
+              setRightPanelTab('chat');
+              setChatOpen(true);
+            }}
+          >
             <ChatIcon />
           </Fab>
         )}

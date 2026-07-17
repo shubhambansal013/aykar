@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { expect, test, describe } from 'vitest';
+import { expect, test, describe, vi } from 'vitest';
 import DebugInfoSection from './DebugInfoSection';
 
 describe('DebugInfoSection Unit Tests', () => {

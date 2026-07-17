@@ -129,7 +129,7 @@ describe('Home Page', () => {
     const chatBtn = screen.getByLabelText('open ai chat');
     fireEvent.click(chatBtn);
 
-    expect(screen.getByText(/AI Chat/i)).toBeDefined();
+    expect(screen.getByText(/AI Assistant/i)).toBeDefined();
     expect(screen.getByText(/Ask me anything about your taxes!/i)).toBeDefined();
     expect(screen.getByPlaceholderText(/Ask your tax question.../i)).toBeDefined();
   });

@@ -1,0 +1,110 @@
+ Taxpayer Information Summary (TIS)     Financial Year   2025-26
+General Information
+ Permanent Account Number (PAN)    Aadhaar Number    Name of Assessee
+ CYXPA6852K    XXXX XXXX 0899    TARUSH ARORA
+ Date of Birth    Mobile Number    E-mail Address
+ 28/09/1996    9711174075    tarusharora77@gmail.com
+ Address
+ 7/90,GEETA COLONY,DELHI,110031,DELHI
+-------------------------------------------------------------------- Taxpayer Information Summary (TIS) --------------------------------------------------------------------
+ (All amount values are in INR)
+SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+1   Salary    18,33,722   18,33,722
+2   Interest from savings bank    1,829   1,829
+3   Interest from deposit    2,620   2,620
+4   Sale of securities and units of mutual fund     52,840   52,840
+5   Purchase of securities and units of mutual funds     13,499   13,499
+ The information details under each information category is provided on next page.
+ Reported by Source   - Value as reported by the information source
+ Processed by System   - Value after processing (including deduplication of information) based on pre-defined rules
+ Accepted by Taxpayer/ Confirmed by Source    - Value derived after considering the taxpayer's feedback or source's confirmation on taxpayer's feedback (if
+any) and value Processed by System
+ Disclaimer
+ Taxpayer Information Summary (TIS) includes information presently available with Income Tax Department. There may be other transactions relating to the
+taxpayer which are not presently displayed in Taxpayer Information Summary (TIS). Taxpayer is expected to check all related information and report complete
+and accurate information in the Income Tax Return.
+ Download ID : CYXPA6852K202607050242    IP Address :
+Generation Date : 05/07/2026, 02:42:26     Page 1 of 3
+PAN    Name    Financial Year
+ CYXPA6852K    TARUSH ARORA     2025-26
+----------------------------------------------------------- Annexure to Taxpayer Information Summary (TIS) -----------------------------------------------------------
+ SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+1   Salary    18,33,722   18,33,722
+SR. NO.   PART   INFORMATION INFORMATION SOURCE    AMOUNT REPORTED BY PROCESSED BY ACCEPTED BY
+DESCRIPTION  DESCRIPTION SOURCE SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+1   Other   Salary (TDS THOMSON REUTERS  Gross Salary 9,84,690   9,84,690   9,84,690
+Annexure II) INTERNATIONAL SERVICES  Received
+PRIVATE LIMITED (MUMI04584G)
+2   TDS/ Salary received THOMSON REUTERS  Amount paid/ 9,84,690   -   -
+TCS (Section 192) INTERNATIONAL SERVICES  credited
+PRIVATE LIMITED (MUMI04584G)
+3   Other   Salary (TDS PARAMETRIC TECHNOLOGY  Gross Salary 8,49,032   8,49,032   8,49,032
+Annexure II) (INDIA) PRIVATE LIMITED  Received
+(BLRP15144D)
+4   TDS/ Salary received PARAMETRIC TECHNOLOGY  Amount paid/ 8,49,032   -   -
+TCS (Section 192) (INDIA) PRIVATE LIMITED  credited
+(BLRP15144D)
+SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+2   Interest from savings bank    1,829   1,829
+SR. NO.   PART   INFORMATION INFORMATION SOURCE    AMOUNT REPORTED BY PROCESSED BY ACCEPTED BY
+DESCRIPTION  DESCRIPTION SOURCE SYSTEM TAXPAYER/ CONFIRMED
+BY SOURCE
+1   SFT   Interest income HDFC BANK LIMITED  Interest   1,191   1,191   1,191
+(SFT-016) – Savings (AAACH2702H.AB772)
+2   SFT   Interest income STATE BANK OF INDIA  Interest   280   280   280
+(SFT-016) – Savings (AAACS8577K.AB703)
+3   SFT   Interest income BANK OF BARODA  Interest   229   229   229
+(SFT-016) – Savings (AAACB1534F.AB566)
+4   SFT   Interest income PUNJAB AND SIND BANK  Interest   129   129   129
+(SFT-016) – Savings (AAACP1206G.AB770)
+SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+3   Interest from deposit    2,620   2,620
+SR. NO.   PART   INFORMATION INFORMATION SOURCE    AMOUNT REPORTED BY PROCESSED BY ACCEPTED BY
+DESCRIPTION  DESCRIPTION SOURCE SYSTEM TAXPAYER/ CONFIRMED
+BY SOURCE
+1   SFT   Interest income HDFC BANK LIMITED  Interest   2,620   2,620   2,620
+(SFT-016) – Term (AAACH2702H.AB772)
+Deposit
+ Download ID : CYXPA6852K202607050242    IP Address :
+Generation Date : 05/07/2026, 02:42:26     Page 2 of 3
+PAN    Name    Financial Year
+ CYXPA6852K    TARUSH ARORA     2025-26
+SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+4   Sale of securities and units of mutual fund     52,840   52,840
+SR. NO.   PART   INFORMATION INFORMATION SOURCE    AMOUNT REPORTED PROCESSED ACCEPTED BY
+DESCRIPTION  DESCRIPTION BY SOURCE BY SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+1   SFT   Sale of listed equity CENTRAL DEPOSITORY SERVICES(I)  Value of 52,840   52,840   52,840
+share (Depository) LIMITED (AAACC6233AMUMC09975A)  consideration
+SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY
+SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+5   Purchase of securities and units of mutual funds     13,499   13,499
+SR. NO.   PART   INFORMATION INFORMATION SOURCE    AMOUNT REPORTED PROCESSED ACCEPTED BY
+DESCRIPTION  DESCRIPTION BY SOURCE BY SYSTEM TAXPAYER/
+CONFIRMED BY
+SOURCE
+1   SFT   Purchase of mutual Computer Age Management Services  Total purchase 13,499   13,499   13,499
+funds (SFT - 018) Limited - ICICI Prudential Mutual  amount
+Fund(P) (AAACC3035G.AZ670)
+ Download ID : CYXPA6852K202607050242    IP Address :
+Generation Date : 05/07/2026, 02:42:26     Page 3 of 3

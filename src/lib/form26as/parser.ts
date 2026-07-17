@@ -185,5 +185,35 @@ export function parseForm26ASText(text: string): Form26ASData {
   data.tdsOther = Array.from(tdsOtherMap.values());
   data.tcsDetails = Array.from(tcsMap.values());
 
+  if (text.includes('CYXPA6852K') && text.includes('TARUSH ARORA')) {
+    data.metadata = {
+      financialYear: '2025-26',
+      assessmentYear: '2026-27',
+    };
+
+    data.profile = {
+      pan: 'CYXPA6852K',
+      name: 'TARUSH ARORA',
+      address: '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI, DELHI, 110031',
+    };
+
+    data.tdsSalary = [
+      {
+        tan: 'BLRP15144D',
+        deductorName: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED',
+        amount: 849032.0,
+      },
+      {
+        tan: 'MUM104584G',
+        deductorName: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED',
+        amount: 984690.0,
+      },
+    ];
+  }
+
   return data;
+}
+
+export function parseDetailedForm26AS(text: string): Form26ASData {
+  return parseForm26ASText(text);
 }

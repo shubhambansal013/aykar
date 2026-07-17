@@ -1,0 +1,392 @@
+THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+ Digitally Signed
+ Form 16
+ Form16 Details:
+ Employee Name:   TARUSH ARORA
+Employee PAN:   CYXPA6852K
+Employee Serial Number:   6126833
+Employee Designation:   MARKETING AUTOMATION SPECIALIST
+Form16 Control Number:   6126833/CYXPA6852K
+Assessment Year:   2026-27
+ Signature Details:
+ This form has been signed and certified using a Digital Signature Certificate as specified under section 119 of the Income-Tax
+Act, 1961. (Please refer Circular No.2/2007.dated 21-5-2007).
+The Digital Signature of the signatory has been affixed in the box provided below. To see the details and validate the signature,
+you should click on the box
+ Digitally Signed by   :   KUMAR VIJETA
+Digitally Signature Certificate issued by    :   mtnlTrustLine Class 2 Individual Subscriber Sub CA G1
+Serial Number of DSC   :
+Number of Pages   :   9 (including this page)
+ TARUSH ARORA 6126833
+FORM NO. 16
+ [See rule 31(1)(a)]
+ PART A
+ Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
+of specified senior citizen under section 194P
+ Certificate No.   SFOLYRA    Last updated on   04-Jun-2026
+Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
+ THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE
+LIMITED
+Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,   TARUSH ARORA
+Bandra Kurla Complex, MUMBAI - 400051  7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
+Maharashtra
++(91)80-
+Payrollhelpdesk.India@thomsonreuters.com
+ PAN of the  Employee Reference No. provided by the
+ PAN of the Deductor   TAN of the Deductor  Employee/Specified senior Employer/Pension Payment order no. provided
+citizen by the Employer (If available)
+ AABCI0605H   MUMI04584G   CYXPA6852K
+ CIT (TDS)   Assessment Year   Period with the Employer
+ From To
+ The Commissioner of Income Tax (TDS)
+Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital   2026-27  01-Apr-2025  24-Oct-2025
+Building, Charni Road , Mumbai - 400002
+ Summary of amount paid/credited and tax deducted at source thereon in respect of the employee
+Receipt Numbers of original
+Amount of tax deposited / remitted
+quarterly statements of TDS  Amount of tax deducted
+Quarter(s)  Amount paid/credited  (Rs.)
+under sub-section (3) of  (Rs.)
+Section 200
+ Q1   QWAZAUWA    388879.00  26540.00   26540.00
+6
+Q2   QWCGAVQG    377399.00  24750.00   24750.00
+Q3   QWEJAOOC    218412.00  0.00   0.00
+ Total (Rs.)    984690.00  51290.00   51290.00
+I. DETAILS OF TAX DEDUCTED AND DEPOSITED IN THE CENTRAL GOVERNMENT ACCOUNT THROUGH BOOK ADJUSTMENT
+ (The deductor to provide payment wise details of tax deducted and deposited with respect to the deductee)
+Book Identification Number (BIN)
+Tax Deposited in respect of the
+Sl. No. deductee  Date of transfer voucher Status of matching
+Receipt Numbers of Form  DDO serial number in Form no.
+(Rs.)  (dd/mm/yyyy) with Form no. 24G
+No. 24G  24G
+Total (Rs.)
+ II. DETAILS OF TAX DEDUCTED AND DEPOSITED IN THE CENTRAL GOVERNMENT ACCOUNT THROUGH CHALLAN
+ (The deductor to provide payment wise details of tax deducted and deposited with respect to the deductee)
+Challan Identification Number (CIN)
+Tax Deposited in respect of the
+Sl. No. deductee
+(Rs.) BSR Code of the Bank  Date on which Tax deposited Challan Serial Number   Status of matching with
+Branch  (dd/mm/yyyy)  OLTAS*
+ 1   8510.00   6910013    03-05-2025   01263   F
+2   8512.00   6910013    04-06-2025   04949   F
+3   9518.00   6910013    03-07-2025   04369   F
+4   8226.00   6910013    05-08-2025   10058   F
+5   8289.00   6910013    03-09-2025   06380   F
+ Page 1 of 2
+Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Challan Identification Number (CIN)
+Tax Deposited in respect of the
+ Sl. No. deductee
+(Rs.) BSR Code of the Bank  Date on which Tax deposited Challan Serial Number   Status of matching with
+Branch  (dd/mm/yyyy)  OLTAS*
+ 6   8235.00   6910013    03-10-2025   02966   F
+7    0.00   -    06-11-2025   -   F
+8    0.00   -    05-12-2025   -   F
+ Total (Rs.)   51290.00
+ Verification
+ I,   KUMAR VIJETA, son / daughter of UMESH PRASAD working in the capacity of DIRECTOR PAYROLL OPERATIONS APAC UK (designation) do hereby certify that
+a sum of Rs. 51290.00 [Rs. Fifty One Thousand Two Hundred and Ninety Only (in words)] has been deducted and a sum of Rs. 51290.00 [Rs. Fifty One Thousand
+Two Hundred and Ninety Only] has been deposited to the credit of the Central Government. I further certify that the information given above is true, complete and
+correct and is based on the books of account, documents, TDS statements, TDS deposited and other available records.
+Place  MUMBAI SUBURBAN
+Date    05-Jun-2026  (Signature of person responsible for deduction of Tax)
+Designation:   DIRECTOR PAYROLL OPERATIONS APAC UK  Full Name: KUMAR VIJETA
+ Notes:
+ 1. Part B (Annexure) of the certificate in Form No.16 shall be issued by the employer.
+2. If an assessee is employed under one employer during the year, Part 'A' of the certificate in Form No.16 issued for the quarter ending on 31st March of the financial year shall contain the details
+of tax deducted and deposited for all the quarters of the financial year.
+3. If an assessee is employed under more than one employer during the year, each of the employers shall issue Part A of the certificate in Form No.16 pertaining to the period for which such
+assessee was employed with each of the employers. Part B (Annexure) of the certificate in Form No. 16 may be issued by each of the employers or the last employer at the option of the assessee.
+4. To update PAN details in Income Tax Department database, apply for 'PAN change request' through NSDL or UTITSL.
+Legend used in Form 16
+* Status of matching with OLTAS
+ Legend   Description    Definition
+Deductors have not deposited taxes or have furnished incorrect particulars of tax payment. Final credit will be reflected only when payment
+U   Unmatched
+details in bank match with details of deposit in TDS / TCS statement
+Provisional tax credit is effected only for TDS / TCS Statements filed by Government deductors."P" status will be changed to Final (F) on
+ P   Provisional
+verification of payment details submitted by Pay and Accounts Officer (PAO)
+In case of non-government deductors, payment details of TDS / TCS deposited in bank by deductor have matched with the payment details
+ F   Final mentioned in the TDS / TCS statement filed by the deductors. In case of government deductors, details of TDS / TCS booked in Government
+account have been verified by Pay & Accounts Officer (PAO)
+Payment details of TDS / TCS deposited in bank by deductor have matched with details mentioned in the TDS / TCS statement but the
+ O   Overbooked amount is over claimed in the statement. Final (F) credit will be reflected only when deductor reduces claimed amount in the statement or
+makes new payment for excess amount claimed in the statement
+Page 2 of 2
+FORM NO. 16
+ PART B
+ Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
+of specified senior citizen under section 194P
+ Certificate No.    SFOLYRA  Last updated on   04-Jun-2026
+Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
+ THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,
+ TARUSH ARORA
+Bandra Kurla Complex, MUMBAI - 400051
+7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
+Maharashtra
++(91)80-
+Payrollhelpdesk.India@thomsonreuters.com
+ PAN of the Deductor   TAN of the Deductor   PAN of the Employee/Specified senior citizen
+ AABCI0605H   MUMI04584G   CYXPA6852K
+ CIT (TDS)   Assessment Year   Period with the Employer
+ From To
+ The Commissioner of Income Tax (TDS)
+Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital   2026-27  01-Apr-2025  24-Oct-2025
+Building, Charni Road , Mumbai - 400002
+ Annexure - I
+ Details of Salary Paid and any other income and tax deducted
+A Whether opting out of taxation u/s 115BAC(1A)?     No
+1.   Gross Salary  Rs.   Rs.
+(a)   Salary as per provisions contained in section 17(1)  984690.00
+Value of perquisites under section 17(2) (as per Form No. 12BA,
+(b)    0.00
+wherever applicable)
+Profits in lieu of salary under section 17(3) (as per Form No.
+(c)    0.00
+12BA, wherever applicable)
+(d)   Total    984690.00
+(e)   Reported total amount of salary received from other employer(s)     0.00
+2.   Less: Allowances to the extent exempt under section 10
+(a) Travel concession or assistance under section 10(5)  0.00
+(b) Death-cum-retirement gratuity under section 10(10)  0.00
+(c) Commuted value of pension under section 10(10A)  0.00
+Cash equivalent of leave salary encashment under section 10
+(d)  0.00
+(10AA)
+(e)   House rent allowance under section 10(13A)  0.00
+(f)   Other special allowances under section 10(14)     0.00
+ Page 1 of 4
+Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
+(g)  [Note: Break-up to be filled and signed    by employer in the table
+provide at the bottom of this form]
+ (h) Total amount of any other exemption under section 10  0.00
+Total amount of exemption claimed under section 10
+(i)  0.00
+[2(a)+2(b)+2(c)+2(d)+2(e)+2(f)+2(h)]
+Total amount of salary received from current employer
+3.    984690.00
+[1(d)-2(i)]
+4.   Less: Deductions under section 16
+(a)   Standard deduction under section 16(ia)  75000.00
+(b) Entertainment allowance under section 16(ii)  0.00
+(c) Tax on employment under section 16(iii)     0.00
+5. Total amount of deductions under section 16 [4(a)+4(b)+4(c)]  75000.00
+6. Income chargeable under the head "Salaries" [(3+1(e)-5]  909690.00
+7. Add: Any other income reported by the employee under as per section 192 (2B)
+Income (or admissible loss) from house property reported by
+(a)    0.00
+employee offered for TDS
+(b) Income under the head Other Sources offered for TDS  0.00
+Total amount of other income reported by the employee
+8.  0.00
+[7(a)+7(b)]
+9. Gross total income (6+8)   909690.00
+10. Deductions under Chapter VI-A  Gross Amount   Deductible Amount
+Deduction in respect of life insurance premia, contributions to
+(a)  0.00 0.00
+provident fund etc. under section 80C
+Deduction in respect of contribution to certain pension funds
+(b)  0.00 0.00
+under section 80CCC
+Deduction in respect of contribution by taxpayer to pension
+(c)  0.00 0.00
+scheme under section 80CCD (1)
+(d) Total deduction under section 80C, 80CCC and 80CCD(1)  0.00 0.00
+Deductions in respect of amount paid/deposited to notified
+(e)  0.00 0.00
+pension scheme under section 80CCD (1B)
+Deduction in respect of contribution by Employer to pension
+(f)  0.00 0.00
+scheme under section 80CCD (2)
+Deduction in respect of health insurance premia under section
+(g)  0.00 0.00
+80D
+ Page 2 of 4
+Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Deduction in respect of interest on loan taken for higher
+(h)    0.00 0.00
+education under section 80E
+ Deduction in respect of contribution by the employee to Agnipath
+ (i)  0.00 0.00
+Scheme under section 80CCH
+Deduction in respect of contribution by the Central Government
+(j)  0.00 0.00
+to Agnipath Scheme under section 80CCH
+Gross Qualifying Deductible
+Amount Amount Amount
+ Total Deduction in respect of donations to certain funds,
+(k)  0.00   0.00 0.00
+charitable institutions, etc. under section 80G
+Deduction in respect of interest on deposits in savings account
+(l)  0.00   0.00 0.00
+under section 80TTA
+Amount Deductible under any other provision (s) of Chapter VI-A
+(m)  [Note: Break-up to be filled and signed    by employer in the table
+provide at the bottom of this form]
+Total of amount deductible under any other provision(s) of
+(n)    0.00 0.00 0.00
+Chapter VI-A
+Aggregate of deductible amount under Chapter VI-A
+11.  0.00
+[10(d)+10(e)+10(f)+10(g)+10(h)+10(i)+10(j)+10(k)+10(l)+10(n)]
+12. Total taxable income (9-11)   909690.00
+13. Tax on total income  0.00
+14. Rebate under section 87A, if applicable     0.00
+15.    Surcharge, wherever applicable  0.00
+16.   Health and education cess  0.00
+17. Tax payable (13+15+16-14)  0.00
+18. Less: Relief under section 89 (attach details)  0.00
+Less: Tax deducted at source as per Form No. 12BAA submitted
+19.
+under provisions of section 192(2B)
+0.00
+Less: Tax collected at source as per Form No. 12BAA submitted
+20.
+under provisions of section 192(2B)
+21.    Net tax payable (17-18-19-20)  0.00
+ Verification
+ I, KUMAR VIJETA, son/daughter of UMESH PRASAD .Working in the capacity of DIRECTOR PAYROLL OPERATIONS
+APAC UK (Designation) do hereby certify that the information given above is true, complete and correct and is based on the books of
+account, documents, TDS statements, and other available records.
+ Place  MUMBAI SUBURBAN  (Signature of person responsible for deduction of tax)
+ Full
+Date   05-Jun-2026   KUMAR VIJETA
+Name:
+ Page 3 of 4
+Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+2. (f) Break up for ‘Amount of any other exemption under section 10’ to be filled in the table below
+Particular's of Amount for any other
+Sl.
+exemption under section 10   Gross Amount  Qualifying Amount   Deductible Amount
+No.
+Rs.  Rs.   Rs.   Rs.
+ 1.
+2..
+3.
+4.
+5.
+6.
+10(k). Break up for ‘Amount deductible under any other provision(s) of Chapter VIA ‘to be filled in the table below
+Particular's of Amount deductible under
+Sl. any other provision(s) of Chapter VIA  Gross Amount  Qualifying Amount  Deductible Amount
+No.
+Rs.    Rs. Rs.   Rs.
+1.
+2.
+3.
+4.
+5.
+6.
+ MUMBAI SUBURBAN    (Signature of person responsible for deduction of
+ Place
+tax)
+ Full
+Date    05-Jun-2026    KUMAR VIJETA
+Name:
+ Page 4 of 4
+Annexure to FORM NO.16
+ [Breakups for item no 2(f) and 10(k)]
+ Name and address of the Employer    Name and address of the Employee
+ THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20, Bandra Kurla  TARUSH ARORA
+Complex MUMBAI-400051 MAHARASHTRA
+ PAN of the Deductor   TAN of the Deductor    PAN of the Employee   Employee Reference No. Provided by the Employer (If available)
+ AABCI0605H   MUMI04584G    CYXPA6852K   6126833
+ CIT(TDS)    Assessment Year   Period
+ The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G Mittal  From   To
+Ayurvedic Hospital Building, Charni Road,     2026-27
+ Mumbai 400002    01- Apr-2025   24-Oct-2025
+2. (f) Break up for ' Amount of any other exemption under section 10' to be filled in the table below
+Sl No   Particulars of any other exemption under section 10     Gross Amount Qualifying Amount Deductible Amount
+Rs. Rs. Rs.
+1   Transport Exemption    0.00
+2   Children Education Allowance    0.00
+3   Uniform Exemption    0.00
+4
+5
+6
+10(k). Break up for   μ Amount deductible under any other provision(s) of Chapter VIA    μ to be filled in the table below
+Sl No   Amount deductible under any other provision(s) of Chapter VIA     Gross Amount Qualifying Amount Deductible Amount
+Rs. Rs. Rs.
+1   80 CCG Rajiv Gandhi Equity Scheme    0.00   0.00   0.00
+2   80 DD Handicapped Dependents    0.00   0.00   0.00
+3   80 DD Handicapped Dependents(severe disability)     0.00   0.00   0.00
+4   80 DDB Medical Expenses, Chronic Diseases     0.00   0.00   0.00
+5   80 DDB Medical Expenses, Chronic Diseases(Senior Citizen)     0.00   0.00   0.00
+6   80 GG Rent paid (HRA not received)    0.00   0.00   0.00
+7   80 EE Additional Interest on House Property     0.00   0.00   0.00
+8   80 EEA Deduction for interest paid on home loan for affordable housing     0.00   0.00   0.00
+9   80 EEB Deduction in respect of interest paid on loan taken for the purchase of electric vehicle    0.00   0.00   0.00
+10   80 U Deduction in case of physical diability     0.00   0.00   0.00
+Place   MUMBAI
+ Signature of the person responsible for deduction of tax
+Date   05-Jun-2026    FULL NAME :   KUMAR VIJETA
+FORM NO. 12BA
+ {See rule 26A(2)(b)}
+ Statement showing particulars of perquisites, other fringe benefits or
+amenities and profits in lieu of salary with value thereof
+ 1. Name and Address of the Employer   :   THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20, Bandra Kurla Complex
+MUMBAI-400051 MAHARASHTRA
+2. TAN    :   MUMI04584G
+3. TDS Assessment Range of the Employer    :   The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G Mittal Ayurvedic
+Hospital Building, Charni Road, Mumbai 400002
+4.Name of Employee    :   TARUSH ARORA
+Designation    :   MARKETING AUTOMATION SPECIALIST
+PAN or Aadhaar Number   :   CYXPA6852K
+5. Is the Employee a Director or a person with substantial
+interest in the company (Where the employer is a company)    :   No
+6. Income under the Head 'Salaries' of the Employee
+(Other than from perquisites)    :   909690.00
+7. Financial Year    :   2025-26
+8. Valuation of Perquisites
+Value of Amount,if any, Amount of perquisite
+ Sl No.   Nature of perquisite (see rule 3)  perquisite as per rules recovered from employee chargeable to tax Col. (3) - Col. (4)
+(Rs.) (Rs.) (Rs.)
+(1)    (2)    (3)   (4)   (5)
+ (1)   Accommodation    0.00   0.00   0.00
+(2)   Cars/Other automotive    0.00   0.00   0.00
+(3)   Sweeper, Gardener, Watchman or Personal attendant     0.00   0.00   0.00
+(4)   Gas, Electricity, Water    0.00   0.00   0.00
+(5)   Interest free or concessional loans    0.00   0.00   0.00
+(6)   Holiday expenses    0.00   0.00   0.00
+(7)   Free or concessional travel    0.00   0.00   0.00
+(8)   Free Meals    0.00   0.00   0.00
+(9)   Free Education    0.00   0.00   0.00
+(10)   Gifts, Vouchers etc.    0.00   0.00   0.00
+(11)   Credit card expenses    0.00   0.00   0.00
+(12)   Club expenses    0.00   0.00   0.00
+(13)   Use of movable assets by employees    0.00   0.00   0.00
+(14)   Transfer of assets to employees    0.00   0.00   0.00
+(15)   Value of any other benefit/amenity/service/privilege     0.00   0.00   0.00
+(16)   Stock options allotted or transferred by employer being an eligible start-up referred to in  0.00   0.00   0.00
+section 80-IAC.
+(17)   Stock options (non-qualified options) other than ESOP in col 16 above.    0.00   0.00   0.00
+(18)   Contribution by employer to fund and scheme taxable under section 17(2)(vii).    0.00   0.00   0.00
+(19)   Annual accretion by way of interest, dividend etc. to the balance at the credit of fund and
+scheme referred to insection 17(2)(vii) and taxable under section 17(2)(viia).    0.00   0.00   0.00
+(20)   Other Benefits or amenities    0.00   0.00   0.00
+(21)   Total Value of Perquisites    0.00   0.00   0.00
+(22)   Total Value of profits in lieu of salary as per section 17(3)     0.00   0.00   0.00
+9. Details of Tax
+a) Tax Deducted from Salary of Employee u/s 192(1)     :   51290.00
+b) Tax Paid by Employer on behalf of Employee u/s 192(1A)     :   0.00
+c) Total Tax Paid    :   51290.00
+d) Date of Payment into Government Treasury     :   ref form 16
+DECLARATION BY EMPLOYER
+I,   KUMAR VIJETA   son / daughter of   UMESH OJHA PRASAD   working in the capacity of    DIRECTOR PAYROLL OPERATIONS APAC UK    do hereby declare on behalf of
+ THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED    that the information given above is based on the books of account, documents and other
+relevant records or information available with us and the details of value of each such perquisite are in accordance with section 17 and rules framed thereunder and that
+such information is true and correct.
+For THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+Place : MUMBAI
+Date : 05-Jun-2026
+ Signature of the person responsible for deduction of tax
+This Form 16 is signed using Digital Signature.
+FULL NAME : KUMAR VIJETA
+Designation : DIRECTOR PAYROLL OPERATIONS APAC UK

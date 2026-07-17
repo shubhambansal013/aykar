@@ -1,0 +1,117 @@
+ Annual Information Statement (AIS)     Financial Year   2025-26
+Part A - General Information
+ Permanent Account Number (PAN)     Aadhaar Number    Name of Assessee
+ CYXPA6852K    XXXX XXXX 0899    TARUSH ARORA
+ Date of Birth    Mobile Number    E-mail Address
+ 28/09/1996    9711174075    tarusharora77@gmail.com
+ Address
+ 7/90,GEETA COLONY,DELHI,110031,DELHI
+------------------------------------------------------------------------------------- Annual Information Statement (Part B) --------------------------------------------------------------------------------------
+ (All amount values are in INR)
+ Part B1-Information relating to tax deducted or collected at source
+ Salary
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+1   TDS-192    Salary received (Section 192)    THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED  8   9,84,690
+(MUMI04584G)
+SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
+1   Q3(Oct-Dec)    30/11/2025     1,066    0    0   Active
+2   Q3(Oct-Dec)    31/10/2025     2,17,346    0    0   Active
+3   Q2(Jul-Sep)    30/09/2025     1,25,699    8,235    8,235   Active
+4   Q2(Jul-Sep)    31/08/2025     1,26,050    8,289    8,289   Active
+5   Q2(Jul-Sep)    31/07/2025     1,25,650    8,226    8,226   Active
+6   Q1(Apr-Jun)    30/06/2025     1,33,933    9,518    9,518   Active
+7   Q1(Apr-Jun)    31/05/2025     1,27,473    8,512    8,512   Active
+8   Q1(Apr-Jun)    30/04/2025     1,27,473    8,510    8,510   Active
+SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+2   TDS-192    Salary received (Section 192)    PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)    6   8,49,032
+SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
+1   Q4(Jan-Mar)    31/03/2026     1,64,500    0    0   Active
+2   Q4(Jan-Mar)    28/02/2026     1,64,500    0    0   Active
+3   Q4(Jan-Mar)    31/01/2026     1,64,500    0    0   Active
+4   Q3(Oct-Dec)    31/12/2025     1,64,500    0    0   Active
+5   Q3(Oct-Dec)    30/11/2025     1,64,500    0    0   Active
+6   Q3(Oct-Dec)    31/10/2025     26,532    0    0   Active
+ Note -   If there is variation between the TDS/TCS information as displayed in Form26AS on TRACES portal, and the TDS/TCS information as displayed in AIS on Compliance Portal, the taxpayer may rely on the
+information displayed on TRACES portal for the purpose of filing of tax return and for other tax compliance purposes.
+ Part B2-Information relating to specified financial transaction (SFT)
+ Interest from savings bank
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+1   SFT-016(SB)    Interest income (SFT-016) – Savings    HDFC BANK LIMITED (AAACH2702H.AB772)     1   1,191
+SR. NO.   REPORTED ON    ACCOUNT NUMBER    ACCOUNT TYPE    INTEREST AMOUNT   STATUS
+1   08/05/2026    50100282109028     Saving    1,191   Active
+SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+2   SFT-016(SB)    Interest income (SFT-016) – Savings    STATE BANK OF INDIA (AAACS8577K.AB703)     1   280
+SR. NO.   REPORTED ON    ACCOUNT NUMBER    ACCOUNT TYPE    INTEREST AMOUNT   STATUS
+1   26/05/2026    00000040226888207    Saving    280   Active
+SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+3   SFT-016(SB)    Interest income (SFT-016) – Savings    BANK OF BARODA (AAACB1534F.AB566)     1   229
+SR. NO.   REPORTED ON    ACCOUNT NUMBER    ACCOUNT TYPE    INTEREST AMOUNT   STATUS
+1   18/05/2026    21380100026089     Saving    229   Active
+SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+4   SFT-016(SB)    Interest income (SFT-016) – Savings    PUNJAB AND SIND BANK (AAACP1206G.AB770)     1   129
+SR. NO.   REPORTED ON    ACCOUNT NUMBER    ACCOUNT TYPE    INTEREST AMOUNT   STATUS
+1   23/05/2026    06261000058396     Saving    129   Active
+ Interest from deposit
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+5   SFT-016(TD)    Interest income (SFT-016) – Term Deposit    HDFC BANK LIMITED (AAACH2702H.AB772)     1   2,620
+SR. NO.   REPORTED ON    ACCOUNT NUMBER    ACCOUNT TYPE    INTEREST AMOUNT   STATUS
+1   08/05/2026    50300606083392     Time Deposit    2,620   Active
+ Sale of securities and units of mutual fund
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+6   SFT-17-LES(M)    Sale of listed equity share (Depository)    CENTRAL DEPOSITORY SERVICES(I) LIMITED  3   52,840.00
+(AAACC6233AMUMC09975A)
+SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
+NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
+VALUE
+1   25/02/2026   WAAREE ENERGIES LIMITED # EQUITY  Listed Market   Market   Long 5.00   3,001.00   15,005   7,515.00   0   0   0   Active
+SHARES(INE377N01017)  Equity Share  term
+ Download ID : CYXPA6852K202607050531     IP Address :
+Generation Date : 05/07/2026, 05:31:10     Page 1 of 2
+ PAN    Name    Financial Year
+ CYXPA6852K    TARUSH ARORA    2025-26
+SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
+NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
+VALUE
+2   22/12/2025   ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY  Listed Market   Market   Short 6.00   2,590.00   15,540   12,990.00   0   0   0   Active
+LIMITED#NEW EQUITY SHARES WITH FV RE.1/-AFTER  Equity Share  term
+SUB-DIVISION(INE346A01027)
+3   15/10/2025   LG ELECTRONICS INDIA LIMITED # EQUITY  Listed Market   Market   Short 13.00   1,715.00   22,295   14,820.00   0   0   0   Active
+SHARES(INE324D01010)  Equity Share  term
+ Purchase of securities and units of mutual funds
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+7   SFT-18(Pur)    Purchase of mutual funds (SFT - 018)    Computer Age Management Services Limited - ICICI Prudential Mutual  2   13,499
+Fund(P) (AAACC3035G.AZ670)
+SR. NO.   QUARTER   CLIENT ID    AMC NAME (CODE)   HOLDER FLAG   TOTAL PURCHASE AMOUNT   TOTAL SALES VALUE   STATUS
+1   Q4(Jan-Mar)   34738785    ICICI Prudential Mutual First    4,500   0   Active
+Fund(P)
+2   Q2(Jul-Sep)   34738785    ICICI Prudential Mutual First    9,000   0   Active
+Fund(P)
+ Part B7-Any other information in relation to sub-rule (2) of rule 114-I
+ Salary
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+1   TDS-Ann.II-SAL    Salary (TDS Annexure II)     THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED  1   9,84,690
+(MUMI04584G)
+SR. NO.   EMPLOYMENT START DATE   EMPLOYMENT END DATE    GROSS SALARY U/S 17(1)   VALUE OF PERQUISITES U/S PROFITS IN LIEU OF SALARY  GROSS SALARY   STATUS
+17(2) U/S 17(3)
+1   01/04/2025   24/10/2025    9,84,690   0   0   9,84,690   Active
+SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+2   TDS-Ann.II-SAL    Salary (TDS Annexure II)     PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)    1   8,49,032
+SR. NO.   EMPLOYMENT START DATE   EMPLOYMENT END DATE    GROSS SALARY U/S 17(1)   VALUE OF PERQUISITES U/S PROFITS IN LIEU OF SALARY  GROSS SALARY   STATUS
+17(2) U/S 17(3)
+1   27/10/2025   31/03/2026    8,49,032   0   0   8,49,032   Active
+ Part B3-Information relating to payment of taxes
+ SR. NO.   FINANCIAL MAJOR HEAD   MINOR HEAD   TAX (A)    SURCHARGE (B)   EDUCATION OTHERS (D)   TOTAL (A+B+C BSR CODE   DATE OF CHALLAN CHALLAN IDENTIFICATION NUMBER
+YEAR  CESS (C)  +D)  DEPOSIT SERIAL
+NUMBER
+1   2024-25   Income Tax Self 2,140    0   0   0   2,140   0510002   26/08/2025   279   25082600001297HDFC
+(Other than Assessment
+Companies)
+ Note -   For financial year 2022-23 and earlier, details of tax payments are available in both Form 26AS on the TRACES portal and Annual Information Statement (AIS) on the Compliance Portal. If there is any variation
+between the tax payment information shown in Form 26AS and AIS, taxpayers are advised to rely on Form 26AS on the TRACES portal for filing their income tax returns and for other tax compliance purposes.
+However, from Financial Year 2023-24, details of Tax Payments are available only in AIS.
+ Part B4-Information relating to demand and refund
+Refund
+ SR. NO.   FINANCIAL YEAR    MODE    NATURE OF REFUND   REFUND AMOUNT    DATE OF PAYMENT
+No Transactions Present
+ Download ID : CYXPA6852K202607050531     IP Address :
+Generation Date : 05/07/2026, 05:31:10     Page 2 of 2

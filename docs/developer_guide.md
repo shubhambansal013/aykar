@@ -28,7 +28,7 @@ Welcome to the Aykar developer guide! This document compiles critical context, a
 - **Purpose:** Translation layers preserve core taxpayer details (such as names, PAN, address, metadata) during transformations.
 
 ### C. Uncle Bob's Clean Code Guidelines
-- Refer to [READABILITY.md](../READABILITY.md) for full compliance.
+- Refer to [readability.md](readability.md) for full compliance.
 - Keep UI components small and separated from computational logic.
 - Avoid inline arrow functions inside JSX elements. Use single, shared event handlers (e.g., `handleChange`) mapped to input names to reduce statement count and avoid coverage holes.
 

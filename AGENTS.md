@@ -7,8 +7,8 @@ This project is a Next.js application designed to run on Cloudflare Workers usin
 Before modifying any file, please read and familiarize yourself with:
 
 1. **[Developer Guide](docs/developer_guide.md)** — Consolidates critical implementation details, including **Protocol Buffer-driven rendering**, **Vitest custom configurations/workarounds**, **JSDOM/SSR-safe MUI color modes**, **right-panel state synchronizations**, and parser modularization logic. **Always consult this file before writing or updating tests.**
-2. **[Architecture & Core Principles](ARCHITECTURE.md)** — Explains the deterministic reconciliation pipelines, untrusted AI extraction paradigms, and ITR JSON mapping lifecycle.
-3. **[Clean Code & Readability Guidelines](READABILITY.md)** — Defines strict compliance rules based on Uncle Bob's principles. All components must remain highly focused and adhere strictly to the Single Responsibility Principle (SRP).
+2. **[Architecture & Core Principles](docs/architecture.md)** — Explains the deterministic reconciliation pipelines, untrusted AI extraction paradigms, and ITR JSON mapping lifecycle.
+3. **[Clean Code & Readability Guidelines](docs/readability.md)** — Defines strict compliance rules based on Uncle Bob's principles. All components must remain highly focused and adhere strictly to the Single Responsibility Principle (SRP).
 4. **[Form-16 Centralized Extraction Configuration](docs/extraction_config.md)** — Details how regexes, boundary definitions, and column indices are decoupled into `extractionConfig.ts`.
 5. **[Gemini API Key Setup Guide](docs/gemini_setup.md)** — Contains explicit instructions for configuring local variables and Cloudflare Worker runtime secrets.
 

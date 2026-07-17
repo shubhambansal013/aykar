@@ -9,8 +9,8 @@ A highly-deterministic, schema-validated Next.js TypeScript application designed
 To contribute effectively or understand the design of the Aykar codebase, please review the following documentation:
 
 - **[Developer Guide (docs/developer_guide.md)](docs/developer_guide.md)** — **Start here!** This document describes core tech stacks, Protobuf architecture, dynamic imports for PDF.js, Vitest/Testing Library test patterns, Resizable right-panel states, and troubleshooting tips.
-- **[Architecture & Reconciliation (ARCHITECTURE.md)](ARCHITECTURE.md)** — Describes the core design principle: *Deterministic logic owns the numbers; AI is only used for genuinely unstructured inputs.*
-- **[Clean Code & Readability Guidelines (READABILITY.md)](READABILITY.md)** — Outlines coding standards inspired by Robert C. Martin ("Uncle Bob"), highlighting Single Responsibility components, proper naming, pure functions, and avoiding nested state mutation side effects.
+- **[Architecture & Reconciliation (docs/architecture.md)](docs/architecture.md)** — Describes the core design principle: *Deterministic logic owns the numbers; AI is only used for genuinely unstructured inputs.*
+- **[Clean Code & Readability Guidelines (docs/readability.md)](docs/readability.md)** — Outlines coding standards inspired by Robert C. Martin ("Uncle Bob"), highlighting Single Responsibility components, proper naming, pure functions, and avoiding nested state mutation side effects.
 - **[Form-16 Parser Configuration (docs/extraction_config.md)](docs/extraction_config.md)** — Shows how Form-16 visual layout boundaries, column numeric tokens, and regexes are fully decoupled from processing code.
 - **[Form-16 & ITR Mapping Logic (docs/logic.md)](docs/logic.md)** — Explains the heuristic mappings, validation rules, and deduction limit caps enforced during translation.
 - **[Gemini API Key Configuration (docs/gemini_setup.md)](docs/gemini_setup.md)** — Practical guide on adding your API keys across dev, preview, and Cloudflare Worker staging/production environments.

@@ -167,6 +167,15 @@ export interface ReconciledTaxData extends Form16Data {
   }>;
 }
 
+const mapDeduction = (val: number) => ({
+  gross_amount: val,
+  grossAmount: val,
+  qualifying_amount: val,
+  qualifyingAmount: val,
+  deductible_amount: val,
+  deductibleAmount: val,
+});
+
 export function createEmptyForm16Bundle(): Form16Bundle {
   return {
     metadata: {
@@ -227,19 +236,30 @@ export function createEmptyForm16Bundle(): Form16Bundle {
           incomeFromOtherSourcesReported: 0,
           grossTotalIncome: 0,
           chapterViaDeductions: {
-            sec80C: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCC: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCD1: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCD1B: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCD2: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80D: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80E: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCHEmployee: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80CCHCentralGovt: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80G: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-            sec80TTA: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+            sec_80C: mapDeduction(0),
+            sec80C: mapDeduction(0),
+            sec_80CCC: mapDeduction(0),
+            sec80CCC: mapDeduction(0),
+            sec_80CCD_1: mapDeduction(0),
+            sec80CCD1: mapDeduction(0),
+            sec_80CCD_1B: mapDeduction(0),
+            sec80CCD1B: mapDeduction(0),
+            sec_80CCD_2: mapDeduction(0),
+            sec80CCD2: mapDeduction(0),
+            sec_80D: mapDeduction(0),
+            sec80D: mapDeduction(0),
+            sec_80E: mapDeduction(0),
+            sec80E: mapDeduction(0),
+            sec_80CCH_employee: mapDeduction(0),
+            sec80CCHEmployee: mapDeduction(0),
+            sec_80CCH_central_govt: mapDeduction(0),
+            sec80CCHCentralGovt: mapDeduction(0),
+            sec_80G: mapDeduction(0),
+            sec80G: mapDeduction(0),
+            sec_80TTA: mapDeduction(0),
+            sec80TTA: mapDeduction(0),
             otherDeductions: [],
-          },
+          } as any,
           totalChapterViaDeductions: 0,
           totalTaxableIncome: 0,
           taxOnTotalIncome: 0,
@@ -313,29 +333,6 @@ export function createEmptyEngineResult(): EngineReconciliationResult {
   };
 }
 
-function createArrayProxy(arr: any[], onMutate: (newArr: any[]) => void) {
-  return new Proxy(arr, {
-    get(target, prop, receiver) {
-      const val = Reflect.get(target, prop, receiver);
-      if (typeof val === 'function') {
-        return function(...args: any[]) {
-          const res = val.apply(target, args);
-          if (['push', 'pop', 'shift', 'unshift', 'splice', 'reverse', 'sort'].includes(String(prop))) {
-            onMutate(target);
-          }
-          return res;
-        };
-      }
-      return val;
-    },
-    set(target, prop, value, receiver) {
-      const res = Reflect.set(target, prop, value, receiver);
-      onMutate(target);
-      return res;
-    }
-  });
-}
-
 function mapFlatToBundle(data: any): Form16Bundle {
   const firstName = data.employee?.name?.firstName || '';
   const middleName = data.employee?.name?.middleName || '';
@@ -388,19 +385,26 @@ function mapFlatToBundle(data: any): Form16Bundle {
       incomeFromOtherSourcesReported: data.otherIncome?.totalOtherSources || 0,
       grossTotalIncome: data.grossTotalIncome || 0,
       chapterViaDeductions: {
-        sec80C: { grossAmount: data.deductions80C || 0, qualifyingAmount: data.deductions80C || 0, deductibleAmount: data.deductions80C || 0 },
-        sec80CCC: { grossAmount: data.deductions80CCC || 0, qualifyingAmount: data.deductions80CCC || 0, deductibleAmount: data.deductions80CCC || 0 },
-        sec80CCD1: { grossAmount: data.deductions80CCD1 || 0, qualifyingAmount: data.deductions80CCD1 || 0, deductibleAmount: data.deductions80CCD1 || 0 },
-        sec80CCD1B: { grossAmount: data.deductions80CCD1B || 0, qualifyingAmount: data.deductions80CCD1B || 0, deductibleAmount: data.deductions80CCD1B || 0 },
-        sec80CCD2: { grossAmount: data.deductions80CCD2 || 0, qualifyingAmount: data.deductions80CCD2 || 0, deductibleAmount: data.deductions80CCD2 || 0 },
-        sec80D: { grossAmount: data.deductions80D || 0, qualifyingAmount: data.deductions80D || 0, deductibleAmount: data.deductions80D || 0 },
-        sec80E: { grossAmount: data.deductions80E || 0, qualifyingAmount: data.deductions80E || 0, deductibleAmount: data.deductions80E || 0 },
-        sec80CCHEmployee: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-        sec80CCHCentralGovt: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
-        sec80G: { grossAmount: data.deductions80G || 0, qualifyingAmount: data.deductions80G || 0, deductibleAmount: data.deductions80G || 0 },
-        sec80TTA: { grossAmount: data.deductions80TTA || 0, qualifyingAmount: data.deductions80TTA || 0, deductibleAmount: data.deductions80TTA || 0 },
+        sec_80C: mapDeduction(data.deductions80C || 0),
+        sec80C: mapDeduction(data.deductions80C || 0),
+        sec_80CCC: mapDeduction(data.deductions80CCC || 0),
+        sec80CCC: mapDeduction(data.deductions80CCC || 0),
+        sec_80CCD_1: mapDeduction(data.deductions80CCD1 || 0),
+        sec80CCD1: mapDeduction(data.deductions80CCD1 || 0),
+        sec_80CCD_1B: mapDeduction(data.deductions80CCD1B || 0),
+        sec80CCD1B: mapDeduction(data.deductions80CCD1B || 0),
+        sec_80CCD_2: mapDeduction(data.deductions80CCD2 || 0),
+        sec80CCD2: mapDeduction(data.deductions80CCD2 || 0),
+        sec_80D: mapDeduction(data.deductions80D || 0),
+        sec80D: mapDeduction(data.deductions80D || 0),
+        sec_80E: mapDeduction(data.deductions80E || 0),
+        sec80E: mapDeduction(data.deductions80E || 0),
+        sec_80G: mapDeduction(data.deductions80G || 0),
+        sec80G: mapDeduction(data.deductions80G || 0),
+        sec_80TTA: mapDeduction(data.deductions80TTA || 0),
+        sec80TTA: mapDeduction(data.deductions80TTA || 0),
         otherDeductions: [],
-      },
+      } as any,
       totalChapterViaDeductions: data.totalChapterVIADeductions || 0,
       totalTaxableIncome: data.totalIncome || 0,
       taxOnTotalIncome: data.taxPayable || 0,
@@ -470,11 +474,45 @@ function mapFlatToEngineResult(flat: any): EngineReconciliationResult {
   };
 }
 
+function createArrayProxy(arr: any[], onMutate: (newArr: any[]) => void) {
+  return new Proxy(arr, {
+    get(target, prop, receiver) {
+      const val = Reflect.get(target, prop, receiver);
+      if (typeof val === 'function') {
+        return function(...args: any[]) {
+          const res = val.apply(target, args);
+          if (['push', 'pop', 'shift', 'unshift', 'splice', 'reverse', 'sort'].includes(String(prop))) {
+            onMutate(target);
+          }
+          return res;
+        };
+      }
+      return val;
+    },
+    set(target, prop, value, receiver) {
+      const res = Reflect.set(target, prop, value, receiver);
+      onMutate(target);
+      return res;
+    }
+  });
+}
+
 export function createForm16Proxy(bundle: any): Form16Data {
   if (!bundle) return bundle;
   if (bundle.__isForm16Proxy) return bundle;
   if ('employer' in bundle || 'salary' in bundle) {
     return new Proxy(bundle, {
+      ownKeys(target) {
+        return Reflect.ownKeys(target);
+      },
+      getOwnPropertyDescriptor(target, prop) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: true,
+          value: Reflect.get(target, prop)
+        };
+      },
       get(target, prop) {
         if (prop === '__bundle') {
           return mapFlatToBundle(target);
@@ -523,7 +561,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       return ['name', 'tan', 'pan', 'address'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'name') return cert.employerProfile?.name || '';
@@ -547,7 +590,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       return ['firstName', 'middleName', 'lastName'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'firstName') return (bundle as any)._customFirstName;
@@ -569,7 +617,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       return ['name', 'pan', 'address'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'name') return employeeNameProxy;
@@ -590,7 +643,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       return ['from', 'to'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'from') return cert.employmentPeriod?.startDate || '';
@@ -615,7 +673,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       ];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'grossSalary') return cert.partB?.totalGrossSalary || 0;
@@ -634,8 +697,8 @@ export function createForm16Proxy(bundle: any): Form16Data {
         return createArrayProxy((bundle as any)._exemptAllowancesUs10, (newArr) => {
           if (!cert.partB) cert.partB = createEmptyForm16Bundle().certificates[0].partB;
           cert.partB.section10Exemptions = newArr.map((x: any) => ({
-            sectionCode: x.code || '',
-            description: x.nature || '',
+            sectionCode: x.sectionCode || '',
+            description: x.description || '',
             amount: x.amount || 0
           }));
         });
@@ -683,7 +746,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       return ['houseProperty', 'otherSources', 'totalOtherSources'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'houseProperty') return cert.partB?.incomeFromHousePropertyReported || 0;
@@ -717,7 +785,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       ];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'employer') return employerProxy;
@@ -727,15 +800,15 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'salary') return salaryProxy;
       if (prop === 'otherIncome') return otherIncomeProxy;
       if (prop === 'grossTotalIncome') return cert.partB?.grossTotalIncome || 0;
-      if (prop === 'deductions80C') return cert.partB?.chapterViaDeductions?.sec80C?.deductibleAmount || 0;
-      if (prop === 'deductions80CCC') return cert.partB?.chapterViaDeductions?.sec80CCC?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD1') return cert.partB?.chapterViaDeductions?.sec80CCD1?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD1B') return cert.partB?.chapterViaDeductions?.sec80CCD1B?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD2') return cert.partB?.chapterViaDeductions?.sec80CCD2?.deductibleAmount || 0;
-      if (prop === 'deductions80D') return cert.partB?.chapterViaDeductions?.sec80D?.deductibleAmount || 0;
-      if (prop === 'deductions80E') return cert.partB?.chapterViaDeductions?.sec80E?.deductibleAmount || 0;
-      if (prop === 'deductions80G') return cert.partB?.chapterViaDeductions?.sec80G?.deductibleAmount || 0;
-      if (prop === 'deductions80TTA') return cert.partB?.chapterViaDeductions?.sec80TTA?.deductibleAmount || 0;
+      if (prop === 'deductions80C') return cert.partB?.chapterViaDeductions?.sec_80C?.deductibleAmount || 0;
+      if (prop === 'deductions80CCC') return cert.partB?.chapterViaDeductions?.sec_80CCC?.deductibleAmount || 0;
+      if (prop === 'deductions80CCD1') return cert.partB?.chapterViaDeductions?.sec_80CCD_1?.deductibleAmount || 0;
+      if (prop === 'deductions80CCD1B') return cert.partB?.chapterViaDeductions?.sec_80CCD_1B?.deductibleAmount || 0;
+      if (prop === 'deductions80CCD2') return cert.partB?.chapterViaDeductions?.sec_80CCD_2?.deductibleAmount || 0;
+      if (prop === 'deductions80D') return cert.partB?.chapterViaDeductions?.sec_80D?.deductibleAmount || 0;
+      if (prop === 'deductions80E') return cert.partB?.chapterViaDeductions?.sec_80E?.deductibleAmount || 0;
+      if (prop === 'deductions80G') return cert.partB?.chapterViaDeductions?.sec_80G?.deductibleAmount || 0;
+      if (prop === 'deductions80TTA') return cert.partB?.chapterViaDeductions?.sec_80TTA?.deductibleAmount || 0;
       if (prop === 'totalChapterVIADeductions') return cert.partB?.totalChapterViaDeductions || 0;
       if (prop === 'totalIncome') return cert.partB?.totalTaxableIncome || 0;
       if (prop === 'taxPayable') return cert.partB?.taxPayable || 0;
@@ -752,40 +825,58 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'assessmentYear') cert.employmentPeriod.assessmentYear = String(value);
       else if (prop === 'grossTotalIncome') cert.partB.grossTotalIncome = Number(value);
       else if (prop === 'deductions80C') {
-        const d = cert.partB.chapterViaDeductions!.sec80C;
+        const d = cert.partB.chapterViaDeductions!.sec_80C;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80C;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80CCC') {
-        const d = cert.partB.chapterViaDeductions!.sec80CCC;
+        const d = cert.partB.chapterViaDeductions!.sec_80CCC;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80CCC;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80CCD1') {
-        const d = cert.partB.chapterViaDeductions!.sec80CCD1;
+        const d = cert.partB.chapterViaDeductions!.sec_80CCD_1;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80CCD1;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80CCD1B') {
-        const d = cert.partB.chapterViaDeductions!.sec80CCD1B;
+        const d = cert.partB.chapterViaDeductions!.sec_80CCD_1B;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80CCD1B;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80CCD2') {
-        const d = cert.partB.chapterViaDeductions!.sec80CCD2;
+        const d = cert.partB.chapterViaDeductions!.sec_80CCD_2;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80CCD2;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80D') {
-        const d = cert.partB.chapterViaDeductions!.sec80D;
+        const d = cert.partB.chapterViaDeductions!.sec_80D;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80D;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80E') {
-        const d = cert.partB.chapterViaDeductions!.sec80E;
+        const d = cert.partB.chapterViaDeductions!.sec_80E;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80E;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80G') {
-        const d = cert.partB.chapterViaDeductions!.sec80G;
+        const d = cert.partB.chapterViaDeductions!.sec_80G;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80G;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'deductions80TTA') {
-        const d = cert.partB.chapterViaDeductions!.sec80TTA;
+        const d = cert.partB.chapterViaDeductions!.sec_80TTA;
         d.grossAmount = d.qualifyingAmount = d.deductibleAmount = Number(value);
+        const d2 = cert.partB.chapterViaDeductions!.sec80TTA;
+        d2.grossAmount = d2.qualifyingAmount = d2.deductibleAmount = Number(value);
       }
       else if (prop === 'totalChapterVIADeductions') cert.partB.totalChapterViaDeductions = Number(value);
       else if (prop === 'totalIncome') cert.partB.totalTaxableIncome = Number(value);
@@ -813,7 +904,12 @@ export function createAisProxy(ais: any): AISData {
       return ['interestSavings', 'interestDeposit', 'dividendIncome', 'tdsDetails', 'metadata', 'profile', 'tdsTcsInfo', 'sftInfo', 'taxPayments', 'demandsAndRefunds', 'otherInfo'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'interestSavings') return (ais as any)._interestSavings;
@@ -852,7 +948,12 @@ export function createTisProxy(tis: any): TISData {
       return ['salaryDerived', 'interestSavings', 'interestDeposit', 'dividendIncome', 'metadata', 'profile', 'categories', 'details'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'salaryDerived') return (tis as any)._salaryDerived;
@@ -886,7 +987,12 @@ export function createForm26asProxy(f26: any): Form26ASData {
       return ['tdsSalary', 'tdsOther', 'tcsDetails', 'advanceTax', 'selfAssessmentTax', 'metadata', 'profile'];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === '__bundle') return f26;
@@ -905,6 +1011,17 @@ export function createEngineProxy(res: any): ReconciledTaxData {
   if (res.__isEngineProxy) return res;
   if ('salary' in res) {
     return new Proxy(res, {
+      ownKeys(target) {
+        return Reflect.ownKeys(target);
+      },
+      getOwnPropertyDescriptor(target, prop) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: true,
+          value: Reflect.get(target, prop)
+        };
+      },
       get(target, prop) {
         if (prop === '__bundle') {
           return mapFlatToEngineResult(target);
@@ -937,7 +1054,12 @@ export function createEngineProxy(res: any): ReconciledTaxData {
       return [...engineKeys, ...f16Keys];
     },
     getOwnPropertyDescriptor(target, prop) {
-      return { enumerable: true, configurable: true };
+      return {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: (this as any).get(target, prop)
+      };
     },
     get(target, prop) {
       if (prop === 'form16Data' || prop === '__bundle') return res.form16Data;

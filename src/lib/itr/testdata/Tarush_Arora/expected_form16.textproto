@@ -11,6 +11,7 @@ certificates {
     name: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED"
     address: "Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra"
     email: "Payrollhelpdesk.India@thomsonreuters.com"
+    phone: "+(91)80-"
     cit_tds_address: "The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road, Mumbai - 400002"
   }
   employment_period {
@@ -38,8 +39,6 @@ certificates {
       quarter: "Q3"
       receipt_number: "QWEJAOOC"
       amount_paid_credited: 218412
-      tax_deducted: 0
-      tax_deposited: 0
     }
     challan_deposits {
       tax_deposited: 8510
@@ -84,12 +83,10 @@ certificates {
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "06-11-2025"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "05-12-2025"
       matching_status: "F"
     }
@@ -98,38 +95,17 @@ certificates {
     total_tds_deposited: 51290
   }
   part_b {
-    opting_out_of_115BAC_new_regime: false
     salary_us_17_1: 984690
-    perquisites_us_17_2: 0
-    profits_in_lieu_us_17_3: 0
-    salary_from_other_employers_reported: 0
     total_gross_salary: 984690
-    total_section10_exemptions: 0
     standard_deduction: 75000
-    entertainment_allowance: 0
-    professional_tax: 0
     total_section16_deductions: 75000
     income_chargeable_under_salaries: 909690
-    income_from_house_property_reported: 0
-    income_from_other_sources_reported: 0
     gross_total_income: 909690
-    total_chapter_via_deductions: 0
+    chapter_via_deductions {
+    }
     total_taxable_income: 909690
-    tax_on_total_income: 0
-    rebate_us_87A: 0
-    surcharge: 0
-    health_education_cess: 0
-    tax_payable: 0
-    relief_us_89: 0
-    tax_deducted_as_per_12BAA_tds: 0
-    tax_collected_as_per_12BAA_tcs: 0
-    net_tax_payable: 0
   }
   perquisites_details {
-    total_perquisites_value: 0
-    total_profits_in_lieu_of_salary: 0
-    tax_deducted_from_salary_192_1: 51290
-    tax_paid_by_employer_192_1A: 0
   }
   verification {
     signatory_name: "KUMAR VIJETA"
@@ -137,7 +113,6 @@ certificates {
     designation: "DIRECTOR PAYROLL OPERATIONS APAC UK"
     place: "MUMBAI SUBURBAN"
     date: "05-Jun-2026"
-    digital_signature_verified: false
   }
 }
 certificates {
@@ -155,83 +130,58 @@ certificates {
     start_date: "27-Oct-2025"
     end_date: "31-Mar-2026"
     assessment_year: "2026-27"
+    employee_reference_no: "1"
   }
   part_a {
     quarter_summaries {
       quarter: "Q3"
       receipt_number: "QWEIJEDD"
       amount_paid_credited: 355532
-      tax_deducted: 0
-      tax_deposited: 0
     }
     quarter_summaries {
       quarter: "Q4"
       receipt_number: "QWGHYABG"
       amount_paid_credited: 493500
-      tax_deducted: 0
-      tax_deposited: 0
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "05-11-2025"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "05-12-2025"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "07-01-2026"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "05-02-2026"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "05-03-2026"
       matching_status: "F"
     }
     challan_deposits {
-      tax_deposited: 0
       date_of_deposit: "21-04-2026"
       matching_status: "F"
     }
     total_amount_paid: 849032
-    total_tds_deducted: 0
-    total_tds_deposited: 0
   }
   part_b {
-    opting_out_of_115BAC_new_regime: false
     salary_us_17_1: 849032
-    perquisites_us_17_2: 0
-    profits_in_lieu_us_17_3: 0
-    salary_from_other_employers_reported: 0
     total_gross_salary: 849032
-    total_section10_exemptions: 0
     standard_deduction: 75000
-    entertainment_allowance: 0
-    professional_tax: 0
     total_section16_deductions: 75000
     income_chargeable_under_salaries: 774032
-    income_from_house_property_reported: 0
-    income_from_other_sources_reported: 0
     gross_total_income: 774032
-    total_chapter_via_deductions: 0
+    chapter_via_deductions {
+    }
     total_taxable_income: 774032
     tax_on_total_income: 18701.6
-    rebate_us_87A: 18701.6
-    surcharge: 0
-    health_education_cess: 0
-    tax_payable: 0
-    relief_us_89: 0
-    tax_deducted_as_per_12BAA_tds: 0
-    tax_collected_as_per_12BAA_tcs: 0
-    net_tax_payable: 0
+  }
+  perquisites_details {
   }
   verification {
     signatory_name: "ARVIND LAXMAN BODGAL"
@@ -239,6 +189,5 @@ certificates {
     designation: "GROUP LEAD ACCOUNTING"
     place: "BANGALORE"
     date: "03-Jun-2026"
-    digital_signature_verified: false
   }
 }

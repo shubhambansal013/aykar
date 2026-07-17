@@ -1,161 +1,102 @@
-const KNOWN_REPEATED_FIELDS = new Set([
-  'certificates',
-  'quarterSummaries',
-  'quarter_summaries',
-  'challanDeposits',
-  'challan_deposits',
-  'section10Exemptions',
-  'section10_exemptions',
-  'otherDeductions',
-  'other_deductions',
-  'categories',
-  'details',
-  'records',
-  'transactions',
-  'savingsInterest',
-  'savings_interest',
-  'depositInterest',
-  'deposit_interest',
-  'securitySales',
-  'security_sales',
-  'securityPurchases',
-  'security_purchases',
-  'taxPayments',
-  'tax_payments',
-  'salaries',
-  'tdsSalary',
-  'tds_salary',
-  'tdsOther',
-  'tds_other',
-  'tcsDetails',
-  'tcs_details',
-  'advanceTax',
-  'advance_tax',
-  'selfAssessmentTax',
-  'self_assessment_tax',
-  'otherSources',
-  'other_sources',
-  'exemptAllowancesUs10',
-  'discrepancies',
-  'detectedIncomeSources',
-  'detected_income_sources',
-  'items'
+import * as protobuf from 'protobufjs';
+import * as textformat from 'protobufjs/ext/textformat';
+
+// Install Text Format support into protobufjs
+textformat.install();
+
+const root = new protobuf.Root();
+root.resolvePath = (origin: string, target: string) => {
+  if (target.startsWith('proto/')) return target;
+  return 'proto/' + target;
+};
+
+root.loadSync([
+  'proto/common/common.proto',
+  'proto/sources/form16.proto',
+  'proto/sources/ais.proto',
+  'proto/sources/tis.proto',
+  'proto/sources/form26as.proto',
+  'proto/platform/engine.proto',
+  'proto/platform/itr.proto'
 ]);
 
-export function parseTextProto(text: string): any {
-  const lines = text.split(/\r?\n/);
-  let lineIdx = 0;
-
-  function parseObject(): any {
-    const obj: any = {};
-    while (lineIdx < lines.length) {
-      const line = lines[lineIdx].trim();
-      if (!line || line.startsWith('#')) {
-        lineIdx++;
-        continue;
-      }
-      if (line === '}') {
-        lineIdx++;
-        return obj;
-      }
-
-      // Check if it's a block start like "nested {"
-      const blockMatch = line.match(/^([a-zA-Z0-9_]+)\s*\{$/);
-      if (blockMatch) {
-        const key = blockMatch[1];
-        lineIdx++;
-        const nestedObj = parseObject();
-        if (KNOWN_REPEATED_FIELDS.has(key)) {
-          if (obj[key] === undefined) {
-            obj[key] = [nestedObj];
-          } else {
-            obj[key].push(nestedObj);
-          }
-        } else {
-          obj[key] = nestedObj;
-        }
-        continue;
-      }
-
-      // Check if it's a key-value pair like "field: value"
-      const kvMatch = line.match(/^([a-zA-Z0-9_]+)\s*:\s*(.*)$/);
-      if (kvMatch) {
-        const key = kvMatch[1];
-        let valStr = kvMatch[2].trim();
-        lineIdx++;
-
-        // Parse value
-        let val: any;
-        if (valStr.startsWith('"') && valStr.endsWith('"')) {
-          val = valStr.substring(1, valStr.length - 1).replace(/\\"/g, '"');
-        } else if (valStr === 'true') {
-          val = true;
-        } else if (valStr === 'false') {
-          val = false;
-        } else if (!isNaN(Number(valStr)) && valStr !== '') {
-          val = Number(valStr);
-        } else {
-          val = valStr;
-        }
-
-        if (KNOWN_REPEATED_FIELDS.has(key)) {
-          if (obj[key] === undefined) {
-            obj[key] = [val];
-          } else {
-            obj[key].push(val);
-          }
-        } else {
-          obj[key] = val;
-        }
-        continue;
-      }
-
-      lineIdx++;
+export function parseTextProto(text: string, typeName?: string): any {
+  let resolvedType = typeName;
+  if (!resolvedType) {
+    if (text.includes('certificates') || text.includes('taxpayer_profile')) {
+      resolvedType = 'tax.sources.form16.Form16Bundle';
+    } else if (text.includes('interest_savings') && text.includes('tds_details')) {
+      resolvedType = 'tax.sources.ais.AnnualInformationStatement';
+    } else if (text.includes('categories') || text.includes('details')) {
+      resolvedType = 'tax.sources.tis.TaxpayerInformationSummary';
+    } else if (text.includes('tds_salary') || text.includes('tds_other')) {
+      resolvedType = 'tax.sources.form26as.Form26AS';
+    } else {
+      throw new Error('Unable to automatically resolve protobuf type for textproto parsing.');
     }
-    return obj;
   }
 
-  return parseObject();
+  const MyType = root.lookupType(resolvedType);
+  const msg = MyType.fromText(text);
+  return MyType.toObject(msg, {
+    keepCase: false,
+    defaults: true,
+    arrays: true,
+    objects: true,
+  } as any);
 }
 
-export function stringifyTextProto(obj: any, indent = 0): string {
-  const spaces = ' '.repeat(indent);
-  let result = '';
-
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
-    if (val === undefined || val === null) {
-      continue;
-    }
-
-    if (Array.isArray(val)) {
-      for (const item of val) {
-        if (typeof item === 'object') {
-          result += `${spaces}${key} {\n`;
-          result += stringifyTextProto(item, indent + 2);
-          result += `${spaces}}\n`;
-        } else {
-          result += `${spaces}${key}: ${formatValue(item)}\n`;
-        }
-      }
-    } else if (typeof val === 'object' && !(val instanceof Date)) {
-      result += `${spaces}${key} {\n`;
-      result += stringifyTextProto(val, indent + 2);
-      result += `${spaces}}\n`;
-    } else {
-      result += `${spaces}${key}: ${formatValue(val)}\n`;
-    }
+function normalizeKeysForProtobufJS(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
   }
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeKeysForProtobufJS);
+  }
+  const result: any = {};
+  for (const key of Object.keys(obj)) {
+    if (key.startsWith('_') && key !== '_dividendIncome' && key !== '_interestDeposit' && key !== '_interestSavings' && key !== '_tdsDetails') {
+      if (key !== '__bundle') continue;
+    }
 
+    let normalizedKey = key;
+    const mapping: Record<string, string> = {
+      salaryUs171: 'salaryUs_17_1',
+      perquisitesUs172: 'perquisitesUs_17_2',
+      profitsInLieuUs173: 'profitsInLieuUs_17_3',
+      grossSalaryUs171: 'grossSalaryUs_17_1',
+      gross_salary_us_17_1: 'grossSalaryUs_17_1',
+      profitsInLieuOfSalaryUs173: 'profitsInLieuOfSalaryUs_17_3',
+      profits_in_lieu_of_salary_us_17_3: 'profitsInLieuOfSalaryUs_17_3',
+      valueOfPerquisitesUs172: 'valueOfPerquisitesUs_17_2',
+      value_of_perquisites_us_17_2: 'valueOfPerquisitesUs_17_2',
+      taxDeductedAsPer12BAATds: 'taxDeductedAsPer_12BAATds',
+      taxCollectedAsPer12BAATcs: 'taxCollectedAsPer_12BAATcs',
+      optingOutOf115BACNewRegime: 'optingOutOf_115BACNewRegime',
+    };
+    if (mapping[key]) {
+      normalizedKey = mapping[key];
+    }
+    result[normalizedKey] = normalizeKeysForProtobufJS(obj[key]);
+  }
   return result;
 }
 
-function formatValue(val: any): string {
-  if (val instanceof Date) {
-    return `"${val.toISOString()}"`;
-  }
-  if (typeof val === 'string') {
-    return `"${val.replace(/"/g, '\\"')}"`;
-  }
-  return String(val);
+export function stringifyTextProto(obj: any, typeName: string): string {
+  const MyType = root.lookupType(typeName);
+  const normObj = normalizeKeysForProtobufJS(obj);
+  const msg = MyType.fromObject(normObj);
+  return MyType.toText(msg);
+}
+
+export function toPlainObject(obj: any, typeName: string): any {
+  const MyType = root.lookupType(typeName);
+  const normObj = normalizeKeysForProtobufJS(obj);
+  const msg = MyType.fromObject(normObj);
+  return MyType.toObject(msg, {
+    keepCase: false,
+    defaults: true,
+    arrays: true,
+    objects: true,
+  } as any);
 }

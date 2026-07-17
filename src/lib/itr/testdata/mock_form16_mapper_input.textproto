@@ -1,55 +1,78 @@
-employer {
-  name: "Test Corp"
-  tan: "MUMT12345A"
-  pan: "MUMC12345A"
-  address: "Mumbai"
-}
-employee {
-  name {
-    firstName: "John"
-    middleName: ""
-    lastName: "Doe"
+metadata {
+  financial_year: "2025-26"
+  generation_date {
   }
+}
+taxpayer_profile {
   pan: "ABCDE1234F"
+  name: "John Doe"
   address: "Delhi"
 }
-assessmentYear: "2026"
-period {
-  from: "2025-04-01"
-  to: "2026-03-31"
-}
-salary {
-  grossSalary: 1000000
-  salaryAsPer17_1: 900000
-  perquisites17_2: 100000
-  profitsInLieu17_3: 0
-  exemptAllowancesUs10 {
-    code: "10(13A)"
-    nature: "HRA"
-    amount: 50000
+certificates {
+  certificate_number: "GEN-001"
+  employer_profile {
+    tan: "MUMT12345A"
+    pan: "MUMC12345A"
+    name: "Test Corp"
+    address: "Mumbai"
   }
-  totalExemptAllowances: 50000
-  netSalary: 950000
-  standardDeduction16ia: 50000
-  entertainmentAllowance16ii: 0
-  professionalTax16iii: 0
-  totalDeductionsUs16: 50000
-  incomeChargeableUnderHeadSalaries: 900000
+  employment_period {
+    start_date: "2025-04-01"
+    end_date: "2026-03-31"
+    assessment_year: "2026"
+  }
+  part_a {
+    total_amount_paid: 1000000
+    total_tds_deducted: 50000
+    total_tds_deposited: 50000
+  }
+  part_b {
+    total_gross_salary: 1000000
+    section10_exemptions {
+      section_code: "10(13A)"
+      description: "HRA"
+      amount: 50000
+    }
+    total_section10_exemptions: 50000
+    standard_deduction: 50000
+    total_section16_deductions: 50000
+    income_chargeable_under_salaries: 900000
+    gross_total_income: 900000
+    chapter_via_deductions {
+      sec_80_c {
+        gross_amount: 150000
+        qualifying_amount: 150000
+        deductible_amount: 150000
+      }
+      sec_80CC_c {
+      }
+      sec_80CCD_1 {
+      }
+      sec_80CCD_1_b {
+      }
+      sec_80CCD_2 {
+        gross_amount: 20000
+        qualifying_amount: 20000
+        deductible_amount: 20000
+      }
+      sec_80_d {
+        gross_amount: 25000
+        qualifying_amount: 25000
+        deductible_amount: 25000
+      }
+      sec_80_e {
+      }
+      sec_80_g {
+      }
+      sec_80TT_a {
+      }
+    }
+    total_chapter_via_deductions: 195000
+    total_taxable_income: 705000
+    tax_on_total_income: 50000
+    tax_payable: 50000
+    net_tax_payable: 50000
+  }
+  verification {
+  }
 }
-otherIncome {
-  houseProperty: 0
-  totalOtherSources: 0
-}
-grossTotalIncome: 900000
-deductions80C: 150000
-deductions80CCC: 0
-deductions80CCD1: 0
-deductions80CCD1B: 0
-deductions80CCD2: 20000
-deductions80D: 25000
-deductions80E: 0
-deductions80G: 0
-deductions80TTA: 0
-totalChapterVIADeductions: 195000
-totalIncome: 705000
-taxPayable: 50000

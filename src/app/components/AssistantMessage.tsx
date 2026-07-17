@@ -52,6 +52,19 @@ export function AssistantMessage({
     return getForm16Differences(ensureForm16Data(currentData), updatedData);
   }, [currentData, updatedData]);
 
+  const profileDiffs = useMemo(() => {
+    return diffs.filter(d =>
+      d.path.startsWith('employer') ||
+      d.path.startsWith('employee') ||
+      d.path === 'assessmentYear' ||
+      d.path.startsWith('period')
+    );
+  }, [diffs]);
+
+  const incomeDiffs = useMemo(() => {
+    return diffs.filter(d => !profileDiffs.includes(d));
+  }, [diffs, profileDiffs]);
+
   if (!parsed.json) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -103,27 +116,67 @@ export function AssistantMessage({
               The AI assistant has detected discrepancies and proposed corrections to your tax details. Would you like to override your existing form details with these suggested corrections?
             </Typography>
 
-            {/* List of differences */}
-            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '0.725rem' }}>
+            {/* List of differences grouped by category */}
+            <Box sx={{ mt: 1.5, mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', fontSize: '0.725rem', display: 'block' }}>
                 Proposed Changes:
               </Typography>
-              {diffs.map((diff, dIdx) => (
-                <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light', py: 0.25 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', mr: 0.5 }}>
-                    {diff.label}:
+
+              {profileDiffs.length > 0 && (
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 'extrabold', color: 'primary.main', fontSize: '0.725rem', display: 'block', mb: 0.75, borderBottom: '1px solid', borderColor: 'divider', pb: 0.25 }}>
+                    Profile Info (Name, Address)
                   </Typography>
-                  <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
-                    {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                    →
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
-                    {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, pl: 1 }}>
+                    {profileDiffs.map((diff, dIdx) => (
+                      <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', minWidth: 140 }}>
+                          {diff.label}:
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                          <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
+                            {diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                            →
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
+                            {diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
-              ))}
+              )}
+
+              {incomeDiffs.length > 0 && (
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 'extrabold', color: 'primary.main', fontSize: '0.725rem', display: 'block', mb: 0.75, borderBottom: '1px solid', borderColor: 'divider', pb: 0.25 }}>
+                    Income Details (Gross Total, Other Sources)
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, pl: 1 }}>
+                    {incomeDiffs.map((diff, dIdx) => (
+                      <Box key={dIdx} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem', minWidth: 140 }}>
+                          {diff.label}:
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                          <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', fontSize: '0.7rem' }}>
+                            {typeof diff.oldVal === 'number' ? `₹${diff.oldVal.toLocaleString('en-IN')}` : (diff.oldVal !== undefined && diff.oldVal !== null && diff.oldVal !== '' ? String(diff.oldVal) : '(empty)')}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                            →
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 'bold', fontSize: '0.725rem' }}>
+                            {typeof diff.newVal === 'number' ? `₹${diff.newVal.toLocaleString('en-IN')}` : (diff.newVal !== undefined && diff.newVal !== null && diff.newVal !== '' ? String(diff.newVal) : '(empty)')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Box>
 
             {!isAccepted && !isRejected ? (

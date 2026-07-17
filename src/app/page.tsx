@@ -52,6 +52,9 @@ import {
   FormControl,
   FormControlLabel,
   Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -66,6 +69,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CodeIcon from '@mui/icons-material/Code';
 
 import { CueTextField, getSectionVerifiedCount } from '@/app/components/FieldCues';
 import { AssistantMessage } from '@/app/components/AssistantMessage';
@@ -118,6 +122,9 @@ export default function Home() {
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
+  const [showUploadArea, setShowUploadArea] = useState(false);
+  const [warningsExpanded, setWarningsExpanded] = useState(false);
+  const [inspectOpen, setInspectOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
 
@@ -222,6 +229,10 @@ export default function Home() {
   const extractedDataDomain = useMemo(() => {
     return extractedData ? EngineMapper.toDomain(extractedData) : null;
   }, [extractedData]);
+
+  const hasUploadedDocs = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
+  const isUploadCollapsed = hasUploadedDocs && !showUploadArea;
+  const readyDocsCount = (form16List.length > 0 ? 1 : 0) + (aisFile ? 1 : 0) + (tisFile ? 1 : 0) + (form26asFile ? 1 : 0);
 
   const salaryDiscrepancies = useMemo(() => {
     if (!extractedDataDomain) return [];
@@ -792,88 +803,156 @@ export default function Home() {
             display: { xs: chatOpen ? 'none' : 'block', md: 'block' }
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
-              {/* Document Upload section */}
-              <Card variant="outlined" sx={{ mb: 2.5 }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 'bold' }}>
-                    1. Upload Financial Documents
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {/* Form-16 */}
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                        <Typography id="file-upload-label" variant="subtitle2" component="label" htmlFor="file-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                          1. Upload Form-16 PDF
-                        </Typography>
-                        <input id="file-upload" type="file" accept=".pdf" multiple onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
-                        <Button component="label" htmlFor="file-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                          {form16List.length > 0 ? `${form16List.length} Uploaded` : 'Upload'}
-                        </Button>
-                        {form16List.length > 0 && (
-                          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5, textAlign: 'left', width: '100%' }}>
-                            {form16List.map((item, idx) => (
-                              <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'action.hover', p: 0.5, px: 1, borderRadius: 1, gap: 1 }}>
-                                <Typography variant="caption" sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flexGrow: 1, fontSize: '0.7rem' }}>
-                                  {item.file.name}
-                                </Typography>
-                                <IconButton size="small" onClick={(evt) => { evt.preventDefault(); handleRemoveForm16(idx); }} aria-label={`delete form16 file ${idx}`} sx={{ p: 0.25 }}>
-                                  <CloseIcon sx={{ fontSize: 12 }} />
-                                </IconButton>
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
-                        {loading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                      </Box>
-                    </Grid>
+              {/* Compact Upload Status Bar */}
+              {isUploadCollapsed && (
+                <Paper variant="outlined" sx={{ p: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)', borderColor: 'success.light' }} data-testid="compact-upload-status">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                      Compact Upload Status: {readyDocsCount}/4 Docs Ready
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                      {form16List.length > 0 && (
+                        <Paper variant="outlined" sx={{ px: 1, py: 0.25, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'success.light', color: 'success.dark', borderColor: 'success.light' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                            Form-16 ({form16List.length})
+                          </Typography>
+                        </Paper>
+                      )}
+                      {aisFile && (
+                        <Paper variant="outlined" sx={{ px: 1, py: 0.25, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'success.light', color: 'success.dark', borderColor: 'success.light' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                            AIS
+                          </Typography>
+                        </Paper>
+                      )}
+                      {tisFile && (
+                        <Paper variant="outlined" sx={{ px: 1, py: 0.25, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'success.light', color: 'success.dark', borderColor: 'success.light' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                            TIS
+                          </Typography>
+                        </Paper>
+                      )}
+                      {form26asFile && (
+                        <Paper variant="outlined" sx={{ px: 1, py: 0.25, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'success.light', color: 'success.dark', borderColor: 'success.light' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                            Form 26AS
+                          </Typography>
+                        </Paper>
+                      )}
+                    </Box>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={() => setShowUploadArea(true)}
+                    data-testid="manage-files-btn"
+                    sx={{ textTransform: 'none', fontWeight: 'bold' }}
+                  >
+                    Manage Files
+                  </Button>
+                </Paper>
+              )}
 
-                    {/* AIS */}
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                        <Typography id="ais-label" variant="subtitle2" component="label" htmlFor="ais-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                          AIS PDF (Annual Info)
-                        </Typography>
-                        <input id="ais-upload" type="file" accept=".pdf" onChange={handleAISUpload} style={{ display: 'none' }} aria-labelledby="ais-label" />
-                        <Button component="label" htmlFor="ais-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                          {aisFile ? 'Uploaded' : 'Upload'}
+              {/* Large Document Upload Card */}
+              <Box sx={{ display: isUploadCollapsed ? 'none' : 'block' }}>
+                <Card variant="outlined" sx={{ mb: 2.5 }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Typography variant="h6" sx={{ m: 0, fontWeight: 'bold' }}>
+                        1. Upload Financial Documents
+                      </Typography>
+                      {hasUploadedDocs && (
+                        <Button
+                          variant="text"
+                          color="primary"
+                          size="small"
+                          onClick={() => setShowUploadArea(false)}
+                          sx={{ textTransform: 'none', fontWeight: 'bold' }}
+                          data-testid="collapse-upload-btn"
+                        >
+                          Collapse
                         </Button>
-                        {aisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{aisFile.name}</Typography>}
-                        {aisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                      </Box>
-                    </Grid>
+                      )}
+                    </Box>
+                    <Grid container spacing={2}>
+                      {/* Form-16 */}
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                          <Typography id="file-upload-label" variant="subtitle2" component="label" htmlFor="file-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                            1. Upload Form-16 PDF
+                          </Typography>
+                          <input id="file-upload" type="file" accept=".pdf" multiple onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
+                          <Button component="label" htmlFor="file-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                            {form16List.length > 0 ? `${form16List.length} Uploaded` : 'Upload'}
+                          </Button>
+                          {form16List.length > 0 && (
+                            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5, textAlign: 'left', width: '100%' }}>
+                              {form16List.map((item, idx) => (
+                                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'action.hover', p: 0.5, px: 1, borderRadius: 1, gap: 1 }}>
+                                  <Typography variant="caption" sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flexGrow: 1, fontSize: '0.7rem' }}>
+                                    {item.file.name}
+                                  </Typography>
+                                  <IconButton size="small" onClick={(evt) => { evt.preventDefault(); handleRemoveForm16(idx); }} aria-label={`delete form16 file ${idx}`} sx={{ p: 0.25 }}>
+                                    <CloseIcon sx={{ fontSize: 12 }} />
+                                  </IconButton>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                          {loading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                        </Box>
+                      </Grid>
 
-                    {/* TIS */}
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                        <Typography id="tis-label" variant="subtitle2" component="label" htmlFor="tis-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                          TIS PDF (Tax Summary)
-                        </Typography>
-                        <input id="tis-upload" type="file" accept=".pdf" onChange={handleTISUpload} style={{ display: 'none' }} aria-labelledby="tis-label" />
-                        <Button component="label" htmlFor="tis-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                          {tisFile ? 'Uploaded' : 'Upload'}
-                        </Button>
-                        {tisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{tisFile.name}</Typography>}
-                        {tisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                      </Box>
-                    </Grid>
+                      {/* AIS */}
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                          <Typography id="ais-label" variant="subtitle2" component="label" htmlFor="ais-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                            AIS PDF (Annual Info)
+                          </Typography>
+                          <input id="ais-upload" type="file" accept=".pdf" onChange={handleAISUpload} style={{ display: 'none' }} aria-labelledby="ais-label" />
+                          <Button component="label" htmlFor="ais-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                            {aisFile ? 'Uploaded' : 'Upload'}
+                          </Button>
+                          {aisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{aisFile.name}</Typography>}
+                          {aisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                        </Box>
+                      </Grid>
 
-                    {/* Form 26AS */}
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                      <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                        <Typography id="f26as-label" variant="subtitle2" component="label" htmlFor="f26as-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                          Form 26AS PDF (Tax Paid)
-                        </Typography>
-                        <input id="f26as-upload" type="file" accept=".pdf" onChange={handleForm26ASUpload} style={{ display: 'none' }} aria-labelledby="f26as-label" />
-                        <Button component="label" htmlFor="f26as-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                          {form26asFile ? 'Uploaded' : 'Upload'}
-                        </Button>
-                        {form26asFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form26asFile.name}</Typography>}
-                        {form26asLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                      </Box>
+                      {/* TIS */}
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                          <Typography id="tis-label" variant="subtitle2" component="label" htmlFor="tis-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                            TIS PDF (Tax Summary)
+                          </Typography>
+                          <input id="tis-upload" type="file" accept=".pdf" onChange={handleTISUpload} style={{ display: 'none' }} aria-labelledby="tis-label" />
+                          <Button component="label" htmlFor="tis-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                            {tisFile ? 'Uploaded' : 'Upload'}
+                          </Button>
+                          {tisFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{tisFile.name}</Typography>}
+                          {tisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                        </Box>
+                      </Grid>
+
+                      {/* Form 26AS */}
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
+                          <Typography id="f26as-label" variant="subtitle2" component="label" htmlFor="f26as-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
+                            Form 26AS PDF (Tax Paid)
+                          </Typography>
+                          <input id="f26as-upload" type="file" accept=".pdf" onChange={handleForm26ASUpload} style={{ display: 'none' }} aria-labelledby="f26as-label" />
+                          <Button component="label" htmlFor="f26as-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
+                            {form26asFile ? 'Uploaded' : 'Upload'}
+                          </Button>
+                          {form26asFile && <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form26asFile.name}</Typography>}
+                          {form26asLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
+                        </Box>
+                      </Grid>
                     </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Box>
 
               {/* Miscellaneous/Other Reconciliation Alerts */}
               {extractedData && otherDiscrepancies.length > 0 && (
@@ -944,15 +1023,37 @@ export default function Home() {
                 <>
                   {/* Validation warnings */}
                   {errors.length > 0 && (
-                    <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 0.5 }}>
-                      <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem', m: 0 }}>Validation Warnings:</AlertTitle>
-                      <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                        {errors.map((err, i) => (
-                          <li key={i}>
-                            <Typography variant="body2">{err}</Typography>
-                          </li>
-                        ))}
-                      </ul>
+                    <Alert
+                      severity="warning"
+                      variant="outlined"
+                      sx={{
+                        mb: 2.5,
+                        borderRadius: 1.5,
+                        py: 1,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => setWarningsExpanded(!warningsExpanded)}
+                      data-testid="validation-warnings-box"
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          ⚠️ Validation Warnings: {errors.length} Found
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 'bold', textDecoration: 'underline', ml: 2 }}>
+                          {warningsExpanded ? 'Click to Collapse' : 'Click to Expand'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: warningsExpanded ? 'block' : 'none', mt: 1.5, pl: 2 }} onClick={(e: any) => e.stopPropagation()}>
+                        <ul style={{ margin: 0, paddingLeft: '1rem' }}>
+                          {errors.map((err, i) => (
+                            <li key={i}>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>{err}</Typography>
+                            </li>
+                          ))}
+                        </ul>
+                      </Box>
                     </Alert>
                   )}
 
@@ -1221,7 +1322,17 @@ export default function Home() {
                         </Grid>
                       </Grid>
 
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="outlined"
+                          color="info"
+                          startIcon={<CodeIcon fontSize="small" />}
+                          onClick={() => setInspectOpen(true)}
+                          size="small"
+                          data-testid="inspect-form-data-btn-left"
+                        >
+                          Inspect Form Data
+                        </Button>
                         <Button
                           variant="outlined"
                           color="secondary"
@@ -1259,12 +1370,30 @@ export default function Home() {
                     </CardContent>
                   </Card>
 
-                  {/* Debug Information */}
-                  <DebugInfoSection
-                    mode={mode}
-                    combinedRawText={combinedRawText}
-                    extractedData={extractedData}
-                  />
+                  {/* Split-Screen Modal/Drawer overlay for developers/power-users */}
+                  <Dialog
+                    open={inspectOpen}
+                    onClose={() => setInspectOpen(false)}
+                    maxWidth="lg"
+                    fullWidth
+                    aria-labelledby="inspect-form-data-title"
+                  >
+                    <DialogTitle id="inspect-form-data-title" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+                      <Typography variant="h6" component="span" sx={{ fontWeight: 'bold' }}>
+                        Inspect Form Data & Protos Schema
+                      </Typography>
+                      <IconButton onClick={() => setInspectOpen(false)} size="small" aria-label="close inspect modal">
+                        <CloseIcon />
+                      </IconButton>
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 2, bgcolor: mode === 'dark' ? 'background.default' : '#f8fafc' }}>
+                      <DebugInfoSection
+                        mode={mode}
+                        combinedRawText={combinedRawText}
+                        extractedData={extractedData}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </>
               )}
             </Container>
@@ -1432,14 +1561,28 @@ export default function Home() {
               {/* Badges for Selected Context Files */}
               {(file || aisFile || tisFile || form26asFile || attachments.length > 0 || (!sendOnlyRawData && extractedData)) && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {/* Parsed Data Badge */}
+                  {/* Parsed Data Button */}
                   {!sendOnlyRawData && extractedData && (
-                    <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.75, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main' }} data-testid="parsed-itr-badge">
-                      <AttachFileIcon sx={{ fontSize: 12, color: 'inherit' }} />
-                      <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
-                        Parsed ITR JSON Data
-                      </Typography>
-                    </Paper>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<CodeIcon sx={{ fontSize: 12 }} />}
+                      onClick={() => setInspectOpen(true)}
+                      data-testid="parsed-itr-badge"
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.7rem',
+                        py: 0.25,
+                        px: 1,
+                        borderRadius: 1,
+                        minHeight: 0,
+                        height: 24,
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      Inspect Form Data
+                    </Button>
                   )}
 
                   {/* Form-16 Context */}

@@ -84,6 +84,10 @@ export interface AISData {
     name: string;
     address: string;
   };
+  tdsTcsInfo?: any;
+  sftInfo?: any;
+  taxPayments?: any;
+  otherInfo?: any;
 }
 
 export interface TISData {
@@ -100,6 +104,8 @@ export interface TISData {
     name: string;
     address: string;
   };
+  categories?: any;
+  details?: any;
 }
 
 export interface Form26ASData {
@@ -619,7 +625,7 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'exemptAllowancesUs10') {
         if (!(bundle as any)._exemptAllowancesUs10) {
           const exempts = cert.partB?.section10Exemptions || [];
-          (bundle as any)._exemptAllowancesUs10 = exempts.map(x => ({
+          (bundle as any)._exemptAllowancesUs10 = exempts.map((x: any) => ({
             code: x.sectionCode,
             nature: x.description,
             amount: x.amount
@@ -627,7 +633,7 @@ export function createForm16Proxy(bundle: any): Form16Data {
         }
         return createArrayProxy((bundle as any)._exemptAllowancesUs10, (newArr) => {
           if (!cert.partB) cert.partB = createEmptyForm16Bundle().certificates[0].partB;
-          cert.partB.section10Exemptions = newArr.map(x => ({
+          cert.partB.section10Exemptions = newArr.map((x: any) => ({
             sectionCode: x.code || '',
             description: x.nature || '',
             amount: x.amount || 0

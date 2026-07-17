@@ -1,4 +1,4 @@
-import { Form16Data } from '@/lib/types';
+import { Form16Data } from '@/lib/proto/compatibilityProxy';
 
 export interface FieldDiff {
   path: string;

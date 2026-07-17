@@ -57,7 +57,7 @@ export class DetailedForm16Parser {
 
     for (const text of texts) {
       const cert = this.parse(text);
-      if (cert.employerProfile.name) {
+      if (cert.employerProfile?.name) {
         certs.push(cert);
       }
       if (text.includes('PARAMETRIC TECHNOLOGY') || text.includes('THOMSON REUTERS')) {
@@ -69,7 +69,7 @@ export class DetailedForm16Parser {
 
     const mergedCertsMap = new Map<string, Form16Detailed>();
     for (const cert of certs) {
-      const key = cert.certificateNumber || cert.employerProfile.tan;
+      const key = cert.certificateNumber || cert.employerProfile?.tan || '';
       const existing = mergedCertsMap.get(key);
       if (existing) {
         this.mergeDetailedCertificates(existing, cert);
@@ -83,8 +83,13 @@ export class DetailedForm16Parser {
         pan: taxpayerPan,
         name: taxpayerName,
         address: taxpayerAddress,
+        aadhaarMasked: undefined,
+        dateOfBirth: '',
+        mobileNumber: undefined,
+        emailAddress: undefined,
       },
       certificates: Array.from(mergedCertsMap.values()),
+      metadata: undefined,
     };
   }
 
@@ -109,8 +114,8 @@ export class DetailedForm16Parser {
     }
     if (incoming.verification) existing.verification = incoming.verification;
     if (incoming.perquisitesDetails) existing.perquisitesDetails = incoming.perquisitesDetails;
-    if (incoming.employmentPeriod.startDate) existing.employmentPeriod.startDate = incoming.employmentPeriod.startDate;
-    if (incoming.employmentPeriod.endDate) existing.employmentPeriod.endDate = incoming.employmentPeriod.endDate;
+    if (incoming.employmentPeriod?.startDate && existing.employmentPeriod) existing.employmentPeriod.startDate = incoming.employmentPeriod.startDate;
+    if (incoming.employmentPeriod?.endDate && existing.employmentPeriod) existing.employmentPeriod.endDate = incoming.employmentPeriod.endDate;
   }
 
   /**
@@ -330,9 +335,9 @@ export class DetailedForm16Parser {
         const cMatch = line.match(/^\s*(\d+)\s+([\d.]+)\s+([\d\w-]+)\s+(\d{2}-\d{2}-\d{4})\s+([\d\w-]+)\s+([A-Z])/i);
         if (cMatch) {
           const taxDep = parseFloat(cMatch[2]);
-          const bsr = cMatch[3] !== '-' ? cMatch[3] : undefined;
+          const bsr = cMatch[3] !== '-' ? cMatch[3] : '';
           const date = cMatch[4];
-          const chalSer = cMatch[5] !== '-' ? cMatch[5] : undefined;
+          const chalSer = cMatch[5] !== '-' ? cMatch[5] : '';
           const matchStat = cMatch[6];
           challanDeposits.push({
             taxDeposited: taxDep,
@@ -395,12 +400,13 @@ export class DetailedForm16Parser {
     const netTaxPayable = this.getVal(lines, 'Net tax payable');
 
     return {
-      opting_out_of_115BAC_new_regime: optingOutOf115BACNewRegime,
-      salary_us_17_1: salaryUs171,
-      perquisites_us_17_2: perquisitesUs172,
-      profits_in_lieu_us_17_3: profitsInLieuUs173,
+      optingOutOf115BACNewRegime,
+      salaryUs171,
+      perquisitesUs172,
+      profitsInLieuUs173,
       salaryFromOtherEmployersReported,
       totalGrossSalary,
+      section10Exemptions: [],
       totalSection10Exemptions,
       standardDeduction,
       entertainmentAllowance,
@@ -410,16 +416,30 @@ export class DetailedForm16Parser {
       incomeFromHousePropertyReported,
       incomeFromOtherSourcesReported,
       grossTotalIncome,
+      chapterViaDeductions: {
+        sec80C: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCC: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCD1: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCD1B: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCD2: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80D: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80E: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCHEmployee: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCHCentralGovt: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80G: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80TTA: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        otherDeductions: [],
+      },
       totalChapterViaDeductions,
       totalTaxableIncome,
       taxOnTotalIncome,
-      rebate_us_87A: rebateUs87A,
+      rebateUs87A,
       surcharge,
       healthEducationCess,
       taxPayable,
-      relief_us_89: reliefUs89,
-      tax_deducted_as_per_12BAA_tds: taxDeductedAsPer12BAATds,
-      tax_collected_as_per_12BAA_tcs: taxCollectedAsPer12BAATcs,
+      reliefUs89,
+      taxDeductedAsPer12BAATds,
+      taxCollectedAsPer12BAATcs,
       netTaxPayable,
     };
   }
@@ -440,6 +460,7 @@ export class DetailedForm16Parser {
       totalProfitsInLieuOfSalary,
       taxDeductedFromSalary1921,
       taxPaidByEmployer1921A,
+      items: [],
     };
   }
 

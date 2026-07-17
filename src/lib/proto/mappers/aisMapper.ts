@@ -75,7 +75,17 @@ export class AisMapper {
         securityPurchases: [],
       },
       otherInfo: data.otherInfo ? {
-        salaries: data.otherInfo.salaries,
+        salaries: data.otherInfo.salaries.map(s => ({
+          infoCode: s.infoCode,
+          infoDescription: s.infoDescription,
+          informationSource: s.informationSource,
+          employmentStartDate: s.employmentStartDate,
+          employmentEndDate: s.employmentEndDate,
+          grossSalaryUs171: s.gross_salary_us_17_1,
+          valueOfPerquisitesUs172: s.value_of_perquisites_us_17_2,
+          profitsInLieuOfSalaryUs173: s.profits_in_lieu_of_salary_us_17_3,
+          grossSalaryStatus: s.grossSalaryStatus,
+        })),
       } : {
         salaries: [],
       },

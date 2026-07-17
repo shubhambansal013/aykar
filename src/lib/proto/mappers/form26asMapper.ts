@@ -5,19 +5,19 @@ export class Form26asMapper {
   static toProto(data: Form26ASData): Form26AS {
     return {
       metadata: {
-        financialYear: '',
+        financialYear: data.metadata?.financialYear || '',
         downloadId: undefined,
         generationDate: new Date(),
         ipAddress: undefined,
       },
       profile: {
-        pan: '',
+        pan: data.profile?.pan || '',
         aadhaarMasked: undefined,
-        name: '',
+        name: data.profile?.name || '',
         dateOfBirth: '',
         mobileNumber: undefined,
         emailAddress: undefined,
-        address: undefined,
+        address: data.profile?.address || undefined,
       },
       tdsSalary: (data.tdsSalary || []).map(x => ({
         tan: x.tan,
@@ -52,32 +52,41 @@ export class Form26asMapper {
   static toDomain(proto: Form26AS): Form26ASData {
     return {
       tdsSalary: (proto.tdsSalary || []).map(x => ({
-        tan: x.tan,
-        deductorName: x.deductorName,
-        amount: x.amount,
+        tan: x.tan || '',
+        deductorName: x.deductorName || '',
+        amount: x.amount || 0,
       })),
       tdsOther: (proto.tdsOther || []).map(x => ({
-        tan: x.tan,
-        deductorName: x.deductorName,
-        section: x.section,
-        amount: x.amount,
+        tan: x.tan || '',
+        deductorName: x.deductorName || '',
+        section: x.section || '',
+        amount: x.amount || 0,
       })),
       tcsDetails: (proto.tcsDetails || []).map(x => ({
-        collectorName: x.collectorName,
-        amount: x.amount,
+        collectorName: x.collectorName || '',
+        amount: x.amount || 0,
       })),
       advanceTax: (proto.advanceTax || []).map(x => ({
-        bsrCode: x.bsrCode,
-        date: x.date,
-        challanNo: x.challanNo,
-        amount: x.amount,
+        bsrCode: x.bsrCode || '',
+        date: x.date || '',
+        challanNo: x.challanNo || '',
+        amount: x.amount || 0,
       })),
       selfAssessmentTax: (proto.selfAssessmentTax || []).map(x => ({
-        bsrCode: x.bsrCode,
-        date: x.date,
-        challanNo: x.challanNo,
-        amount: x.amount,
+        bsrCode: x.bsrCode || '',
+        date: x.date || '',
+        challanNo: x.challanNo || '',
+        amount: x.amount || 0,
       })),
+      metadata: proto.metadata ? {
+        financialYear: proto.metadata.financialYear || '',
+        assessmentYear: '',
+      } : undefined,
+      profile: proto.profile ? {
+        pan: proto.profile.pan || '',
+        name: proto.profile.name || '',
+        address: proto.profile.address || '',
+      } : undefined,
     };
   }
 }

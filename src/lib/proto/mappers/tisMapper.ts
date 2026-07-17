@@ -5,27 +5,40 @@ export class TisMapper {
   static toProto(data: TISData): TaxpayerInformationSummary {
     return {
       metadata: {
-        financialYear: '',
+        financialYear: data.metadata?.financialYear || '',
         downloadId: undefined,
         generationDate: new Date(),
         ipAddress: undefined,
       },
       profile: {
-        pan: '',
+        pan: data.profile?.pan || '',
         aadhaarMasked: undefined,
-        name: '',
+        name: data.profile?.name || '',
         dateOfBirth: '',
         mobileNumber: undefined,
         emailAddress: undefined,
-        address: undefined,
+        address: data.profile?.address || undefined,
       },
-      categories: [
+      categories: data.categories ? data.categories.map(c => ({
+        categoryName: c.categoryName,
+        processedBySystem: c.processedBySystem,
+        acceptedByTaxpayer: c.acceptedByTaxpayer,
+      })) : [
         { categoryName: 'Salary', processedBySystem: data.salaryDerived, acceptedByTaxpayer: data.salaryDerived },
         { categoryName: 'Interest from savings bank', processedBySystem: data.interestSavings, acceptedByTaxpayer: data.interestSavings },
         { categoryName: 'Interest on deposit', processedBySystem: data.interestDeposit, acceptedByTaxpayer: data.interestDeposit },
         { categoryName: 'Dividend', processedBySystem: data.dividendIncome, acceptedByTaxpayer: data.dividendIncome },
       ],
-      details: [],
+      details: data.details ? data.details.map(d => ({
+        parentCategory: d.parentCategory,
+        part: d.part,
+        informationDescription: d.informationDescription,
+        informationSource: d.informationSource,
+        amountDescription: d.amountDescription,
+        reportedBySource: d.reportedBySource,
+        processedBySystem: d.processedBySystem,
+        acceptedByTaxpayer: d.acceptedByTaxpayer,
+      })) : [],
     };
   }
 
@@ -52,6 +65,30 @@ export class TisMapper {
       interestSavings,
       interestDeposit,
       dividendIncome,
+      metadata: proto.metadata ? {
+        financialYear: proto.metadata.financialYear || '',
+        assessmentYear: '',
+      } : undefined,
+      profile: proto.profile ? {
+        pan: proto.profile.pan || '',
+        name: proto.profile.name || '',
+        address: proto.profile.address || '',
+      } : undefined,
+      categories: proto.categories ? proto.categories.map(c => ({
+        categoryName: c.categoryName || '',
+        processedBySystem: c.processedBySystem || 0,
+        acceptedByTaxpayer: c.acceptedByTaxpayer || 0,
+      })) : undefined,
+      details: proto.details ? proto.details.map(d => ({
+        parentCategory: d.parentCategory || '',
+        part: d.part || '',
+        informationDescription: d.informationDescription || '',
+        informationSource: d.informationSource || '',
+        amountDescription: d.amountDescription || '',
+        reportedBySource: d.reportedBySource || 0,
+        processedBySystem: d.processedBySystem || 0,
+        acceptedByTaxpayer: d.acceptedByTaxpayer || 0,
+      })) : undefined,
     };
   }
 }

@@ -1,6 +1,6 @@
 import {
-  Form16Detailed,
-  Form16DetailedBundle,
+  Form16 as Form16Detailed,
+  Form16Bundle as Form16DetailedBundle,
   EmployerProfile,
   EmploymentPeriod,
   PartA,
@@ -9,7 +9,7 @@ import {
   ChallanDeposit,
   Form12BA,
   Verification
-} from '../types';
+} from '../../generated/sources/form16';
 
 /**
  * DetailedForm16Parser is a high-fidelity parser designed to extract deep structural details from Form-16 text.

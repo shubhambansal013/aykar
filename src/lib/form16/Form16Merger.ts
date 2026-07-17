@@ -1,14 +1,11 @@
-import { Form16Data } from '../types';
+import { Form16Bundle } from '../../generated/sources/form16';
+import { createEmptyForm16Bundle, createForm16Proxy } from '../proto/compatibilityProxy';
 
 /**
- * Form16Merger is a specialized utility class responsible for merging multiple Form16Data structures
- * into a single unified Form16Data object.
+ * Form16Merger is a specialized utility class responsible for merging multiple Form16Bundle structures
+ * into a single unified Form16Bundle object.
  * This is particularly useful for handling multi-employer cases (job changes) or combining
  * Part A and Part B documents from the same employer.
- *
- * It strictly adheres to Robert C. Martin's (Uncle Bob) Clean Code guidelines:
- * - Single Responsibility Principle (SRP): Handles only the merging of Form 16 documents.
- * - Single Level of Abstraction: Methods are broken down into small, highly-cohesive, well-named operations.
  */
 export class Form16Merger {
   /**
@@ -17,77 +14,39 @@ export class Form16Merger {
    * @param docs Array of parsed Form 16 data objects.
    * @returns A single merged and recalculated Form 16 data object.
    */
-  public static merge(docs: Form16Data[]): Form16Data {
+  public static merge(docs: Form16Bundle[]): Form16Bundle {
     if (docs.length === 0) {
-      return this.createEmptyTemplate();
+      return createEmptyForm16Bundle();
     }
 
     if (docs.length === 1) {
-      return this.deepCopy(docs[0]);
+      return JSON.parse(JSON.stringify(docs[0]));
     }
 
-    const merged = this.deepCopy(docs[0]);
+    const mergedBundle = createEmptyForm16Bundle();
+    const mergedProxy = createForm16Proxy(mergedBundle);
+
+    if (docs[0].taxpayerProfile) {
+      mergedBundle.taxpayerProfile = JSON.parse(JSON.stringify(docs[0].taxpayerProfile));
+    }
+
+    const docProxies = docs.map(d => createForm16Proxy(d));
+
+    this.mergeSingleDocument(mergedProxy, docProxies[0]);
 
     for (let i = 1; i < docs.length; i++) {
-      this.mergeSingleDocument(merged, docs[i]);
+      this.mergeSingleDocument(mergedProxy, docProxies[i]);
     }
 
-    this.recalculateDerivedFields(merged);
+    this.recalculateDerivedFields(mergedProxy);
 
-    return merged;
-  }
-
-  /**
-   * Creates a default empty Form16Data template structure.
-   */
-  private static createEmptyTemplate(): Form16Data {
-    return {
-      employer: { name: '', tan: '', pan: '', address: '' },
-      employee: { name: { firstName: '', middleName: '', lastName: '' }, pan: '', address: '' },
-      assessmentYear: '',
-      period: { from: '', to: '' },
-      salary: {
-        grossSalary: 0,
-        salaryAsPer17_1: 0,
-        perquisites17_2: 0,
-        profitsInLieu17_3: 0,
-        exemptAllowancesUs10: [],
-        totalExemptAllowances: 0,
-        netSalary: 0,
-        standardDeduction16ia: 0,
-        entertainmentAllowance16ii: 0,
-        professionalTax16iii: 0,
-        totalDeductionsUs16: 0,
-        incomeChargeableUnderHeadSalaries: 0,
-      },
-      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
-      grossTotalIncome: 0,
-      deductions80C: 0,
-      deductions80CCC: 0,
-      deductions80CCD1: 0,
-      deductions80CCD1B: 0,
-      deductions80CCD2: 0,
-      deductions80D: 0,
-      deductions80E: 0,
-      deductions80G: 0,
-      deductions80TTA: 0,
-      totalChapterVIADeductions: 0,
-      totalIncome: 0,
-      taxPayable: 0,
-    };
-  }
-
-  /**
-   * Produces a deep copy of a Form16Data object to avoid side-effects.
-   */
-  private static deepCopy<T>(obj: T): T {
-    return JSON.parse(JSON.stringify(obj));
+    return mergedBundle;
   }
 
   /**
    * Merges a single Form 16 document's properties into the accumulator object.
    */
-  private static mergeSingleDocument(merged: Form16Data, doc: Form16Data): void {
+  private static mergeSingleDocument(merged: any, doc: any): void {
     this.mergeEmployer(merged, doc);
     this.mergeEmployee(merged, doc);
     this.mergeAssessmentYear(merged, doc);
@@ -101,7 +60,7 @@ export class Form16Merger {
   /**
    * Combines employer name, TAN, PAN, and address with duplicate prevention.
    */
-  private static mergeEmployer(merged: Form16Data, doc: Form16Data): void {
+  private static mergeEmployer(merged: any, doc: any): void {
     merged.employer.name = this.joinDistinctTokens(merged.employer.name, doc.employer.name, ' / ');
     merged.employer.tan = this.joinDistinctTokens(merged.employer.tan, doc.employer.tan, ' / ');
     merged.employer.pan = this.joinDistinctTokens(merged.employer.pan, doc.employer.pan, ' / ');
@@ -118,7 +77,7 @@ export class Form16Merger {
   /**
    * Merges employee's PAN, Name (FirstName, MiddleName, LastName), and Address.
    */
-  private static mergeEmployee(merged: Form16Data, doc: Form16Data): void {
+  private static mergeEmployee(merged: any, doc: any): void {
     if (!merged.employee.pan && doc.employee.pan) {
       merged.employee.pan = doc.employee.pan;
     }
@@ -139,7 +98,7 @@ export class Form16Merger {
   /**
    * Merges assessment year from the document if missing in merged.
    */
-  private static mergeAssessmentYear(merged: Form16Data, doc: Form16Data): void {
+  private static mergeAssessmentYear(merged: any, doc: any): void {
     if (!merged.assessmentYear && doc.assessmentYear) {
       merged.assessmentYear = doc.assessmentYear;
     }
@@ -149,7 +108,7 @@ export class Form16Merger {
    * Merges start and end dates of the employment period, expanding to the minimum of start dates
    * and the maximum of end dates.
    */
-  private static mergePeriod(merged: Form16Data, doc: Form16Data): void {
+  private static mergePeriod(merged: any, doc: any): void {
     const mergedFromDate = this.parseEmploymentDate(merged.period.from);
     const docFromDate = this.parseEmploymentDate(doc.period.from);
 
@@ -201,7 +160,7 @@ export class Form16Merger {
   /**
    * Merges salary figures, exempt allowances, and Section 16 deductions.
    */
-  private static mergeSalary(merged: Form16Data, doc: Form16Data): void {
+  private static mergeSalary(merged: any, doc: any): void {
     merged.salary.grossSalary += doc.salary.grossSalary || 0;
     merged.salary.salaryAsPer17_1 += doc.salary.salaryAsPer17_1 || 0;
     merged.salary.perquisites17_2 += doc.salary.perquisites17_2 || 0;
@@ -230,7 +189,7 @@ export class Form16Merger {
   /**
    * Combines Section 10 exempt allowances lists.
    */
-  private static mergeExemptAllowances(merged: Form16Data, doc: Form16Data): void {
+  private static mergeExemptAllowances(merged: any, doc: any): void {
     const combinedExempts = [...(merged.salary.exemptAllowancesUs10 || [])];
 
     for (const item of (doc.salary.exemptAllowancesUs10 || [])) {
@@ -255,7 +214,7 @@ export class Form16Merger {
   /**
    * Merges other income sources, such as house property and other sources.
    */
-  private static mergeOtherIncome(merged: Form16Data, doc: Form16Data): void {
+  private static mergeOtherIncome(merged: any, doc: any): void {
     merged.otherIncome.houseProperty += doc.otherIncome.houseProperty || 0;
 
     const combinedOtherSources = [...(merged.otherIncome.otherSources || [])];
@@ -281,7 +240,7 @@ export class Form16Merger {
   /**
    * Merges Chapter VI-A deductions.
    */
-  private static mergeDeductions(merged: Form16Data, doc: Form16Data): void {
+  private static mergeDeductions(merged: any, doc: any): void {
     merged.deductions80C += doc.deductions80C || 0;
     merged.deductions80CCC += doc.deductions80CCC || 0;
     merged.deductions80CCD1 += doc.deductions80CCD1 || 0;
@@ -299,16 +258,16 @@ export class Form16Merger {
   /**
    * Merges the tax payable field.
    */
-  private static mergeTaxPayable(merged: Form16Data, doc: Form16Data): void {
+  private static mergeTaxPayable(merged: any, doc: any): void {
     merged.taxPayable += doc.taxPayable || 0;
   }
 
   /**
    * Recalculates all derived totals and sums to ensure overall mathematical consistency.
    */
-  private static recalculateDerivedFields(merged: Form16Data): void {
+  private static recalculateDerivedFields(merged: any): void {
     merged.salary.totalExemptAllowances = merged.salary.exemptAllowancesUs10.reduce(
-      (sum, item) => sum + (item?.amount || 0),
+      (sum: number, item: any) => sum + (item?.amount || 0),
       0
     );
 
@@ -325,7 +284,7 @@ export class Form16Merger {
     );
 
     merged.otherIncome.totalOtherSources = merged.otherIncome.otherSources.reduce(
-      (sum, item) => sum + (item?.amount || 0),
+      (sum: number, item: any) => sum + (item?.amount || 0),
       0
     );
 

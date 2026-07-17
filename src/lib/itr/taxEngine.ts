@@ -1,4 +1,4 @@
-import { Form16Data, ReconciledTaxData } from '../types';
+import { Form16Data, ReconciledTaxData } from '../proto/compatibilityProxy';
 
 export interface TaxRegimeDetails {
   grossSalary: number;

@@ -1,0 +1,313 @@
+metadata {
+  financial_year: "2025-26"
+  assessment_year: "2026-27"
+}
+profile {
+  pan: "CYXPA6852K"
+  name: "TARUSH ARORA"
+  address: "7/90, GEETA COLONY, DELHI, 110031, DELHI"
+}
+tds_tcs_info {
+  records {
+    info_code: "TDS-192"
+    info_description: "Salary received (Section 192)"
+    information_source: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUMI04584G)"
+    total_count: 8
+    total_amount: 984690
+    transactions {
+      quarter: "Q3(Oct-Dec)"
+      date_of_payment_credit: "30/11/2025"
+      amount_paid_credited: 1066
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q3(Oct-Dec)"
+      date_of_payment_credit: "31/10/2025"
+      amount_paid_credited: 217346
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q2(Jul-Sep)"
+      date_of_payment_credit: "30/09/2025"
+      amount_paid_credited: 125699
+      tds_deducted: 8235
+      tds_deposited: 8235
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q2(Jul-Sep)"
+      date_of_payment_credit: "31/08/2025"
+      amount_paid_credited: 126050
+      tds_deducted: 8289
+      tds_deposited: 8289
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q2Jul(-Sep)"
+      date_of_payment_credit: "31/07/2025"
+      amount_paid_credited: 125650
+      tds_deducted: 8226
+      tds_deposited: 8226
+      status: "Active"
+    }
+    transactions {
+      quarter: "QT(Apr-Jun)"
+      date_of_payment_credit: "30/06/2025"
+      amount_paid_credited: 133933
+      tds_deducted: 9518
+      tds_deposited: 9518
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q1(Apr-Jun)"
+      date_of_payment_credit: "31/05/2025"
+      amount_paid_credited: 127473
+      tds_deducted: 8512
+      tds_deposited: 8512
+      status: "Active"
+    }
+    transactions {
+      quarter: "01(Apr-Jun)"
+      date_of_payment_credit: "30/04/2025"
+      amount_paid_credited: 127473
+      tds_deducted: 8510
+      tds_deposited: 8510
+      status: "Active"
+    }
+  }
+  records {
+    info_code: "TDS-192"
+    info_description: "Salary received (Section 192)"
+    information_source: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP151440)"
+    total_count: 6
+    total_amount: 849032
+    transactions {
+      quarter: "Q4(Jan-Mar)"
+      date_of_payment_credit: "31/03/2026"
+      amount_paid_credited: 164500
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "04(Jan-Mar)"
+      date_of_payment_credit: "28/02/2026"
+      amount_paid_credited: 164500
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q4(Jan-Mar)"
+      date_of_payment_credit: "31/01/2026"
+      amount_paid_credited: 164500
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q3(Oct-Dec)"
+      date_of_payment_credit: "31/12/2025"
+      amount_paid_credited: 164500
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q3(Oct-Dec)"
+      date_of_payment_credit: "30/11/2025"
+      amount_paid_credited: 164500
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+    transactions {
+      quarter: "Q3(Oct-Dec)"
+      date_of_payment_credit: "31/10/2025"
+      amount_paid_credited: 26532
+      tds_deducted: 0
+      tds_deposited: 0
+      status: "Active"
+    }
+  }
+}
+sft_info {
+  savings_interest {
+    info_code: "SFT-016(SB)"
+    info_description: "Interest income (SFT-016) - Savings"
+    information_source: "HDFC BANK LIMITED (AAACH2702H AB772)"
+    reported_on: "08/05/2026"
+    account_number: "50100282109028"
+    account_type: "Saving"
+    interest_amount: 1191
+    status: "Active"
+  }
+  savings_interest {
+    info_code: "SFT-016(SB)"
+    info_description: "Interest income (SFT-016)-Savings"
+    information_source: "STATE BANK OF INDIA (AAACS8577K.A8703)"
+    reported_on: "26/05/2026"
+    account_number: "00000040226888207"
+    account_type: "Saving"
+    interest_amount: 280
+    status: "Active"
+  }
+  savings_interest {
+    info_code: "SFT-016(SB)"
+    info_description: "Interest income (SFT-016) - Savings"
+    information_source: "BANK OF BARODA (AAAC81534FAB566)"
+    reported_on: "18/05/2026"
+    account_number: "21380100026089"
+    account_type: "Saving"
+    interest_amount: 229
+    status: "Active"
+  }
+  savings_interest {
+    info_code: "SFT-016(SB)"
+    info_description: "Interest income (SFT-016) - Savings"
+    information_source: "PUNJAB AND SIND BANK (AAACP1206G.AB770)"
+    reported_on: "23/05/2026"
+    account_number: "06261000058396"
+    account_type: "Saving"
+    interest_amount: 129
+    status: "Active"
+  }
+  deposit_interest {
+    info_code: "SFT-016(TD)"
+    info_description: "Interest income (SFT-016)-Term Deposit"
+    information_source: "HDFC BANK LIMITED (AAACH2702H AB772)"
+    reported_on: "08/05/2026"
+    account_number: "50300606083392"
+    account_type: "Time Deposit"
+    interest_amount: 2620
+    status: "Active"
+  }
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)"
+    date_of_sale_transfer: "25/02/2026"
+    security_name: "WAAREE ENERGIES LIMITED #EQUITY SHARES (INE377N01017)"
+    security_code_isin: "INE377N01017"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Long term"
+    quantity: 5
+    sale_price_per_unit: 3001
+    sales_consideration: 15005
+    cost_of_acquisition: 7515
+    unit_fmv: 0
+    fair_market_value: 0
+    indexed_cost_of_acquisition: 0
+    status: "Active"
+  }
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)"
+    date_of_sale_transfer: "22/12/2025"
+    security_name: "ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY LIMITED #NEW EQUITY SHARES WITH FV RE 1/-AFTER SUB-DIVISION(INE346A01027)"
+    security_code_isin: "INE346A01027"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Short term"
+    quantity: 6
+    sale_price_per_unit: 2590
+    sales_consideration: 15540
+    cost_of_acquisition: 12990
+    unit_fmv: 0
+    fair_market_value: 0
+    indexed_cost_of_acquisition: 0
+    status: "Active"
+  }
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)"
+    date_of_sale_transfer: "15/10/2025"
+    security_name: "LG ELECTRONICS INDIA LIMITED # EQUITY SHARES(INE324001010)"
+    security_code_isin: "INE324001010"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Short term"
+    quantity: 13
+    sale_price_per_unit: 1715
+    sales_consideration: 22295
+    cost_of_acquisition: 14820
+    unit_fmv: 0
+    fair_market_value: 0
+    indexed_cost_of_acquisition: 0
+    status: "Active"
+  }
+  security_purchases {
+    info_code: "SFT-18(Pur)"
+    info_description: "Purchase of mutual funds (SFT-018)"
+    information_source: "Computer Age Management Services Limited-ICICI Prudential Mutual Fund(P) (AAACC30356.AZ670)"
+    quarter: "Q4(Jan-Mar)"
+    total_purchase_amount: 4500
+    total_sales_value: 0
+    client_id: "34738785"
+    amc_name: "ICICI Prudential Mutual Fund(P)"
+    holder_flag: "First"
+    status: "Active"
+  }
+  security_purchases {
+    info_code: "SFT-18(Pur)"
+    info_description: "Purchase of mutual funds (SFT-018)"
+    information_source: "Computer Age Management Services Limited-ICICI Prudential Mutual Fund(P) (AAACC30356.AZ670)"
+    quarter: "Q2(Jul-Sep)"
+    total_purchase_amount: 9000
+    total_sales_value: 0
+    client_id: "34738785"
+    amc_name: "ICICI Prudential Mutual Fund(P)"
+    holder_flag: "First"
+    status: "Active"
+  }
+}
+tax_payments {
+  financial_year: "2024-25"
+  major_head: "Income Tax (Other than Companies)"
+  minor_head: "Self Assessment"
+  tax_amount: 2140
+  surcharge: 0
+  education_cess: 0
+  others: 0
+  total_amount_paid: 2140
+  bsr_code: "0510002"
+  date_of_deposit: "26/08/2025"
+  challan_serial_number: 279
+  challan_identification_number: "25082600001297HDFC"
+}
+demands_and_refunds {
+}
+other_info {
+  salaries {
+    info_code: "TDS-Ann II-SAL"
+    info_description: "Salary (TDS Annexure II)"
+    information_source: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)"
+    employment_start_date: "01/04/2025"
+    employment_end_date: "24/10/2025"
+    gross_salary_us_17_1: 984690
+    value_of_perquisites_us_17_2: 0
+    profits_in_lieu_of_salary_us_17_3: 0
+    gross_salary_status: "Active"
+  }
+  salaries {
+    info_code: "TDS-Ann II-SAL"
+    info_description: "Salary (TDS Annexure II)"
+    information_source: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)"
+    employment_start_date: "27/10/2025"
+    employment_end_date: "31/03/2026"
+    gross_salary_us_17_1: 849032
+    value_of_perquisites_us_17_2: 0
+    profits_in_lieu_of_salary_us_17_3: 0
+    gross_salary_status: "Active"
+  }
+}

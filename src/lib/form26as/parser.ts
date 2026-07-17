@@ -1,4 +1,4 @@
-import { Form26ASData } from '../types';
+import { Form26ASData, createEmptyForm26as, createForm26asProxy } from '../proto/compatibilityProxy';
 
 function extractNumbersNoSpace(line: string): number[] {
   const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
@@ -63,8 +63,8 @@ function findNameInWindow(lines: string[], centerIdx: number, targetTan: string,
   return isCollector ? 'Unknown Collector' : 'Unknown Deductor';
 }
 
-export function parseForm26ASText(text: string): Form26ASData {
-  const data: Form26ASData = {
+export function parseForm26ASText(text: string): any {
+  const data: any = {
     tdsSalary: [],
     tdsOther: [],
     tcsDetails: [],
@@ -211,9 +211,20 @@ export function parseForm26ASText(text: string): Form26ASData {
     ];
   }
 
-  return data;
+  const f26 = createEmptyForm26as();
+  const proxy = createForm26asProxy(f26);
+
+  proxy.tdsSalary = data.tdsSalary;
+  proxy.tdsOther = data.tdsOther;
+  proxy.tcsDetails = data.tcsDetails;
+  proxy.advanceTax = data.advanceTax;
+  proxy.selfAssessmentTax = data.selfAssessmentTax;
+  proxy.metadata = data.metadata;
+  proxy.profile = data.profile;
+
+  return proxy;
 }
 
-export function parseDetailedForm26AS(text: string): Form26ASData {
+export function parseDetailedForm26AS(text: string): any {
   return parseForm26ASText(text);
 }

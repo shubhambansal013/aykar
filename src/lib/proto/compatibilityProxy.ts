@@ -63,12 +63,12 @@ export interface Form16Data {
   totalChapterVIADeductions: number;
   totalIncome: number;
   taxPayable: number;
-  stcgTaxable: number;
-  ltcg112A: number;
-  interest234A: number;
-  interest234B: number;
-  interest234C: number;
-  lateFee234F: number;
+  stcgTaxable?: number;
+  ltcg112A?: number;
+  interest234A?: number;
+  interest234B?: number;
+  interest234C?: number;
+  lateFee234F?: number;
 }
 
 export interface AISData {

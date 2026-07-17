@@ -1,7 +1,19 @@
 import React from 'react';
-import { Card, CardContent, Box, Typography, Paper, Grid, Checkbox, Divider } from '@mui/material';
+import {
+  Card,
+  CardContent,
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Checkbox,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { compareTaxRegimes } from '@/lib/itr/taxEngine';
-import { Form16Data } from '@/lib/types';
 import { ensureForm16Data } from './FieldCues';
 
 interface TaxRegimeComparisonCardProps {
@@ -52,9 +64,25 @@ export default function TaxRegimeComparisonCard({
           </Box>
         </Box>
 
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2, display: 'block', fontWeight: 500 }}>
-          {recommendation}
-        </Typography>
+        {/* Primary Recommendation Banner */}
+        <Box sx={{
+          p: 2,
+          mb: 2.5,
+          borderRadius: 1.5,
+          bgcolor: comparison.optimalRegime === 'NEW' ? 'success.dark' : 'success.main',
+          color: 'success.contrastText',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.5,
+          boxShadow: 1
+        }} data-testid="recommendation-banner">
+          <Typography variant="subtitle1" sx={{ fontWeight: 'extrabold', letterSpacing: 0.5, m: 0, fontSize: '0.95rem' }}>
+            RECOMMENDATION: {comparison.optimalRegime === 'NEW' ? 'NEW REGIME OPTIMAL' : 'OLD REGIME OPTIMAL'} {savings > 0 ? `(Saves ₹${savings.toLocaleString('en-IN')})` : ''}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.8rem' }}>
+            {recommendation}
+          </Typography>
+        </Box>
 
         <Grid container spacing={2}>
           {/* Old Regime Summary */}
@@ -71,7 +99,7 @@ export default function TaxRegimeComparisonCard({
                     : 'background.paper'
                   ),
               cursor: 'pointer',
-              opacity: selectedRegime === 'OLD' ? 1 : 0.6,
+              opacity: selectedRegime === 'OLD' ? 1 : 0.8,
               transition: 'opacity 0.2s, border-color 0.2s',
             }} onClick={() => onSelectRegime('OLD')} data-testid="select-old-regime">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -94,18 +122,16 @@ export default function TaxRegimeComparisonCard({
                 </Box>
                 <Checkbox checked={selectedRegime === 'OLD'} readOnly size="small" />
               </Box>
+
+              {/* Core Numbers */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
+                  <Typography variant="caption" color="textSecondary">Gross Income:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.grossTotalIncome.toLocaleString('en-IN')}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Deductions (Chapter VI-A):</Typography>
+                  <Typography variant="caption" color="textSecondary">Total Deductions:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.chapterVIADeductions.toLocaleString('en-IN')}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.oldRegime.totalIncome.toLocaleString('en-IN')}</Typography>
                 </Box>
                 <Divider sx={{ my: 0.5 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -121,6 +147,82 @@ export default function TaxRegimeComparisonCard({
                   </Typography>
                 </Box>
               </Box>
+
+              {/* Collapsible Breakdown */}
+              <Accordion
+                sx={{
+                  mt: 2,
+                  boxShadow: 'none',
+                  bgcolor: 'transparent',
+                  backgroundImage: 'none',
+                  '&::before': { display: 'none' },
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  '&.Mui-expanded': { m: '16px 0 0 0' }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon fontSize="small" />}
+                  sx={{ minHeight: 32, '& .MuiAccordionSummary-content': { my: 0.5 } }}
+                >
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    View Detailed Breakdown
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 1.5, pt: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Gross Salary:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.grossSalary.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Exempt Allowances (HRA etc):</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.totalExemptAllowances.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Net Salary:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.netSalary.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Standard Deduction:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.standardDeduction.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Other Deductions u/s 16:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.otherDeductionsUs16.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Income from Salaries:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.incomeFromSalaries.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">House Property Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.housePropertyIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Other Sources Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.otherSourcesIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.totalIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Divider sx={{ my: 0.25 }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Tax Before Rebate:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.taxBeforeRebate.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Rebate u/s 87A:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.rebate87A.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Cess:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.cess.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
             </Paper>
           </Grid>
 
@@ -138,7 +240,7 @@ export default function TaxRegimeComparisonCard({
                     : 'background.paper'
                   ),
               cursor: 'pointer',
-              opacity: selectedRegime === 'NEW' ? 1 : 0.6,
+              opacity: selectedRegime === 'NEW' ? 1 : 0.8,
               transition: 'opacity 0.2s, border-color 0.2s',
             }} onClick={() => onSelectRegime('NEW')} data-testid="select-new-regime">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -161,18 +263,16 @@ export default function TaxRegimeComparisonCard({
                 </Box>
                 <Checkbox checked={selectedRegime === 'NEW'} readOnly size="small" />
               </Box>
+
+              {/* Core Numbers */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
+                  <Typography variant="caption" color="textSecondary">Gross Income:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.grossTotalIncome.toLocaleString('en-IN')}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Deductions (80CCD(2)):</Typography>
+                  <Typography variant="caption" color="textSecondary">Total Deductions:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.chapterVIADeductions.toLocaleString('en-IN')}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{comparison.newRegime.totalIncome.toLocaleString('en-IN')}</Typography>
                 </Box>
                 <Divider sx={{ my: 0.5 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -188,6 +288,70 @@ export default function TaxRegimeComparisonCard({
                   </Typography>
                 </Box>
               </Box>
+
+              {/* Collapsible Breakdown */}
+              <Accordion
+                sx={{
+                  mt: 2,
+                  boxShadow: 'none',
+                  bgcolor: 'transparent',
+                  backgroundImage: 'none',
+                  '&::before': { display: 'none' },
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  '&.Mui-expanded': { m: '16px 0 0 0' }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon fontSize="small" />}
+                  sx={{ minHeight: 32, '& .MuiAccordionSummary-content': { my: 0.5 } }}
+                >
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    View Detailed Breakdown
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 1.5, pt: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Gross Salary:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.grossSalary.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Standard Deduction:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.standardDeduction.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Income from Salaries:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.incomeFromSalaries.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">House Property Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.housePropertyIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Other Sources Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.otherSourcesIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.totalIncome.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Divider sx={{ my: 0.25 }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Tax Before Rebate:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.taxBeforeRebate.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Rebate u/s 87A:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.rebate87A.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="textSecondary">Cess:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.cess.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
             </Paper>
           </Grid>
         </Grid>

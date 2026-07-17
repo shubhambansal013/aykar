@@ -63,6 +63,12 @@ export interface Form16Data {
   totalChapterVIADeductions: number;
   totalIncome: number;
   taxPayable: number;
+  stcgTaxable: number;
+  ltcg112A: number;
+  interest234A: number;
+  interest234B: number;
+  interest234C: number;
+  lateFee234F: number;
 }
 
 export interface AISData {
@@ -428,7 +434,7 @@ function mapFlatToBundle(data: any): Form16Bundle {
     },
   };
 
-  return {
+  const bundle: any = {
     metadata: {
       financialYear: data.assessmentYear ? `${parseInt(data.assessmentYear.split('-')[0], 10) - 1}-${data.assessmentYear.split('-')[0].substring(2)}` : '',
       downloadId: undefined,
@@ -446,6 +452,16 @@ function mapFlatToBundle(data: any): Form16Bundle {
     },
     certificates: [certificate],
   };
+
+  bundle._customOtherSources = data.otherIncome?.otherSources || data._customOtherSources || [];
+  bundle._customStcgTaxable = data.stcgTaxable !== undefined ? data.stcgTaxable : (data._customStcgTaxable || 0);
+  bundle._customLtcg112A = data.ltcg112A !== undefined ? data.ltcg112A : (data._customLtcg112A || 0);
+  bundle._customInterest234A = data.interest234A !== undefined ? data.interest234A : (data._customInterest234A || 0);
+  bundle._customInterest234B = data.interest234B !== undefined ? data.interest234B : (data._customInterest234B || 0);
+  bundle._customInterest234C = data.interest234C !== undefined ? data.interest234C : (data._customInterest234C || 0);
+  bundle._customLateFee234F = data.lateFee234F !== undefined ? data.lateFee234F : (data._customLateFee234F || 0);
+
+  return bundle;
 }
 
 function mapFlatToEngineResult(flat: any): EngineReconciliationResult {
@@ -540,19 +556,22 @@ export function createForm16Proxy(bundle: any): Form16Data {
   }
   if (!(bundle as any)._customOtherSources) (bundle as any)._customOtherSources = [];
 
-  const nameStr = bundle.taxpayerProfile?.name || '';
-  const names = nameStr.split(' ');
-  if (!(bundle as any)._customFirstName) (bundle as any)._customFirstName = names[0] || '';
-  if (!(bundle as any)._customMiddleName) (bundle as any)._customMiddleName = names.length > 2 ? names.slice(1, -1).join(' ') : '';
-  if (!(bundle as any)._customLastName) (bundle as any)._customLastName = names.length > 1 ? names[names.length - 1] : '';
+  const getNamesFromProto = () => {
+    const nameStr = bundle.taxpayerProfile?.name || '';
+    const names = nameStr.split(' ');
+    const f = names[0] || '';
+    const m = names.length > 2 ? names.slice(1, -1).join(' ') : '';
+    const l = names.length > 1 ? names[names.length - 1] : '';
+    return { f, m, l };
+  };
 
   const syncNamesToProto = () => {
     if (bundle.taxpayerProfile) {
-      bundle.taxpayerProfile.name = [
-        (bundle as any)._customFirstName,
-        (bundle as any)._customMiddleName,
-        (bundle as any)._customLastName
-      ].filter(Boolean).join(' ');
+      const { f, m, l } = getNamesFromProto();
+      const first = (bundle as any)._customFirstName !== undefined ? (bundle as any)._customFirstName : f;
+      const middle = (bundle as any)._customMiddleName !== undefined ? (bundle as any)._customMiddleName : m;
+      const last = (bundle as any)._customLastName !== undefined ? (bundle as any)._customLastName : l;
+      bundle.taxpayerProfile.name = [first, middle, last].filter(Boolean).join(' ');
     }
   };
 
@@ -598,9 +617,10 @@ export function createForm16Proxy(bundle: any): Form16Data {
       };
     },
     get(target, prop) {
-      if (prop === 'firstName') return (bundle as any)._customFirstName;
-      if (prop === 'middleName') return (bundle as any)._customMiddleName;
-      if (prop === 'lastName') return (bundle as any)._customLastName;
+      const { f, m, l } = getNamesFromProto();
+      if (prop === 'firstName') return (bundle as any)._customFirstName !== undefined ? (bundle as any)._customFirstName : f;
+      if (prop === 'middleName') return (bundle as any)._customMiddleName !== undefined ? (bundle as any)._customMiddleName : m;
+      if (prop === 'lastName') return (bundle as any)._customLastName !== undefined ? (bundle as any)._customLastName : l;
       return undefined;
     },
     set(target, prop, value) {
@@ -781,7 +801,8 @@ export function createForm16Proxy(bundle: any): Form16Data {
         'employer', 'employee', 'assessmentYear', 'period', 'salary', 'otherIncome',
         'grossTotalIncome', 'deductions80C', 'deductions80CCC', 'deductions80CCD1',
         'deductions80CCD1B', 'deductions80CCD2', 'deductions80D', 'deductions80E',
-        'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable'
+        'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable',
+        'stcgTaxable', 'ltcg112A', 'interest234A', 'interest234B', 'interest234C', 'lateFee234F'
       ];
     },
     getOwnPropertyDescriptor(target, prop) {
@@ -840,6 +861,13 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'totalIncome') return cert.partB?.totalTaxableIncome || 0;
       if (prop === 'taxPayable') return cert.partB?.taxPayable || 0;
 
+      if (prop === 'stcgTaxable') return bundle._customStcgTaxable || 0;
+      if (prop === 'ltcg112A') return bundle._customLtcg112A || 0;
+      if (prop === 'interest234A') return bundle._customInterest234A || 0;
+      if (prop === 'interest234B') return bundle._customInterest234B || 0;
+      if (prop === 'interest234C') return bundle._customInterest234C || 0;
+      if (prop === 'lateFee234F') return bundle._customLateFee234F || 0;
+
       if (prop === '__isForm16Proxy') return true;
       if (prop === '__bundle') return bundle;
 
@@ -850,6 +878,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (!cert.employmentPeriod) cert.employmentPeriod = createEmptyForm16Bundle().certificates[0].employmentPeriod;
 
       if (prop === 'assessmentYear') cert.employmentPeriod.assessmentYear = String(value);
+      else if (prop === 'stcgTaxable') bundle._customStcgTaxable = Number(value);
+      else if (prop === 'ltcg112A') bundle._customLtcg112A = Number(value);
+      else if (prop === 'interest234A') bundle._customInterest234A = Number(value);
+      else if (prop === 'interest234B') bundle._customInterest234B = Number(value);
+      else if (prop === 'interest234C') bundle._customInterest234C = Number(value);
+      else if (prop === 'lateFee234F') bundle._customLateFee234F = Number(value);
       else if (prop === 'grossTotalIncome') cert.partB.grossTotalIncome = Number(value);
       else if (prop === 'deductions80C') {
         const d = cert.partB.chapterViaDeductions!.sec_80C;

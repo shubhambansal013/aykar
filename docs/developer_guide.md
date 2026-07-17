@@ -72,12 +72,14 @@ Welcome to the Aykar developer guide! This document compiles critical context, a
 - Extraction regexes, boundaries, and column column preferences are decoupled from procedural parser code into `src/lib/form16/extractionConfig.ts` (documented in [extraction_config.md](./extraction_config.md)).
 
 ### B. Modular Parsers
-- The Form-16 parser is modularized into specialized classes under `src/lib/form16/`:
-  - `BasicInfoParser` (keeps assessment years fully formatted, e.g., '2026-27' or '2024-25')
-  - `SalaryParser` (extracts Section 10 exempt allowances line-by-line matching `nature`, `code`, and `amount`)
+- The Form-16 parser is modularized into specialized, highly cohesive classes under `src/lib/form16/`:
+  - `BasicInfoParser` (Extracts PANs, TANs, assessment years, and side-by-side employer/employee details. Broken down into tiny, focused private parsing routines).
+  - `SalaryParser` (Extracts Section 17 salary parts, Section 10 exempt allowances, and Section 16 deductions. Structured into small, logical sub-parsing methods).
   - `OtherIncomeParser`
   - `DeductionsParser`
   - `TaxComputationParser`
+  - `DetailedForm16Parser` (High-fidelity detailed parser extracting full quarterly summaries, challan deposits, and verifications. Methods are extremely modular).
+  - `Form16Merger` (Unifies and merges multiple Form-16 models for multi-employer / job change scenarios, capping standard deductions and validating arithmetic totals).
 
 ### C. File Re-upload Prevention Trick
 - To support immediate re-upload of the same file after deletion, always clear the file input DOM value by resetting `e.target.value = ''` in the `onChange` event handler.

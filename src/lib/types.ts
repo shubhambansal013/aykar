@@ -24,7 +24,7 @@ export interface Form16Data {
     salaryAsPer17_1: number;
     perquisites17_2: number;
     profitsInLieu17_3: number;
-    exemptAllowancesUs10: Array<{ code?: string; nature?: string; amount: number }>;
+    exemptAllowancesUs10: ExemptAllowance[];
     totalExemptAllowances: number;
     netSalary: number;
     standardDeduction16ia: number;
@@ -377,4 +377,115 @@ export interface ReconciledTaxData extends Form16Data {
     amount: number;
     confirmed: boolean;
   }>;
+}
+
+export interface QuarterSummary {
+  quarter: string;
+  receiptNumber: string;
+  amountPaidCredited: number;
+  taxDeducted: number;
+  taxDeposited: number;
+}
+
+export interface ChallanDeposit {
+  taxDeposited: number;
+  bsrCode?: string;
+  dateOfDeposit: string;
+  challanSerialNumber?: string;
+  matchingStatus: string;
+}
+
+export interface EmployerProfile {
+  tan: string;
+  pan: string;
+  name: string;
+  address: string;
+  email?: string;
+  phone?: string;
+  citTdsAddress: string;
+}
+
+export interface EmploymentPeriod {
+  startDate: string;
+  endDate: string;
+  assessmentYear: string;
+  employeeReferenceNo?: string;
+}
+
+export interface Verification {
+  signatoryName: string;
+  parentName: string;
+  designation: string;
+  place: string;
+  date: string;
+  digitalSignatureVerified: boolean;
+}
+
+export interface PartA {
+  quarterSummaries: QuarterSummary[];
+  challanDeposits: ChallanDeposit[];
+  totalAmountPaid: number;
+  totalTdsDeducted: number;
+  totalTdsDeposited: number;
+}
+
+export interface PartB {
+  opting_out_of_115BAC_new_regime: boolean;
+  salary_us_17_1: number;
+  perquisites_us_17_2: number;
+  profits_in_lieu_us_17_3: number;
+  salaryFromOtherEmployersReported: number;
+  totalGrossSalary: number;
+  totalSection10Exemptions: number;
+  standardDeduction: number;
+  entertainmentAllowance: number;
+  professionalTax: number;
+  totalSection16Deductions: number;
+  incomeChargeableUnderSalaries: number;
+  incomeFromHousePropertyReported: number;
+  incomeFromOtherSourcesReported: number;
+  grossTotalIncome: number;
+  totalChapterViaDeductions: number;
+  totalTaxableIncome: number;
+  taxOnTotalIncome: number;
+  rebate_us_87A: number;
+  surcharge: number;
+  healthEducationCess: number;
+  taxPayable: number;
+  relief_us_89: number;
+  tax_deducted_as_per_12BAA_tds: number;
+  tax_collected_as_per_12BAA_tcs: number;
+  netTaxPayable: number;
+}
+
+export interface Form12BA {
+  totalPerquisitesValue: number;
+  totalProfitsInLieuOfSalary: number;
+  taxDeductedFromSalary1921: number;
+  taxPaidByEmployer1921A: number;
+}
+
+export interface Form16Detailed {
+  certificateNumber: string;
+  employerProfile: EmployerProfile;
+  employmentPeriod: EmploymentPeriod;
+  partA?: PartA;
+  partB?: PartB;
+  perquisitesDetails?: Form12BA;
+  verification?: Verification;
+}
+
+export interface Form16DetailedBundle {
+  taxpayerProfile: {
+    pan: string;
+    name: string;
+    address: string;
+  };
+  certificates: Form16Detailed[];
+}
+
+export interface ExemptAllowance {
+  code?: string;
+  nature?: string;
+  amount: number;
 }

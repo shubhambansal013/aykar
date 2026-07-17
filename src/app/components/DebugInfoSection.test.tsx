@@ -140,4 +140,26 @@ describe('DebugInfoSection Unit Tests', () => {
     fireEvent.click(rawTab);
     expect(screen.getByText('No raw text extracted yet.')).toBeDefined();
   });
+
+  test('supports controlled mode with activeTab and onTabChange props', () => {
+    const handleTabChange = vi.fn();
+    render(
+      <DebugInfoSection
+        mode="light"
+        combinedRawText="Simulated raw text from PDF"
+        extractedData={dummyReconciledData}
+        form16List={dummyForm16List}
+        activeTab={2}
+        onTabChange={handleTabChange}
+      />
+    );
+
+    // Should display AIS tab content directly because activeTab is 2
+    expect(screen.getByText('Annual Information Statement (AIS) Proto')).toBeDefined();
+
+    // Clicking Form-16 Data tab should call onTabChange
+    const form16Tab = screen.getByText('Form-16 Data');
+    fireEvent.click(form16Tab);
+    expect(handleTabChange).toHaveBeenCalledWith(1);
+  });
 });

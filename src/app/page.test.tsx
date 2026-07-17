@@ -129,7 +129,7 @@ describe('Home Page', () => {
     const chatBtn = screen.getByLabelText('open ai chat');
     fireEvent.click(chatBtn);
 
-    expect(screen.getByText(/AI Tax Assistant/i)).toBeDefined();
+    expect(screen.getByText(/AI Chat/i)).toBeDefined();
     expect(screen.getByText(/Ask me anything about your taxes!/i)).toBeDefined();
     expect(screen.getByPlaceholderText(/Ask your tax question.../i)).toBeDefined();
   });
@@ -1123,6 +1123,64 @@ describe('Home Page', () => {
       expect(screen.getByText('1 Uploaded')).toBeDefined();
       expect(screen.getByDisplayValue('Beta Inc')).toBeDefined();
     });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('opens right panel and switches to correct inspect tab when clicking View Extracted Data on uploaders', async () => {
+    // 1. Setup mock functions for PDF text extraction and parsing
+    const mockText = 'Raw extracted text content for integration test';
+    const mockData = {
+      employer: { name: 'Acme Corp', tan: 'AAAPB1234C', address: '123 clean street' },
+      employee: { name: { firstName: 'Alice', lastName: 'Smith' }, pan: 'ABCDE1234F', address: '456 clean avenue' },
+      assessmentYear: '2026-27',
+      period: { from: '2025-04-01', to: '2026-03-31' },
+      salary: {
+        grossSalary: 1200000,
+        salaryAsPer17_1: 1100000,
+        perquisites17_2: 100000,
+        profitsInLieu17_3: 0,
+        exemptAllowancesUs10: [],
+        totalExemptAllowances: 0,
+        netSalary: 1200000,
+        standardDeduction16ia: 50000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 50000,
+        incomeChargeableUnderHeadSalaries: 1150000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 1150000,
+      deductions80C: 150000,
+      totalChapterVIADeductions: 150000,
+      totalIncome: 1000000,
+      taxPayable: 75000,
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy'], 'form16.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    // Right panel switch tab inspect should be queryable
+    const inspectBtn = screen.getByTestId('view-extracted-form16-btn');
+    expect(inspectBtn).toBeDefined();
+
+    fireEvent.click(inspectBtn);
+
+    // Verify right panel is open and showing the DebugInfoSection tabs
+    expect(screen.getByText('Debug Information & Raw Extracted Documents')).toBeDefined();
+    expect(screen.getByText('Engine Reconciliation Result (Protobuf)')).toBeDefined();
 
     vi.restoreAllMocks();
   }, 45000);

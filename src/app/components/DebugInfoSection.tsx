@@ -11,6 +11,8 @@ interface DebugInfoSectionProps {
   aisData?: any;
   tisData?: any;
   form26asData?: any;
+  activeTab?: number;
+  onTabChange?: (newValue: number) => void;
 }
 
 interface TabPanelProps {
@@ -45,11 +47,20 @@ export default function DebugInfoSection({
   aisData = null,
   tisData = null,
   form26asData = null,
+  activeTab,
+  onTabChange,
 }: DebugInfoSectionProps) {
-  const [tabValue, setTabValue] = useState(0);
+  const [localTabValue, setLocalTabValue] = useState(0);
+
+  const isControlled = activeTab !== undefined && onTabChange !== undefined;
+  const tabValue = isControlled ? activeTab : localTabValue;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+    if (isControlled) {
+      onTabChange(newValue);
+    } else {
+      setLocalTabValue(newValue);
+    }
   };
 
   const renderJsonBlock = (data: any, emptyMessage: string, color: string) => {

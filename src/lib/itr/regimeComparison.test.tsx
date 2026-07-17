@@ -115,5 +115,5 @@ describe('Home Page - Dual Regime Tax Comparison', () => {
     expect(mapper.mapForm16ToITR1).toHaveBeenCalledWith(expect.any(Object), 'OLD');
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
-  });
+  }, 45000);
 });

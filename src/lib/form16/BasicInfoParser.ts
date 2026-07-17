@@ -12,6 +12,21 @@ export class BasicInfoParser {
       .replace(/^[:\-\s]+|[:\-\s]+$/g, '');
   }
 
+  private static isLikelyPersonName(line: string): boolean {
+    const clean = line.trim();
+    if (!/^[A-Za-z\s.-]{3,30}$/.test(clean)) return false;
+    const words = clean.toUpperCase().split(/\s+/).filter(Boolean);
+    if (words.length < 2 || words.length > 4) return false;
+
+    const corpKeywords = ['LIMITED', 'LTD', 'PRIVATE', 'PVT', 'SERVICES', 'CO', 'CORP', 'CORPORATION', 'BANK', 'TRUST', 'INDIA', 'INCORPORATED', 'INC', 'ASSOCIATES', 'OPERATIONS', 'GLOBAL', 'SOLUTIONS', 'TECHNOLOGY', 'INTERNATIONAL', 'PTE'];
+    if (words.some(w => corpKeywords.includes(w))) return false;
+
+    const addressKeywords = ['FLOOR', 'TOWERS', 'ROAD', 'BUILDING', 'HOUSE', 'PLOT', 'SECTOR', 'STREET', 'LANE', 'AVENUE', 'BLOCK', 'FLAT', 'ROOM', 'APARTMENT', 'WARD', 'NAGAR', 'COLONY', 'SOCIETY', 'VIHAR', 'ENCLAVE', 'GALI', 'CITY', 'DISTRICT', 'STATE', 'PINCODE', 'COMMISSIONER', 'HOSPITAL'];
+    if (words.some(w => addressKeywords.includes(w))) return false;
+
+    return true;
+  }
+
   public static extractNameFromBlock(block: string): string {
     const tokens = block.trim().split(/\s+/);
     const nameParts: string[] = [];
@@ -72,34 +87,67 @@ export class BasicInfoParser {
       const startIndex = sideBySideMatch.index! + sideBySideMatch[0].length;
       const subText = text.substring(startIndex);
       const lines = subText.split(/[\r\n]+/);
-      const employerLines: string[] = [];
-      const employeeLines: string[] = [];
-      let foundEmployeeName = false;
 
+      const blockLines: string[] = [];
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
-
-        // Stop if we hit the PAN/TAN section or other major section
         if (/PAN\s+of\s+the/i.test(trimmed) || /PART\s+[A-B]/i.test(trimmed) || /Annexure/i.test(trimmed)) {
           break;
         }
+        blockLines.push(trimmed);
+      }
 
-        // Split by 2 or more spaces
-        const parts = trimmed.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
-        if (parts.length >= 2) {
-          employerLines.push(parts[0]);
-          employeeLines.push(parts[1]);
-          foundEmployeeName = true;
-        } else if (parts.length === 1) {
-          if (!foundEmployeeName) {
+      // Check if blockLines is interleaved (no double spaces but has likely employee name)
+      const hasDoubleSpace = blockLines.some(l => l.split(/\s{2,}/).length >= 2);
+
+      let employerLines: string[] = [];
+      const employeeLines: string[] = [];
+
+      if (!hasDoubleSpace) {
+        let nameIdx = -1;
+        for (let idx = 0; idx < blockLines.length; idx++) {
+          if (this.isLikelyPersonName(blockLines[idx])) {
+            nameIdx = idx;
+            break;
+          }
+        }
+
+        if (nameIdx !== -1) {
+          // Generic alternating de-interleaving based on layout offsets
+          for (let idx = 0; idx < blockLines.length; idx++) {
+            const line = blockLines[idx];
+            if (idx === nameIdx) {
+              employeeLines.push(line);
+            } else if (idx > nameIdx && (idx - nameIdx) % 2 === 0) {
+              // Right column (Employee Address line)
+              employeeLines.push(line);
+            } else {
+              // Left column (Employer line)
+              employerLines.push(line);
+            }
+          }
+        } else {
+          employerLines = [...blockLines];
+        }
+      } else {
+        let foundEmployeeName = false;
+        for (const line of blockLines) {
+          const parts = line.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+          if (parts.length >= 2) {
             employerLines.push(parts[0]);
-          } else {
-            // Check if it looks like employer email or phone
-            if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0]) || /^[a-z_]+@uhg\.com/i.test(parts[0])) {
+            employeeLines.push(parts[1]);
+            foundEmployeeName = true;
+          } else if (parts.length === 1) {
+            if (!foundEmployeeName) {
               employerLines.push(parts[0]);
             } else {
-              employerLines.push(parts[0]);
+              // Check if it looks like employer email or phone
+              if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0]) || /^[a-z_]+@uhg\.com/i.test(parts[0])) {
+                employerLines.push(parts[0]);
+              } else {
+                employerLines.push(parts[0]);
+              }
             }
           }
         }

@@ -800,15 +800,42 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'salary') return salaryProxy;
       if (prop === 'otherIncome') return otherIncomeProxy;
       if (prop === 'grossTotalIncome') return cert.partB?.grossTotalIncome || 0;
-      if (prop === 'deductions80C') return cert.partB?.chapterViaDeductions?.sec_80C?.deductibleAmount || 0;
-      if (prop === 'deductions80CCC') return cert.partB?.chapterViaDeductions?.sec_80CCC?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD1') return cert.partB?.chapterViaDeductions?.sec_80CCD_1?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD1B') return cert.partB?.chapterViaDeductions?.sec_80CCD_1B?.deductibleAmount || 0;
-      if (prop === 'deductions80CCD2') return cert.partB?.chapterViaDeductions?.sec_80CCD_2?.deductibleAmount || 0;
-      if (prop === 'deductions80D') return cert.partB?.chapterViaDeductions?.sec_80D?.deductibleAmount || 0;
-      if (prop === 'deductions80E') return cert.partB?.chapterViaDeductions?.sec_80E?.deductibleAmount || 0;
-      if (prop === 'deductions80G') return cert.partB?.chapterViaDeductions?.sec_80G?.deductibleAmount || 0;
-      if (prop === 'deductions80TTA') return cert.partB?.chapterViaDeductions?.sec_80TTA?.deductibleAmount || 0;
+      if (prop === 'deductions80C') {
+        const d = cert.partB?.chapterViaDeductions?.sec80C || cert.partB?.chapterViaDeductions?.sec_80C;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80CCC') {
+        const d = cert.partB?.chapterViaDeductions?.sec80CCC || cert.partB?.chapterViaDeductions?.sec_80CCC;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80CCD1') {
+        const d = cert.partB?.chapterViaDeductions?.sec80CCD1 || cert.partB?.chapterViaDeductions?.sec_80CCD_1;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80CCD1B') {
+        const d = cert.partB?.chapterViaDeductions?.sec80CCD1B || cert.partB?.chapterViaDeductions?.sec_80CCD_1B;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80CCD2') {
+        const d = cert.partB?.chapterViaDeductions?.sec80CCD2 || cert.partB?.chapterViaDeductions?.sec_80CCD_2;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80D') {
+        const d = cert.partB?.chapterViaDeductions?.sec80D || cert.partB?.chapterViaDeductions?.sec_80D;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80E') {
+        const d = cert.partB?.chapterViaDeductions?.sec80E || cert.partB?.chapterViaDeductions?.sec_80E;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80G') {
+        const d = cert.partB?.chapterViaDeductions?.sec80G || cert.partB?.chapterViaDeductions?.sec_80G;
+        return d?.deductibleAmount || 0;
+      }
+      if (prop === 'deductions80TTA') {
+        const d = cert.partB?.chapterViaDeductions?.sec80TTA || cert.partB?.chapterViaDeductions?.sec_80TTA;
+        return d?.deductibleAmount || 0;
+      }
       if (prop === 'totalChapterVIADeductions') return cert.partB?.totalChapterViaDeductions || 0;
       if (prop === 'totalIncome') return cert.partB?.totalTaxableIncome || 0;
       if (prop === 'taxPayable') return cert.partB?.taxPayable || 0;

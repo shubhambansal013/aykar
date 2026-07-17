@@ -20,14 +20,14 @@ export class Form16Merger {
     }
 
     if (docs.length === 1) {
-      return JSON.parse(JSON.stringify(docs[0]));
+      return Form16Bundle.fromPartial(docs[0]);
     }
 
     const mergedBundle = createEmptyForm16Bundle();
     const mergedProxy = createForm16Proxy(mergedBundle);
 
     if (docs[0].taxpayerProfile) {
-      mergedBundle.taxpayerProfile = JSON.parse(JSON.stringify(docs[0].taxpayerProfile));
+      mergedBundle.taxpayerProfile = Form16Bundle.fromPartial({ taxpayerProfile: docs[0].taxpayerProfile }).taxpayerProfile;
     }
 
     const docProxies = docs.map(d => createForm16Proxy(d));

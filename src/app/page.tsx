@@ -350,7 +350,8 @@ export default function Home() {
 
       // Auto-recalculate dependents using the recalculateAllFormFields tool
       const updated = recalculateAllFormFields(next, selectedRegime, path);
-      return (updated as any).__bundle || updated;
+      const proxy = createEngineProxy(updated);
+      return proxy.__bundle || proxy;
     });
   };
 
@@ -439,16 +440,29 @@ export default function Home() {
   // Chat Actions
   const handleAcceptProposal = (msgIdx: number, updatedData: any) => {
     if (extractedData) {
-      setProposalBackups((prev) => ({ ...prev, [msgIdx]: JSON.parse(JSON.stringify(extractedData)) }));
+      setProposalBackups((prev) => ({ ...prev, [msgIdx]: EngineReconciliationResult.fromPartial(extractedData) }));
     }
     setAcceptedMessages((prev) => ({ ...prev, [msgIdx]: true }));
     const sanitized = sanitizeForm16Data(updatedData);
     // Recalculate everything for safety
     const recalculated = recalculateAllFormFields(sanitized, selectedRegime);
-    const protoData = (recalculated as any).__bundle || recalculated;
+
+    // Merge in existing extra engine result fields if present (such as aisData, tisData, etc.) so we don't lose them
+    const mergedRecalculated = {
+      ...recalculated,
+      aisData: extractedData?.aisData,
+      tisData: extractedData?.tisData,
+      form26asData: extractedData?.form26asData,
+      taxCredits: extractedData?.taxCredits,
+      discrepancies: extractedData?.discrepancies,
+      detectedIncomeSources: extractedData?.detectedIncomeSources,
+    };
+
+    const proxy = createEngineProxy(mergedRecalculated);
+    const protoData = proxy.__bundle || proxy;
     setExtractedData(protoData);
     setAppliedAiSuggestions(protoData);
-    setErrors(validateForm16Data(recalculated));
+    setErrors(validateForm16Data(createEngineProxy(protoData)));
   };
 
   const handleRejectProposal = (msgIdx: number) => {
@@ -459,7 +473,7 @@ export default function Home() {
     if (acceptedMessages[msgIdx]) {
       const backup = proposalBackups[msgIdx];
       if (backup) {
-        setExtractedData(backup);
+        setExtractedData(EngineReconciliationResult.fromPartial(backup));
         setAppliedAiSuggestions(null);
         setErrors(validateForm16Data(createEngineProxy(backup)));
       }
@@ -514,11 +528,12 @@ export default function Home() {
     setSelectedRegime(activeRegime);
 
     const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-    const protoResult = (recalculated as any).__bundle || recalculated;
+    const proxy = createEngineProxy(recalculated);
+    const protoResult = proxy.__bundle || proxy;
 
     setExtractedData(protoResult);
-    setOriginalParsedData(JSON.parse(JSON.stringify(protoResult)));
-    setErrors(validateForm16Data(recalculated));
+    setOriginalParsedData(EngineReconciliationResult.fromPartial(protoResult));
+    setErrors(validateForm16Data(createEngineProxy(protoResult)));
   };
 
   const handleRemoveForm16 = (index: number) => {

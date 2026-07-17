@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Paper, Typography } from '@mui/material';
-import { Form16Data, ReconciledTaxData } from '@/lib/types';
+import { Form16Data, ReconciledTaxData } from '@/lib/proto/compatibilityProxy';
 import { ensureForm16Data } from './FieldCues';
 
 interface SectionAuditTrailProps {

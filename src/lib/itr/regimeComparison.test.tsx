@@ -5,6 +5,7 @@ import * as extractor from '@/lib/form16/extractor';
 import * as parser from '@/lib/form16/parser';
 import * as validator from '@/lib/itr/validator';
 import * as mapper from '@/lib/itr/mapper';
+import { createForm16Proxy } from '@/lib/proto/compatibilityProxy';
 
 vi.mock('@/lib/form16/extractor');
 vi.mock('@/lib/form16/parser', async () => {

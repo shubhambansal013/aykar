@@ -10,14 +10,8 @@ import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapForm16ToITR1 } from '@/lib/itr/mapper';
 import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
-import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData } from '@/lib/types';
+import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
-
-import { EngineMapper } from '@/lib/proto/mappers/engineMapper';
-import { Form16Mapper } from '@/lib/proto/mappers/form16Mapper';
-import { AisMapper } from '@/lib/proto/mappers/aisMapper';
-import { TisMapper } from '@/lib/proto/mappers/tisMapper';
-import { Form26asMapper } from '@/lib/proto/mappers/form26asMapper';
 
 import { EngineReconciliationResult } from '@/generated/platform/engine';
 import { Form16Bundle } from '@/generated/sources/form16';
@@ -232,7 +226,7 @@ export default function Home() {
 
   // Derived Domain Object for computation
   const extractedDataDomain = useMemo(() => {
-    return extractedData ? EngineMapper.toDomain(extractedData) : null;
+    return extractedData ? createEngineProxy(extractedData) : null;
   }, [extractedData]);
 
   const hasUploadedDocs = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
@@ -342,7 +336,7 @@ export default function Home() {
   const updateNestedValue = (path: string, val: any) => {
     setExtractedData((prev) => {
       if (!prev) return prev;
-      const domain = EngineMapper.toDomain(prev);
+      const domain = createEngineProxy(prev);
       const next = JSON.parse(JSON.stringify(domain));
       const parts = path.split('.');
       let current = next;
@@ -356,7 +350,7 @@ export default function Home() {
 
       // Auto-recalculate dependents using the recalculateAllFormFields tool
       const updated = recalculateAllFormFields(next, selectedRegime, path);
-      return EngineMapper.toProto(updated);
+      return (updated as any).__bundle || updated;
     });
   };
 
@@ -451,7 +445,7 @@ export default function Home() {
     const sanitized = sanitizeForm16Data(updatedData);
     // Recalculate everything for safety
     const recalculated = recalculateAllFormFields(sanitized, selectedRegime);
-    const protoData = EngineMapper.toProto(recalculated);
+    const protoData = (recalculated as any).__bundle || recalculated;
     setExtractedData(protoData);
     setAppliedAiSuggestions(protoData);
     setErrors(validateForm16Data(recalculated));
@@ -467,7 +461,7 @@ export default function Home() {
       if (backup) {
         setExtractedData(backup);
         setAppliedAiSuggestions(null);
-        setErrors(validateForm16Data(EngineMapper.toDomain(backup)));
+        setErrors(validateForm16Data(createEngineProxy(backup)));
       }
     }
     setAcceptedMessages((prev) => {
@@ -505,14 +499,14 @@ export default function Home() {
     const mergedRawText = currentForm16s.map(item => item.rawText).join('\n\n');
     setRawText(mergedRawText);
 
-    const domainForm16s = currentForm16s.map(item => Form16Mapper.toDomain(item.data));
+    const domainForm16s = currentForm16s.map(item => createForm16Proxy(item.data));
     const mergedData = mergeForm16Data(domainForm16s);
 
     const reconciled = reconcileAllDocuments(
       mergedData,
-      currentAis ? AisMapper.toDomain(currentAis) : undefined,
-      currentTis ? TisMapper.toDomain(currentTis) : undefined,
-      current26as ? Form26asMapper.toDomain(current26as) : undefined
+      currentAis ? createAisProxy(currentAis) : undefined,
+      currentTis ? createTisProxy(currentTis) : undefined,
+      current26as ? createForm26asProxy(current26as) : undefined
     );
 
     const comparison = compareTaxRegimes(reconciled);
@@ -520,7 +514,7 @@ export default function Home() {
     setSelectedRegime(activeRegime);
 
     const recalculated = recalculateAllFormFields(reconciled, activeRegime);
-    const protoResult = EngineMapper.toProto(recalculated);
+    const protoResult = (recalculated as any).__bundle || recalculated;
 
     setExtractedData(protoResult);
     setOriginalParsedData(JSON.parse(JSON.stringify(protoResult)));
@@ -546,7 +540,7 @@ export default function Home() {
         const arrayBuffer = await selectedFile.arrayBuffer();
         const text = await extractTextFromPDF(arrayBuffer);
         const parsed = parseForm16Text(text);
-        const protoBundle = Form16Mapper.toProto(parsed);
+        const protoBundle = (parsed as any).__bundle || parsed;
         newList.push({ file: selectedFile, rawText: text, data: protoBundle });
       }
 
@@ -572,7 +566,7 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setAisRawText(text);
       const parsed = parseAISText(text);
-      const protoAis = AisMapper.toProto(parsed);
+      const protoAis = (parsed as any).__bundle || parsed;
       setAisData(protoAis);
       reRunReconciliation(form16List, protoAis, tisData, form26asData);
     } catch (err) {
@@ -595,7 +589,7 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setTisRawText(text);
       const parsed = parseTISText(text);
-      const protoTis = TisMapper.toProto(parsed);
+      const protoTis = (parsed as any).__bundle || parsed;
       setTisData(protoTis);
       reRunReconciliation(form16List, aisData, protoTis, form26asData);
     } catch (err) {
@@ -618,7 +612,7 @@ export default function Home() {
       const text = await extractTextFromPDF(arrayBuffer);
       setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
-      const proto26as = Form26asMapper.toProto(parsed);
+      const proto26as = (parsed as any).__bundle || parsed;
       setForm26asData(proto26as);
       reRunReconciliation(form16List, aisData, tisData, proto26as);
     } catch (err) {
@@ -653,7 +647,7 @@ export default function Home() {
     setChatOpen(true);
 
     try {
-      const domainData = extractedData ? EngineMapper.toDomain(extractedData) : null;
+      const domainData = extractedData ? createEngineProxy(extractedData) : null;
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -1167,8 +1161,8 @@ export default function Home() {
                     setSelectedRegime(regime);
                     setExtractedData((prev) => {
                       if (!prev) return null;
-                      const recalculated = recalculateAllFormFields(EngineMapper.toDomain(prev), regime);
-                      return EngineMapper.toProto(recalculated);
+                      const recalculated = recalculateAllFormFields(createEngineProxy(prev), regime);
+                      return (recalculated as any).__bundle || recalculated;
                     });
                   }}
                 />

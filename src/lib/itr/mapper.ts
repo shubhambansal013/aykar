@@ -1,4 +1,5 @@
-import { Form16Data, ITR1_JSON, ReconciledTaxData } from '../types';
+import { ITR1_JSON } from '../types';
+import { Form16Data, ReconciledTaxData } from '../proto/compatibilityProxy';
 import { calculateOldRegime, calculateNewRegime } from './taxEngine';
 
 export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW'): ITR1_JSON {

@@ -1,4 +1,4 @@
-import { Form16Data } from '../types';
+import { Form16Data } from '../proto/compatibilityProxy';
 import { extractionConfig } from './extractionConfig';
 
 /**

@@ -1,4 +1,4 @@
-import { TISData } from '../types';
+import { TISData, createEmptyTis, createTisProxy } from '../proto/compatibilityProxy';
 
 function extractNumbersNoSpace(line: string): number[] {
   const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
@@ -53,7 +53,7 @@ function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
   return maxValue;
 }
 
-export function parseTISText(text: string): TISData {
+export function parseTISText(text: string): any {
   const lines = text.split('\n');
 
   const salaryPatterns = [
@@ -216,18 +216,21 @@ export function parseTISText(text: string): TISData {
     ];
   }
 
-  return {
-    salaryDerived,
-    interestSavings,
-    interestDeposit,
-    dividendIncome,
-    metadata,
-    profile,
-    categories,
-    details,
-  };
+  const tis = createEmptyTis();
+  const proxy = createTisProxy(tis);
+
+  proxy.salaryDerived = salaryDerived;
+  proxy.interestSavings = interestSavings;
+  proxy.interestDeposit = interestDeposit;
+  proxy.dividendIncome = dividendIncome;
+  proxy.metadata = metadata;
+  proxy.profile = profile;
+  proxy.categories = categories as any;
+  proxy.details = details as any;
+
+  return proxy;
 }
 
-export function parseDetailedTIS(text: string): TISData {
+export function parseDetailedTIS(text: string): any {
   return parseTISText(text);
 }

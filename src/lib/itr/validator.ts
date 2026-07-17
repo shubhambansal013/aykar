@@ -1,4 +1,4 @@
-import { Form16Data, ReconciledTaxData } from '../types';
+import { Form16Data, ReconciledTaxData } from '../proto/compatibilityProxy';
 
 export function validateForm16Data(data: Form16Data): string[] {
   const errors: string[] = [];

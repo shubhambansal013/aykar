@@ -1,4 +1,4 @@
-import { AISData } from '../types';
+import { AISData, createEmptyAis, createAisProxy } from '../proto/compatibilityProxy';
 
 function extractNumbersNoSpace(line: string): number[] {
   const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
@@ -440,20 +440,23 @@ export function parseAISText(text: string): AISData {
     };
   }
 
-  return {
-    interestSavings,
-    interestDeposit,
-    dividendIncome,
-    tdsDetails: Array.from(tdsDetailsMap.values()),
-    metadata,
-    profile,
-    tdsTcsInfo,
-    sftInfo,
-    taxPayments,
-    otherInfo,
-  };
+  const ais = createEmptyAis();
+  const proxy = createAisProxy(ais);
+
+  proxy.interestSavings = interestSavings;
+  proxy.interestDeposit = interestDeposit;
+  proxy.dividendIncome = dividendIncome;
+  proxy.tdsDetails = Array.from(tdsDetailsMap.values());
+  proxy.metadata = metadata;
+  proxy.profile = profile;
+  proxy.tdsTcsInfo = tdsTcsInfo as any;
+  proxy.sftInfo = sftInfo as any;
+  proxy.taxPayments = taxPayments as any;
+  proxy.otherInfo = otherInfo as any;
+
+  return proxy;
 }
 
-export function parseDetailedAIS(text: string): AISData {
+export function parseDetailedAIS(text: string): any {
   return parseAISText(text);
 }

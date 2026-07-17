@@ -40,10 +40,11 @@ if (typeof Promise.try === 'undefined') {
 
 import { extractTextFromPDF } from '../form16/extractor';
 import { parseForm16Text, parseForm16ToDetailedBundle } from '../form16/parser';
-import { Form16Mapper } from '../proto/mappers/form16Mapper';
 import { parseDetailedAIS } from '../ais/parser';
 import { parseDetailedTIS } from '../tis/parser';
 import { parseDetailedForm26AS } from '../form26as/parser';
+import { parseTextProto } from '../proto/textproto';
+import { createForm16Proxy } from '../proto/compatibilityProxy';
 
 // Recursive camelCase to snake_case converter helper
 function camelToSnake(str: string): string {
@@ -104,15 +105,15 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
             texts.push(extractedText);
           }
 
-          const expectedJsonPath = path.join(personDir, 'expected_form16.json');
+          const expectedJsonPath = path.join(personDir, 'expected_form16.textproto');
           if (fs.existsSync(expectedJsonPath)) {
-            const expectedJson = JSON.parse(fs.readFileSync(expectedJsonPath, 'utf-8'));
+            const expectedJson = parseTextProto(fs.readFileSync(expectedJsonPath, 'utf-8'));
 
             if (person === 'Manak_Jeet_Singh') {
               // Standard single Form-16 format: compare Protobuf-mapped outputs
               const parsed = parseForm16Text(texts[0]);
-              const parsedProto = Form16Mapper.toProto(parsed);
-              const expectedProto = Form16Mapper.toProto(expectedJson);
+              const parsedProto = parsed.__bundle || parsed;
+              const expectedProto = createForm16Proxy(expectedJson).__bundle || expectedJson;
 
               expect(parsedProto.taxpayerProfile?.name).toBe(expectedProto.taxpayerProfile?.name);
               expect(parsedProto.certificates[0].employerProfile?.name).toBe(expectedProto.certificates[0].employerProfile?.name);
@@ -125,7 +126,7 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
             } else if (person === 'Tarush_Arora') {
               // Detailed multi Form-16 format
               const detailedBundle = parseForm16ToDetailedBundle(texts);
-              const bundleSnake = toSnakeCase(detailedBundle);
+              const bundleSnake = toSnakeCase(detailedBundle.__bundle || detailedBundle);
 
               // Verify taxpayer profile
               expect(bundleSnake.taxpayer_profile.pan).toBe(expectedJson.taxpayer_profile.pan);
@@ -184,7 +185,7 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
 
       // 2. AIS PDF Tests
       const aisPdfPath = path.join(personDir, 'ais.pdf');
-      const expectedAisPath = path.join(personDir, 'expected_ais.json');
+      const expectedAisPath = path.join(personDir, 'expected_ais.textproto');
       if (fs.existsSync(aisPdfPath) && fs.existsSync(expectedAisPath)) {
         it('should correctly parse AIS PDF and validate against expected output structure', async () => {
           const pdfBuffer = fs.readFileSync(aisPdfPath);
@@ -210,14 +211,14 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
             }
           }
 
-          const expectedJson = JSON.parse(fs.readFileSync(expectedAisPath, 'utf-8'));
+          const expectedJson = parseTextProto(fs.readFileSync(expectedAisPath, 'utf-8'));
           expect(aisSnake).toEqual(expectedJson);
         }, 40000);
       }
 
       // 3. TIS PDF Tests
       const tisPdfPath = path.join(personDir, 'tis.pdf');
-      const expectedTisPath = path.join(personDir, 'expected_tis.json');
+      const expectedTisPath = path.join(personDir, 'expected_tis.textproto');
       if (fs.existsSync(tisPdfPath) && fs.existsSync(expectedTisPath)) {
         it('should correctly parse TIS PDF and validate against expected output structure', async () => {
           const pdfBuffer = fs.readFileSync(tisPdfPath);
@@ -233,14 +234,14 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
           delete tisSnake.interest_deposit;
           delete tisSnake.dividend_income;
 
-          const expectedJson = JSON.parse(fs.readFileSync(expectedTisPath, 'utf-8'));
+          const expectedJson = parseTextProto(fs.readFileSync(expectedTisPath, 'utf-8'));
           expect(tisSnake).toEqual(expectedJson);
         }, 40000);
       }
 
       // 4. Form 26AS Tests
       const f26asPdfPath = path.join(personDir, 'f26as.pdf');
-      const expected26asPath = path.join(personDir, 'expected_form26as.json');
+      const expected26asPath = path.join(personDir, 'expected_form26as.textproto');
       if (fs.existsSync(f26asPdfPath) && fs.existsSync(expected26asPath)) {
         it('should correctly parse Form 26AS PDF and validate against expected output structure', async () => {
           const pdfBuffer = fs.readFileSync(f26asPdfPath);
@@ -248,9 +249,15 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
           const text = await extractTextFromPDF(arrayBuffer);
 
           const detailed26as = parseDetailedForm26AS(text);
-          const form26asSnake = toSnakeCase(detailed26as);
+          const form26asSnake = toSnakeCase(detailed26as.__bundle || detailed26as);
 
-          const expectedJson = JSON.parse(fs.readFileSync(expected26asPath, 'utf-8'));
+          // Strip empty arrays to match expected JSON
+          if (Array.isArray(form26asSnake.advance_tax) && form26asSnake.advance_tax.length === 0) delete form26asSnake.advance_tax;
+          if (Array.isArray(form26asSnake.self_assessment_tax) && form26asSnake.self_assessment_tax.length === 0) delete form26asSnake.self_assessment_tax;
+          if (Array.isArray(form26asSnake.tcs_details) && form26asSnake.tcs_details.length === 0) delete form26asSnake.tcs_details;
+          if (Array.isArray(form26asSnake.tds_other) && form26asSnake.tds_other.length === 0) delete form26asSnake.tds_other;
+
+          const expectedJson = parseTextProto(fs.readFileSync(expected26asPath, 'utf-8'));
           expect(form26asSnake).toEqual(expectedJson);
         }, 40000);
       }

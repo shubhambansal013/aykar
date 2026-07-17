@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { mapForm16ToITR1 } from './mapper';
-import { Form16Data } from '../types';
+import { Form16Data, createForm16Proxy } from '../proto/compatibilityProxy';
+import { parseTextProto } from '../proto/textproto';
 
 describe('mapForm16ToITR1', () => {
-  // Read mockData from external JSON testdata file for clean human readability
-  const testdataPath = path.resolve(__dirname, './testdata/mock_form16_mapper_input.json');
-  const mockData: Form16Data = JSON.parse(fs.readFileSync(testdataPath, 'utf-8'));
+  // Read mockData from external textproto testdata file for clean human readability
+  const testdataPath = path.resolve(__dirname, './testdata/mock_form16_mapper_input.textproto');
+  const mockBundle = parseTextProto(fs.readFileSync(testdataPath, 'utf-8'));
+  const mockData: Form16Data = createForm16Proxy(mockBundle);
 
   it('should map Form16Data to ITR1_JSON structure under OLD Tax Regime', () => {
     const dataWithCredits = {

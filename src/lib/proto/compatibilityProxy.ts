@@ -330,7 +330,159 @@ function createArrayProxy(arr: any[], onMutate: (newArr: any[]) => void) {
   });
 }
 
-export function createForm16Proxy(bundle: Form16Bundle): Form16Data {
+function mapFlatToBundle(data: any): Form16Bundle {
+  const firstName = data.employee?.name?.firstName || '';
+  const middleName = data.employee?.name?.middleName || '';
+  const lastName = data.employee?.name?.lastName || '';
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+
+  const certificate = {
+    certificateNumber: 'GEN-001',
+    employerProfile: {
+      tan: data.employer?.tan || '',
+      pan: data.employer?.pan || '',
+      name: data.employer?.name || '',
+      address: data.employer?.address || '',
+      citTdsAddress: '',
+      email: undefined,
+      phone: undefined,
+    },
+    employmentPeriod: {
+      startDate: data.period?.from || '',
+      endDate: data.period?.to || '',
+      assessmentYear: data.assessmentYear || '',
+      employeeReferenceNo: undefined,
+    },
+    partA: {
+      quarterSummaries: [],
+      challanDeposits: [],
+      totalAmountPaid: data.salary?.grossSalary || 0,
+      totalTdsDeducted: data.taxPayable || 0,
+      totalTdsDeposited: data.taxPayable || 0,
+    },
+    partB: {
+      optingOutOf115BACNewRegime: false,
+      salaryUs171: data.salary?.salaryAsPer17_1 || 0,
+      perquisitesUs172: data.salary?.perquisites17_2 || 0,
+      profitsInLieuUs173: data.salary?.profitsInLieu17_3 || 0,
+      salaryFromOtherEmployersReported: 0,
+      totalGrossSalary: data.salary?.grossSalary || 0,
+      section10Exemptions: (data.salary?.exemptAllowancesUs10 || []).map((x: any) => ({
+        sectionCode: x.code || '',
+        description: x.nature || '',
+        amount: x.amount,
+      })),
+      totalSection10Exemptions: data.salary?.totalExemptAllowances || 0,
+      standardDeduction: data.salary?.standardDeduction16ia || 0,
+      entertainmentAllowance: data.salary?.entertainmentAllowance16ii || 0,
+      professionalTax: data.salary?.professionalTax16iii || 0,
+      totalSection16Deductions: data.salary?.totalDeductionsUs16 || 0,
+      incomeChargeableUnderSalaries: data.salary?.incomeChargeableUnderHeadSalaries || 0,
+      incomeFromHousePropertyReported: data.otherIncome?.houseProperty || 0,
+      incomeFromOtherSourcesReported: data.otherIncome?.totalOtherSources || 0,
+      grossTotalIncome: data.grossTotalIncome || 0,
+      chapterViaDeductions: {
+        sec80C: { grossAmount: data.deductions80C || 0, qualifyingAmount: data.deductions80C || 0, deductibleAmount: data.deductions80C || 0 },
+        sec80CCC: { grossAmount: data.deductions80CCC || 0, qualifyingAmount: data.deductions80CCC || 0, deductibleAmount: data.deductions80CCC || 0 },
+        sec80CCD1: { grossAmount: data.deductions80CCD1 || 0, qualifyingAmount: data.deductions80CCD1 || 0, deductibleAmount: data.deductions80CCD1 || 0 },
+        sec80CCD1B: { grossAmount: data.deductions80CCD1B || 0, qualifyingAmount: data.deductions80CCD1B || 0, deductibleAmount: data.deductions80CCD1B || 0 },
+        sec80CCD2: { grossAmount: data.deductions80CCD2 || 0, qualifyingAmount: data.deductions80CCD2 || 0, deductibleAmount: data.deductions80CCD2 || 0 },
+        sec80D: { grossAmount: data.deductions80D || 0, qualifyingAmount: data.deductions80D || 0, deductibleAmount: data.deductions80D || 0 },
+        sec80E: { grossAmount: data.deductions80E || 0, qualifyingAmount: data.deductions80E || 0, deductibleAmount: data.deductions80E || 0 },
+        sec80CCHEmployee: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80CCHCentralGovt: { grossAmount: 0, qualifyingAmount: 0, deductibleAmount: 0 },
+        sec80G: { grossAmount: data.deductions80G || 0, qualifyingAmount: data.deductions80G || 0, deductibleAmount: data.deductions80G || 0 },
+        sec80TTA: { grossAmount: data.deductions80TTA || 0, qualifyingAmount: data.deductions80TTA || 0, deductibleAmount: data.deductions80TTA || 0 },
+        otherDeductions: [],
+      },
+      totalChapterViaDeductions: data.totalChapterVIADeductions || 0,
+      totalTaxableIncome: data.totalIncome || 0,
+      taxOnTotalIncome: data.taxPayable || 0,
+      rebateUs87A: 0,
+      surcharge: 0,
+      healthEducationCess: 0,
+      taxPayable: data.taxPayable || 0,
+      reliefUs89: 0,
+      taxDeductedAsPer12BAATds: 0,
+      taxCollectedAsPer12BAATcs: 0,
+      netTaxPayable: data.taxPayable || 0,
+    },
+    perquisitesDetails: undefined,
+    verification: {
+      signatoryName: '',
+      parentName: '',
+      designation: '',
+      place: '',
+      date: '',
+      digitalSignatureVerified: false,
+    },
+  };
+
+  return {
+    metadata: {
+      financialYear: data.assessmentYear ? `${parseInt(data.assessmentYear.split('-')[0], 10) - 1}-${data.assessmentYear.split('-')[0].substring(2)}` : '',
+      downloadId: undefined,
+      generationDate: new Date(),
+      ipAddress: undefined,
+    },
+    taxpayerProfile: {
+      pan: data.employee?.pan || '',
+      aadhaarMasked: undefined,
+      name: fullName,
+      dateOfBirth: '',
+      mobileNumber: undefined,
+      emailAddress: undefined,
+      address: data.employee?.address || '',
+    },
+    certificates: [certificate],
+  };
+}
+
+function mapFlatToEngineResult(flat: any): EngineReconciliationResult {
+  const form16Data = mapFlatToBundle(flat);
+  return {
+    form16Data,
+    aisData: flat.aisData ? (flat.aisData.__bundle || flat.aisData) : undefined,
+    tisData: flat.tisData ? (flat.tisData.__bundle || flat.tisData) : undefined,
+    form26asData: flat.form26asData ? (flat.form26asData.__bundle || flat.form26asData) : undefined,
+    taxCredits: {
+      tdsSalary: flat.taxCredits?.tdsSalary || 0,
+      tdsOther: flat.taxCredits?.tdsOther || 0,
+      tcs: flat.taxCredits?.tcs || 0,
+      advanceTax: flat.taxCredits?.advanceTax || 0,
+      selfAssessmentTax: flat.taxCredits?.selfAssessmentTax || 0,
+    },
+    discrepancies: flat.discrepancies || [],
+    detectedIncomeSources: (flat.detectedIncomeSources || []).map((x: any) => ({
+      source: x.source || '',
+      category: x.category || '',
+      amount: x.amount || 0,
+      confirmed: !!x.confirmed,
+    })),
+    calculatedTaxOldRegime: 0,
+    calculatedTaxNewRegime: 0,
+  };
+}
+
+export function createForm16Proxy(bundle: any): Form16Data {
+  if (!bundle) return bundle;
+  if (bundle.__isForm16Proxy) return bundle;
+  if ('employer' in bundle || 'salary' in bundle) {
+    return new Proxy(bundle, {
+      get(target, prop) {
+        if (prop === '__bundle') {
+          return mapFlatToBundle(target);
+        }
+        if (prop === '__isForm16Proxy') return true;
+        return target[prop];
+      },
+      set(target, prop, value) {
+        target[prop] = value;
+        return true;
+      }
+    });
+  }
+
   if (!bundle.certificates) {
     bundle.certificates = [];
   }
@@ -339,11 +491,16 @@ export function createForm16Proxy(bundle: Form16Bundle): Form16Data {
   }
   const cert = bundle.certificates[0];
 
-  if (!(bundle as any)._customNetSalary) (bundle as any)._customNetSalary = 0;
+  if (!(bundle as any)._customNetSalary) {
+    (bundle as any)._customNetSalary = cert.partB?.totalGrossSalary && cert.partB?.totalSection10Exemptions ? cert.partB.totalGrossSalary - cert.partB.totalSection10Exemptions : 0;
+  }
   if (!(bundle as any)._customOtherSources) (bundle as any)._customOtherSources = [];
-  if (!(bundle as any)._customFirstName) (bundle as any)._customFirstName = '';
-  if (!(bundle as any)._customMiddleName) (bundle as any)._customMiddleName = '';
-  if (!(bundle as any)._customLastName) (bundle as any)._customLastName = '';
+
+  const nameStr = bundle.taxpayerProfile?.name || '';
+  const names = nameStr.split(' ');
+  if (!(bundle as any)._customFirstName) (bundle as any)._customFirstName = names[0] || '';
+  if (!(bundle as any)._customMiddleName) (bundle as any)._customMiddleName = names.length > 2 ? names.slice(1, -1).join(' ') : '';
+  if (!(bundle as any)._customLastName) (bundle as any)._customLastName = names.length > 1 ? names[names.length - 1] : '';
 
   const syncNamesToProto = () => {
     if (bundle.taxpayerProfile) {
@@ -635,7 +792,11 @@ export function createForm16Proxy(bundle: Form16Bundle): Form16Data {
   });
 }
 
-export function createAisProxy(ais: AnnualInformationStatement): AISData {
+export function createAisProxy(ais: any): AISData {
+  if (!ais) return ais;
+  if (ais.__isAisProxy) return ais;
+  if ('interestSavings' in ais) return ais;
+
   if (!(ais as any)._interestSavings) (ais as any)._interestSavings = 0;
   if (!(ais as any)._interestDeposit) (ais as any)._interestDeposit = 0;
   if (!(ais as any)._dividendIncome) (ais as any)._dividendIncome = 0;
@@ -643,7 +804,7 @@ export function createAisProxy(ais: AnnualInformationStatement): AISData {
 
   return new Proxy(ais, {
     ownKeys() {
-      return ['interestSavings', 'interestDeposit', 'dividendIncome', 'tdsDetails'];
+      return ['interestSavings', 'interestDeposit', 'dividendIncome', 'tdsDetails', 'metadata', 'profile', 'tdsTcsInfo', 'sftInfo', 'taxPayments', 'demandsAndRefunds', 'otherInfo'];
     },
     getOwnPropertyDescriptor(target, prop) {
       return { enumerable: true, configurable: true };
@@ -653,6 +814,8 @@ export function createAisProxy(ais: AnnualInformationStatement): AISData {
       if (prop === 'interestDeposit') return (ais as any)._interestDeposit;
       if (prop === 'dividendIncome') return (ais as any)._dividendIncome;
       if (prop === 'tdsDetails') return (ais as any)._tdsDetails;
+      if (prop === '__bundle') return ais;
+      if (prop === '__isAisProxy') return true;
       return (ais as any)[prop];
     },
     set(target, prop, value) {
@@ -668,7 +831,11 @@ export function createAisProxy(ais: AnnualInformationStatement): AISData {
   });
 }
 
-export function createTisProxy(tis: TaxpayerInformationSummary): TISData {
+export function createTisProxy(tis: any): TISData {
+  if (!tis) return tis;
+  if (tis.__isTisProxy) return tis;
+  if ('salaryDerived' in tis) return tis;
+
   if (!(tis as any)._salaryDerived) (tis as any)._salaryDerived = 0;
   if (!(tis as any)._interestSavings) (tis as any)._interestSavings = 0;
   if (!(tis as any)._interestDeposit) (tis as any)._interestDeposit = 0;
@@ -676,7 +843,7 @@ export function createTisProxy(tis: TaxpayerInformationSummary): TISData {
 
   return new Proxy(tis, {
     ownKeys() {
-      return ['salaryDerived', 'interestSavings', 'interestDeposit', 'dividendIncome'];
+      return ['salaryDerived', 'interestSavings', 'interestDeposit', 'dividendIncome', 'metadata', 'profile', 'categories', 'details'];
     },
     getOwnPropertyDescriptor(target, prop) {
       return { enumerable: true, configurable: true };
@@ -686,6 +853,8 @@ export function createTisProxy(tis: TaxpayerInformationSummary): TISData {
       if (prop === 'interestSavings') return (tis as any)._interestSavings;
       if (prop === 'interestDeposit') return (tis as any)._interestDeposit;
       if (prop === 'dividendIncome') return (tis as any)._dividendIncome;
+      if (prop === '__bundle') return tis;
+      if (prop === '__isTisProxy') return true;
       return (tis as any)[prop];
     },
     set(target, prop, value) {
@@ -701,11 +870,49 @@ export function createTisProxy(tis: TaxpayerInformationSummary): TISData {
   });
 }
 
-export function createForm26asProxy(f26: Form26AS): Form26ASData {
-  return f26 as any;
+export function createForm26asProxy(f26: any): Form26ASData {
+  if (!f26) return f26;
+  if (f26.__isForm26asProxy) return f26;
+  if ('tdsSalary' in f26 && !f26.hasOwnProperty('metadata')) return f26;
+
+  return new Proxy(f26, {
+    ownKeys() {
+      return ['tdsSalary', 'tdsOther', 'tcsDetails', 'advanceTax', 'selfAssessmentTax', 'metadata', 'profile'];
+    },
+    getOwnPropertyDescriptor(target, prop) {
+      return { enumerable: true, configurable: true };
+    },
+    get(target, prop) {
+      if (prop === '__bundle') return f26;
+      if (prop === '__isForm26asProxy') return true;
+      return f26[prop];
+    },
+    set(target, prop, value) {
+      f26[prop] = value;
+      return true;
+    }
+  });
 }
 
-export function createEngineProxy(res: EngineReconciliationResult): ReconciledTaxData {
+export function createEngineProxy(res: any): ReconciledTaxData {
+  if (!res) return res;
+  if (res.__isEngineProxy) return res;
+  if ('salary' in res) {
+    return new Proxy(res, {
+      get(target, prop) {
+        if (prop === '__bundle') {
+          return mapFlatToEngineResult(target);
+        }
+        if (prop === '__isEngineProxy') return true;
+        return target[prop];
+      },
+      set(target, prop, value) {
+        target[prop] = value;
+        return true;
+      }
+    });
+  }
+
   const f16Proxy = createForm16Proxy(res.form16Data || (res.form16Data = createEmptyForm16Bundle()));
 
   if (!(res as any)._discrepancies) (res as any)._discrepancies = [];
@@ -734,6 +941,7 @@ export function createEngineProxy(res: EngineReconciliationResult): ReconciledTa
       if (prop === 'taxCredits') return res.taxCredits;
       if (prop === 'discrepancies') return res.discrepancies || (res.discrepancies = []);
       if (prop === 'detectedIncomeSources') return res.detectedIncomeSources || (res.detectedIncomeSources = []);
+      if (prop === '__isEngineProxy') return true;
 
       if (prop in f16Proxy || typeof prop === 'string') {
         const val = (f16Proxy as any)[prop];

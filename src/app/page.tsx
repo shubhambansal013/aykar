@@ -1391,6 +1391,10 @@ export default function Home() {
                         mode={mode}
                         combinedRawText={combinedRawText}
                         extractedData={extractedData}
+                        form16List={form16List}
+                        aisData={aisData}
+                        tisData={tisData}
+                        form26asData={form26asData}
                       />
                     </DialogContent>
                   </Dialog>

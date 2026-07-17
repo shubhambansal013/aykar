@@ -1,0 +1,119 @@
+{
+  "ITR": {
+    "ITR2": {
+      "CreationInfo": {
+        "SWVersionNo": "1.0",
+        "SWCreatedBy": "SW12345678",
+        "JSONCreatedBy": "SW12345678",
+        "JSONCreationDate": "2026-07-15",
+        "IntermediaryCity": "Delhi",
+        "Digest": "-"
+      },
+      "Form_ITR2": {
+        "FormName": "ITR-2",
+        "Description": "Income Tax Return for Individuals not having income from business or profession",
+        "AssessmentYear": "2026-27",
+        "SchemaVer": "Ver1.0",
+        "FormVer": "Ver1.0"
+      },
+      "PersonalInfo": {
+        "AssesseeName": {
+          "FirstName": "TARUSH",
+          "MiddleName": "",
+          "SurNameOrOrgName": "ARORA"
+        },
+        "PAN": "CYXPA6852K",
+        "Address": {
+          "ResidenceNo": "7/90",
+          "LocalityOrArea": "Geeta Colony",
+          "CityOrTownOrDistrict": "Delhi",
+          "StateCode": "09",
+          "PinCode": "110031",
+          "CountryCode": "91",
+          "CountryCodeMobile": 91,
+          "MobileNo": 9711174075,
+          "EmailAddress": "tarusharora77@gmail.com"
+        },
+        "SecondaryAdd": "N",
+        "DOB": "1996-09-28",
+        "EmployerCategory": "OTH"
+      },
+      "FilingStatus": {
+        "ReturnFileSec": 11,
+        "OptOutNewTaxRegime": "N",
+        "AsseseeRepFlg": "N",
+        "ItrFilingDueDate": "2026-07-31"
+      },
+      "IncomeDeductions": {
+        "GrossSalary": 1833722,
+        "Salary": 1833722,
+        "PerquisitesValue": 0,
+        "ProfitsInSalary": 0,
+        "NetSalary": 1833722,
+        "DeductionUs16ia": 75000,
+        "DeductionUs16": 75000,
+        "IncomeFromSal": 1758722,
+        "TotalIncomeChargeableUnHP": 0,
+        "CapitalGains": {
+          "ShortTerm": {
+            "TotalSTCGTaxable": 10025
+          },
+          "LongTerm": {
+            "TotalLTCGUs112A": 7490
+          }
+        },
+        "IncomeOthSrc": 4449,
+        "GrossTotIncome": 1780686,
+        "TotalIncome": 1780690
+      },
+      "TaxComputation": {
+        "TotalTaxPayable": 154639,
+        "Rebate87A": 0,
+        "EducationCess": 6186,
+        "GrossTaxLiability": 160825,
+        "NetTaxLiability": 160825,
+        "TotalIntrstPay": 9858,
+        "IntrstPay": {
+          "IntrstPayUs234A": 0,
+          "IntrstPayUs234B": 4380,
+          "IntrstPayUs234C": 5478,
+          "LateFilingFee234F": 0
+        },
+        "TotTaxPlusIntrstPay": 170683
+      },
+      "TaxPaid": {
+        "TaxesPaid": {
+          "AdvanceTax": 0,
+          "TDS": 51290,
+          "TCS": 0,
+          "SelfAssessmentTax": 119390,
+          "TotalTaxesPaid": 170680
+        },
+        "BalTaxPayable": 0
+      },
+      "Refund": {
+        "RefundDue": 0,
+        "BankAccountDtls": {
+          "AddtnlBankDetails": [
+            {
+              "IFSCCode": "HDFC0004365",
+              "BankName": "HDFC BANK",
+              "BankAccountNo": "50100282109028",
+              "AccountType": "SB",
+              "UseForRefund": "true"
+            }
+          ]
+        }
+      },
+      "Verification": {
+        "Declaration": {
+          "AssesseeVerName": "TARUSH ARORA",
+          "FatherName": "MAHENDER ARORA",
+          "AssesseeVerPAN": "CYXPA6852K"
+        },
+        "Capacity": "S",
+        "Place": "DELHI"
+      }
+    }
+  }
+}

@@ -351,7 +351,7 @@ export default function Home() {
       // Auto-recalculate dependents using the recalculateAllFormFields tool
       const updated = recalculateAllFormFields(next, selectedRegime, path);
       const proxy = createEngineProxy(updated);
-      return proxy.__bundle || proxy;
+      return (proxy as any).__bundle || proxy;
     });
   };
 
@@ -459,7 +459,7 @@ export default function Home() {
     };
 
     const proxy = createEngineProxy(mergedRecalculated);
-    const protoData = proxy.__bundle || proxy;
+    const protoData = (proxy as any).__bundle || proxy;
     setExtractedData(protoData);
     setAppliedAiSuggestions(protoData);
     setErrors(validateForm16Data(createEngineProxy(protoData)));
@@ -529,7 +529,7 @@ export default function Home() {
 
     const recalculated = recalculateAllFormFields(reconciled, activeRegime);
     const proxy = createEngineProxy(recalculated);
-    const protoResult = proxy.__bundle || proxy;
+    const protoResult = (proxy as any).__bundle || proxy;
 
     setExtractedData(protoResult);
     setOriginalParsedData(EngineReconciliationResult.fromPartial(protoResult));

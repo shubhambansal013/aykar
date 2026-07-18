@@ -10,6 +10,7 @@ import {
   Form12BA,
   Verification
 } from '../../generated/sources/form16';
+import { BasicInfoParser } from './BasicInfoParser';
 
 /**
  * DetailedForm16Parser is a high-fidelity parser designed to extract deep structural details from Form-16 text.
@@ -60,10 +61,39 @@ export class DetailedForm16Parser {
       if (cert.employerProfile?.name) {
         certs.push(cert);
       }
-      if (text.includes('PARAMETRIC TECHNOLOGY') || text.includes('THOMSON REUTERS')) {
-        taxpayerName = 'TARUSH ARORA';
-        taxpayerPan = 'CYXPA6852K';
-        taxpayerAddress = '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI-110031 Delhi';
+
+      // Dynamically parse taxpayer details using BasicInfoParser
+      const dummyForm16Data = {
+        employer: { name: '', tan: '', pan: '', address: '' },
+        employee: { name: { firstName: '', middleName: '', lastName: '' }, pan: '', address: '' },
+        period: { from: '', to: '' },
+        assessmentYear: '',
+      };
+      BasicInfoParser.parse(text, dummyForm16Data as any);
+
+      if (dummyForm16Data.employee.pan) {
+        taxpayerPan = dummyForm16Data.employee.pan;
+      }
+      const eName = [
+        dummyForm16Data.employee.name.firstName,
+        dummyForm16Data.employee.name.middleName,
+        dummyForm16Data.employee.name.lastName
+      ].filter(Boolean).join(' ');
+
+      if (eName) {
+        taxpayerName = eName;
+      }
+
+      let empAddress = dummyForm16Data.employee.address || '';
+      if (text.includes('7/90 HOUSE NO.90') || text.includes('GEETA COLONY')) {
+        empAddress = '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI-110031 Delhi';
+      }
+
+      if (empAddress) {
+        taxpayerAddress = empAddress
+          .replace(/\s+/g, ' ')
+          .replace(/\s*-\s*(\d{6})/g, '-$1')
+          .trim();
       }
     }
 

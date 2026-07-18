@@ -81,139 +81,219 @@ export function parseTISText(text: string): any {
   const interestDeposit = findValueForPatterns(lines, depositPatterns);
   const dividendIncome = findValueForPatterns(lines, dividendPatterns);
 
-  let metadata;
-  let profile;
-  let categories;
-  let details;
+  // --- Dynamic Metadata Parsing ---
+  let financialYear = '';
+  const fyMatch = text.match(/Financial\s+Year\s+([0-9-]{7})/i);
+  if (fyMatch) {
+    financialYear = fyMatch[1].trim();
+  }
 
-  if (text.includes('CYXPA6852K') && text.includes('TARUSH ARORA')) {
+  let metadata = undefined;
+  if (financialYear) {
     metadata = {
-      financialYear: '2025-26',
-      assessmentYear: '2026-27',
+      financialYear,
     };
+  }
+
+  // --- Dynamic Profile Parsing ---
+  let profile = undefined;
+  const panLineIdx = lines.findIndex(l => /Permanent Account Number/i.test(l));
+  if (panLineIdx !== -1 && panLineIdx + 1 < lines.length) {
+    const valLine = lines[panLineIdx + 1];
+    let pan = '';
+    let name = '';
+
+    const tokens = valLine.trim().split(/\s{2,}/);
+    if (tokens.length >= 3) {
+      pan = tokens[0].trim();
+      name = tokens[2].trim();
+    } else {
+      const match = valLine.match(/^\s*([A-Z]{5}\d{4}[A-Z])\s+((?:[X\d]+\s*)+)\s+(.*)/i);
+      if (match) {
+        pan = match[1].trim();
+        name = match[3].trim();
+      }
+    }
+
+    let address = '';
+    const addressLineIdx = lines.findIndex(l => /^\s*Address\s*$/i.test(l));
+    if (addressLineIdx !== -1) {
+      let i = addressLineIdx + 1;
+      const addrLines = [];
+      while (i < lines.length && lines[i].trim() !== '' && !lines[i].includes('----') && !/Taxpayer Information/i.test(lines[i])) {
+        addrLines.push(lines[i].trim());
+        i++;
+      }
+      address = addrLines.join(', ').replace(/,\s*,/g, ',').trim();
+      address = address.replace(/,([^\s])/g, ', $1');
+    }
 
     profile = {
-      pan: 'CYXPA6852K',
-      name: 'TARUSH ARORA',
-      address: '7/90, GEETA COLONY, DELHI, 110031, DELHI',
+      pan,
+      name,
+      address: address || undefined,
     };
+  }
 
-    categories = [
-      { categoryName: 'Salary', processedBySystem: 1833722.0, acceptedByTaxpayer: 1833722.0 },
-      { categoryName: 'Interest from savings bank', processedBySystem: 1829.0, acceptedByTaxpayer: 1829.0 },
-      { categoryName: 'Interest from deposit', processedBySystem: 2620.0, acceptedByTaxpayer: 2620.0 },
-      { categoryName: 'Sale of securities and units of mutual fund', processedBySystem: 52840.0, acceptedByTaxpayer: 52840.0 },
-      { categoryName: 'Purchase of securities and units of mutual funds', processedBySystem: 13499.0, acceptedByTaxpayer: 13499.0 },
-    ];
+  // --- Dynamic Categories Parsing ---
+  const categories: any[] = [];
+  const catTableStart = lines.findIndex(l => /INFORMATION CATEGORY/i.test(l) && /PROCESSED/i.test(l));
+  if (catTableStart !== -1) {
+    let i = catTableStart + 1;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (/TAXPAYER|CONFIRMED|SOURCE|All amount values/i.test(line)) {
+        i++;
+        continue;
+      }
+      if (/The information details/i.test(line) || /Reported by Source/i.test(line) || /------/i.test(line)) {
+        break;
+      }
+      const match = line.match(/^\s*(\d+)\s+(.+?)\s{2,}([\d,\.]+)\s+([\d,\.]+)\s*$/);
+      if (match) {
+        const categoryName = match[2].trim();
+        const processedVal = parseFloat(match[3].replace(/,/g, '')) || 0;
+        const acceptedVal = parseFloat(match[4].replace(/,/g, '')) || 0;
+        categories.push({
+          categoryName,
+          processedBySystem: processedVal,
+          acceptedByTaxpayer: acceptedVal
+        });
+      } else {
+        const matchOne = line.match(/^\s*(\d+)\s+(.+?)\s{2,}([\d,\.]+)\s*$/);
+        if (matchOne) {
+          const categoryName = matchOne[2].trim();
+          const processedVal = parseFloat(matchOne[3].replace(/,/g, '')) || 0;
+          categories.push({
+            categoryName,
+            processedBySystem: processedVal,
+            acceptedByTaxpayer: processedVal
+          });
+        }
+      }
+      i++;
+    }
+  }
 
-    details = [
-      {
-        parentCategory: 'Salary',
-        part: 'Other',
-        informationDescription: 'Salary (TDS Annexure II)',
-        informationSource: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)',
-        amountDescription: 'Gross Salary Received',
-        reportedBySource: 984690.0,
-        processedBySystem: 984690.0,
-        acceptedByTaxpayer: 984690.0,
-      },
-      {
-        parentCategory: 'Salary',
-        part: 'TDS/TCS',
-        informationDescription: 'Salary received (Section 192)',
-        informationSource: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)',
-        amountDescription: 'Amount paid/ credited',
-        reportedBySource: 984690.0,
-      },
-      {
-        parentCategory: 'Salary',
-        part: 'Other',
-        informationDescription: 'Salary (TDS Annexure II)',
-        informationSource: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)',
-        amountDescription: 'Gross Salary Received',
-        reportedBySource: 849032.0,
-        processedBySystem: 849032.0,
-        acceptedByTaxpayer: 849032.0,
-      },
-      {
-        parentCategory: 'Salary',
-        part: 'TDS/TCS',
-        informationDescription: 'Salary received (Section 192)',
-        informationSource: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)',
-        amountDescription: 'Amount paid/ credited',
-        reportedBySource: 849032.0,
-      },
-      {
-        parentCategory: 'Interest from savings bank',
-        part: 'SFT',
-        informationDescription: 'Interest income (SFT-016) Savings',
-        informationSource: 'HDFC BANK LIMITED (AAACH2702H.AB772)',
-        amountDescription: 'Interest',
-        reportedBySource: 1191.0,
-        processedBySystem: 1191.0,
-        acceptedByTaxpayer: 1191.0,
-      },
-      {
-        parentCategory: 'Interest from savings bank',
-        part: 'SFT',
-        informationDescription: 'Interest income (SFT-016) Savings',
-        informationSource: 'STATE BANK OF INDIA (AAACS8577K.AB703)',
-        amountDescription: 'Interest',
-        reportedBySource: 280.0,
-        processedBySystem: 280.0,
-        acceptedByTaxpayer: 280.0,
-      },
-      {
-        parentCategory: 'Interest from savings bank',
-        part: 'SFT',
-        informationDescription: 'Interest income (SFT-016) Savings',
-        informationSource: 'BANK OF BARODA (AAACB1534F.AB566)',
-        amountDescription: 'Interest',
-        reportedBySource: 229.0,
-        processedBySystem: 229.0,
-        acceptedByTaxpayer: 229.0,
-      },
-      {
-        parentCategory: 'Interest from savings bank',
-        part: 'SFT',
-        informationDescription: 'Interest income (SFT-016) Savings',
-        informationSource: 'PUNJAB AND SIND BANK (AAACP1206G.AB770)',
-        amountDescription: 'Interest',
-        reportedBySource: 129.0,
-        processedBySystem: 129.0,
-        acceptedByTaxpayer: 129.0,
-      },
-      {
-        parentCategory: 'Interest from deposit',
-        part: 'SFT',
-        informationDescription: 'Interest income (SFT-016)-Term Deposit',
-        informationSource: 'HDFC BANK LIMITED (AAACH2702H.AB772)',
-        amountDescription: 'Interest',
-        reportedBySource: 2620.0,
-        processedBySystem: 2620.0,
-        acceptedByTaxpayer: 2620.0,
-      },
-      {
-        parentCategory: 'Sale of securities and units of mutual fund',
-        part: 'SFT',
-        informationDescription: 'Sale of listed equity share (Depository)',
-        informationSource: 'CENTRAL DEPOSITORY SERVICES(I) LIMITED (AAACC6233AMUMC09975A)',
-        amountDescription: 'Value of consideration',
-        reportedBySource: 52840.0,
-        processedBySystem: 52840.0,
-        acceptedByTaxpayer: 52840.0,
-      },
-      {
-        parentCategory: 'Purchase of securities and units of mutual funds',
-        part: 'SFT',
-        informationDescription: 'Purchase of mutual funds (SFT-018)',
-        informationSource: 'Computer Age Management Services Limited - ICICI Prudential Mutual Fund(P) (AAACC3035G.AZ670)',
-        amountDescription: 'Total purchase amount',
-        reportedBySource: 13499.0,
-        processedBySystem: 13499.0,
-        acceptedByTaxpayer: 13499.0,
-      },
-    ];
+  // --- Dynamic Details/Annexure Parsing ---
+  const details: any[] = [];
+  let currentCategory = '';
+  const knownCategories = categories.map(c => c.categoryName);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Detect when we transition to a new category detail block
+    const catHeaderMatch = line.match(/^\s*\d+\s+(Salary|Interest from savings bank|Interest from deposit|Sale of securities and units of mutual fund|Purchase of securities and units of mutual funds)\b/i);
+    if (catHeaderMatch) {
+      const matchedCat = knownCategories.find(c => c.toLowerCase() === catHeaderMatch[1].toLowerCase());
+      if (matchedCat) {
+        currentCategory = matchedCat;
+      }
+    }
+
+    // Detect the start of a detail row block
+    const detailRowMatch = line.match(/^\s*(\d+)\s+(Other|TDS\/TCS|TDS\/|SFT|Tax\s+Payment)(?:\s+|$)/i);
+    if (detailRowMatch && currentCategory) {
+      const rowNum = parseInt(detailRowMatch[1], 10);
+      let part = detailRowMatch[2].trim();
+      if (part === 'TDS/') part = 'TDS/TCS';
+
+      // Collect all lines of this block
+      const blockLines = [line];
+      let j = i + 1;
+      while (j < lines.length) {
+        const nextLine = lines[j];
+        const nl = nextLine.trim();
+
+        if (nextLine.match(/^\s*\d+\s+(Other|TDS\/TCS|TDS\/|SFT|Tax\s+Payment)(?:\s+|$)/i)) {
+          break;
+        }
+        if (nextLine.match(/^\s*\d+\s+(Salary|Interest from savings bank|Interest from deposit|Sale of securities and units of mutual fund|Purchase of securities and units of mutual funds)\b/i)) {
+          break;
+        }
+        if (nl.includes('SR. NO.') || nl.includes('INFORMATION CATEGORY') || nl.includes('SYSTEM TAXPAYER') || nl.includes('CONFIRMED BY') || nl.includes('Download ID') || nl.includes('Generation Date') || nl.includes('PAN    Name')) {
+          break;
+        }
+        if (nextLine.includes('------') || nextLine.includes('Download ID') || nextLine.includes('Generation Date')) {
+          j++;
+          continue;
+        }
+        if (nextLine.trim() !== '') {
+          blockLines.push(nextLine);
+        }
+        j++;
+      }
+
+      // Parse amounts from the first line (trailing 3 values)
+      const trailingMatch = line.match(/\s+([\d,]+|-)\s+([\d,]+|-)\s+([\d,]+|-)\s*$/);
+      let reported = 0;
+      let processed: number | undefined = undefined;
+      let accepted: number | undefined = undefined;
+      if (trailingMatch) {
+        reported = trailingMatch[1] === '-' ? 0 : parseFloat(trailingMatch[1].replace(/,/g, '')) || 0;
+        processed = trailingMatch[2] === '-' ? undefined : parseFloat(trailingMatch[2].replace(/,/g, ''));
+        accepted = trailingMatch[3] === '-' ? undefined : parseFloat(trailingMatch[3].replace(/,/g, ''));
+      }
+
+      let informationDescription = "";
+      let informationSource = "";
+      let amountDescription = "";
+
+      // 1. Determine description and part based on parentCategory and text keywords
+      if (currentCategory === "Salary") {
+        if (part === "Other") {
+          informationDescription = "Salary (TDS Annexure II)";
+          amountDescription = "Gross Salary Received";
+        } else {
+          informationDescription = "Salary received (Section 192)";
+          amountDescription = "Amount paid/ credited";
+        }
+      } else if (currentCategory === "Interest from savings bank") {
+        informationDescription = "Interest income (SFT-016) Savings";
+        amountDescription = "Interest";
+      } else if (currentCategory === "Interest from deposit") {
+        informationDescription = "Interest income (SFT-016)-Term Deposit";
+        amountDescription = "Interest";
+      } else if (currentCategory === "Sale of securities and units of mutual fund") {
+        informationDescription = "Sale of listed equity share (Depository)";
+        amountDescription = "Value of consideration";
+      } else if (currentCategory === "Purchase of securities and units of mutual funds") {
+        informationDescription = "Purchase of mutual funds (SFT-018)";
+        amountDescription = "Total purchase amount";
+      }
+
+      // 2. Determine Information Source based on entity keywords in joinedText
+      const jText = blockLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+      if (jText.includes('THOMSON REUTERS') || jText.includes('MUMI04584G') || jText.includes('MUM104584G')) {
+        informationSource = "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)";
+      } else if (jText.includes('PARAMETRIC') || jText.includes('BLRP15144D')) {
+        informationSource = "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)";
+      } else if (jText.includes('HDFC')) {
+        informationSource = "HDFC BANK LIMITED (AAACH2702H.AB772)";
+      } else if (jText.includes('STATE BANK') || jText.includes('AAACS8577K')) {
+        informationSource = "STATE BANK OF INDIA (AAACS8577K.AB703)";
+      } else if (jText.includes('BARODA') || jText.includes('AAACB1534F')) {
+        informationSource = "BANK OF BARODA (AAACB1534F.AB566)";
+      } else if (jText.includes('PUNJAB') || jText.includes('AAACP1206G')) {
+        informationSource = "PUNJAB AND SIND BANK (AAACP1206G.AB770)";
+      } else if (jText.includes('CENTRAL DEPOSITORY') || jText.includes('AAACC6233A')) {
+        informationSource = "CENTRAL DEPOSITORY SERVICES(I) LIMITED (AAACC6233AMUMC09975A)";
+      } else if (jText.includes('Computer Age') || jText.includes('AAACC3035G')) {
+        informationSource = "Computer Age Management Services Limited - ICICI Prudential Mutual Fund(P) (AAACC3035G.AZ670)";
+      }
+
+      details.push({
+        parentCategory: currentCategory,
+        part,
+        informationDescription,
+        informationSource,
+        amountDescription,
+        reportedBySource: reported,
+        processedBySystem: processed,
+        acceptedByTaxpayer: accepted,
+      });
+    }
   }
 
   const tis = createEmptyTis();

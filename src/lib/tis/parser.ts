@@ -90,8 +90,15 @@ export function parseTISText(text: string): any {
 
   let metadata = undefined;
   if (financialYear) {
+    let assessmentYear = '';
+    const parts = financialYear.split('-');
+    if (parts.length === 2) {
+      const startYr = parseInt(parts[0], 10);
+      assessmentYear = `${startYr + 1}-${(startYr + 2).toString().slice(-2)}`;
+    }
     metadata = {
       financialYear,
+      assessmentYear,
     };
   }
 
@@ -131,7 +138,7 @@ export function parseTISText(text: string): any {
     profile = {
       pan,
       name,
-      address: address || undefined,
+      address: address || '',
     };
   }
 

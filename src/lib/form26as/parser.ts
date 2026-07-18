@@ -112,7 +112,7 @@ export function parseForm26ASText(text: string): any {
     profile = {
       pan: panMatch ? panMatch[1].toUpperCase() : '',
       name: nameMatch ? nameMatch[1].trim() : '',
-      address: address || undefined,
+      address: address || '',
     };
   }
 

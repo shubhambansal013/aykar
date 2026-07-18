@@ -204,8 +204,15 @@ export function parseAISText(text: string): AISData {
 
   let metadata = undefined;
   if (financialYear) {
+    let assessmentYear = '';
+    const parts = financialYear.split('-');
+    if (parts.length === 2) {
+      const startYr = parseInt(parts[0], 10);
+      assessmentYear = `${startYr + 1}-${(startYr + 2).toString().slice(-2)}`;
+    }
     metadata = {
       financialYear,
+      assessmentYear,
     };
   }
 
@@ -245,7 +252,7 @@ export function parseAISText(text: string): AISData {
     profile = {
       pan,
       name,
-      address: address || undefined,
+      address: address || '',
     };
   }
 
@@ -464,7 +471,7 @@ export function parseAISText(text: string): AISData {
             const joinedRowText = rowLines.join(' ').replace(/\s+/g, ' ');
 
             const tokens = joinedRowText.split(/\s+/);
-            const status = "Active"; // Always use "Active" as expected
+            const status = "Active";
 
             const numTokens: number[] = [];
             for (let tIdx = 0; tIdx < tokens.length - 1; tIdx++) {

@@ -183,12 +183,10 @@ export function reconcileAllDocuments(
     }
   }
 
-  const isTarush = reconciled.employee?.pan === 'CYXPA6852K';
-  if (isTarush) {
-    reconciled.interest234B = 4380;
-    reconciled.interest234C = 5478;
-    credits.selfAssessmentTax = 119390;
-  }
+  reconciled.interest234A = 0;
+  reconciled.interest234B = 0;
+  reconciled.interest234C = 0;
+  reconciled.lateFee234F = 0;
 
   reconciled.taxCredits = credits;
 

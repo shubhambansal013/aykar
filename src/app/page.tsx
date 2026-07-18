@@ -390,6 +390,12 @@ export default function Home() {
       totalChapterVIADeductions: 0,
       totalIncome: 0,
       taxPayable: 0,
+      stcgTaxable: 0,
+      ltcg112A: 0,
+      interest234A: 0,
+      interest234B: 0,
+      interest234C: 0,
+      lateFee234F: 0,
     };
 
     if (!data) return defaultData;
@@ -397,6 +403,12 @@ export default function Home() {
     return {
       ...defaultData,
       ...data,
+      stcgTaxable: data.stcgTaxable || 0,
+      ltcg112A: data.ltcg112A || 0,
+      interest234A: data.interest234A || 0,
+      interest234B: data.interest234B || 0,
+      interest234C: data.interest234C || 0,
+      lateFee234F: data.lateFee234F || 0,
       employer: {
         ...defaultData.employer,
         ...(data.employer || {}),

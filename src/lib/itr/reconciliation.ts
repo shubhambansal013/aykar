@@ -98,11 +98,29 @@ export function reconcileAllDocuments(
   // Recalculate other sources sum
   reconciled.otherIncome.totalOtherSources = reconciled.otherIncome.otherSources.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
+  // Gather Capital Gains from security sales
+  const securitySales = ais?.sftInfo?.securitySales || [];
+  let stcg = 0;
+  let ltcg = 0;
+  for (const sale of securitySales) {
+    const assetType = sale.assetType || '';
+    const gain = (sale.salesConsideration || 0) - (sale.costOfAcquisition || 0);
+    if (assetType.toLowerCase().includes('short')) {
+      stcg += gain;
+    } else if (assetType.toLowerCase().includes('long')) {
+      ltcg += gain;
+    }
+  }
+  reconciled.stcgTaxable = stcg;
+  reconciled.ltcg112A = ltcg;
+
   // Recalculate GTI, TI, etc.
   reconciled.grossTotalIncome =
     (reconciled.salary?.incomeChargeableUnderHeadSalaries || 0) +
     (reconciled.otherIncome?.houseProperty || 0) +
-    (reconciled.otherIncome?.totalOtherSources || 0);
+    (reconciled.otherIncome?.totalOtherSources || 0) +
+    (reconciled.stcgTaxable || 0) +
+    (reconciled.ltcg112A || 0);
 
   reconciled.totalIncome = Math.max(0, reconciled.grossTotalIncome - (reconciled.totalChapterVIADeductions || 0));
 
@@ -164,6 +182,11 @@ export function reconcileAllDocuments(
       }
     }
   }
+
+  reconciled.interest234A = 0;
+  reconciled.interest234B = 0;
+  reconciled.interest234C = 0;
+  reconciled.lateFee234F = 0;
 
   reconciled.taxCredits = credits;
 

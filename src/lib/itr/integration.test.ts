@@ -45,6 +45,8 @@ import { parseDetailedTIS } from '../tis/parser';
 import { parseDetailedForm26AS } from '../form26as/parser';
 import { parseTextProto, toPlainObject } from '../proto/textproto';
 import { createForm16Proxy } from '../proto/compatibilityProxy';
+import { reconcileAllDocuments } from './reconciliation';
+import { mapForm16ToITR1 } from './mapper';
 
 // Recursive camelCase to snake_case converter helper
 function camelToSnake(str: string): string {
@@ -198,6 +200,47 @@ describe('Dynamic Multi-Person PDF Extraction Integration Tests', () => {
           const expectedJson = parseTextProto(fs.readFileSync(expected26asPath, 'utf-8'), 'tax.sources.form26as.Form26AS');
           expect(cleanActual).toEqual(expectedJson);
         }, 40000);
+      }
+
+      // 5. Complete ITR-2 Generation Integration Test for Tarush Arora
+      const expectedItrJsonPath = path.join(personDir, 'expected_itr.json');
+      if (person === 'Tarush_Arora' && fs.existsSync(expectedItrJsonPath)) {
+        it('should correctly map parsed, merged, and reconciled documents to the expected ITR-2 JSON', async () => {
+          // Read raw texts
+          const f16Texts: string[] = [];
+          for (const pdfFile of f16PdfFiles) {
+            const pdfPath = path.join(personDir, pdfFile);
+            const pdfBuffer = fs.readFileSync(pdfPath);
+            f16Texts.push(await extractTextFromPDF(new Uint8Array(pdfBuffer).buffer));
+          }
+
+          const aisBuffer = fs.readFileSync(aisPdfPath);
+          const aisText = await extractTextFromPDF(new Uint8Array(aisBuffer).buffer);
+
+          const tisBuffer = fs.readFileSync(tisPdfPath);
+          const tisText = await extractTextFromPDF(new Uint8Array(tisBuffer).buffer);
+
+          const f26asBuffer = fs.readFileSync(f26asPdfPath);
+          const f26asText = await extractTextFromPDF(new Uint8Array(f26asBuffer).buffer);
+
+          // Parse
+          const f16Bundle = parseForm16ToDetailedBundle(f16Texts);
+          const ais = parseDetailedAIS(aisText);
+          const tis = parseDetailedTIS(tisText);
+          const f26as = parseDetailedForm26AS(f26asText);
+
+          // Reconcile
+          const reconciled = reconcileAllDocuments(f16Bundle, ais, tis, f26as);
+
+          // Map
+          const actualItr = mapForm16ToITR1(reconciled, 'NEW');
+
+          // Read expected
+          const expectedItr = JSON.parse(fs.readFileSync(expectedItrJsonPath, 'utf-8'));
+
+          // Assert
+          expect(actualItr).toEqual(expectedItr);
+        }, 45000);
       }
 
     });

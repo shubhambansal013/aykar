@@ -2,15 +2,56 @@ import { TISData, createEmptyTis, createTisProxy } from '../proto/compatibilityP
 
 /**
  * Extracts numeric amounts from a line of PDF-extracted text.
- * TIS/AIS amount columns are comma-grouped integers (e.g. "18,33,722") and are NOT
+ * TIS amount columns are comma-grouped integers (e.g. "18,33,722") and are NOT
  * guaranteed to carry a decimal point, so the decimal part is optional here.
  * (A previous version required `\.\d{2}`, which silently matched nothing on real
- * TIS/AIS text and returned 0 for every value - do not reintroduce that.)
+ * TIS text using plain comma-grouped integers and returned 0 for every value -
+ * do not reintroduce that requirement.)
  */
 function extractAmounts(line: string): number[] {
   const matches = line.match(/-?\d[\d,]*(?:\.\d{1,2})?/g);
   if (!matches) return [];
   return matches.map(m => parseFloat(m.replace(/,/g, '')) || 0);
+}
+
+/**
+ * Flexible fallback scanner: finds a label anywhere in the text and returns the
+ * nearest trailing number, either on the same line or within the next few lines
+ * (covering "Label: value", "Label ... value" and "Label\nReported Value: x\nDerived
+ * Value: y" layouts where the last/most-refined number should win).
+ * This is the generic, layout-tolerant path - used when the stricter, more reliable
+ * structured-table parse (parseCategories, below) doesn't have a matching category,
+ * e.g. because the source document isn't the standard numbered TIS table format.
+ */
+function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
+  let maxValue = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!patterns.some(pat => pat.test(line))) continue;
+
+    let foundNumbers = extractAmounts(line);
+    if (foundNumbers.length === 0) {
+      const end = Math.min(lines.length - 1, i + 3);
+      for (let j = i + 1; j <= end; j++) {
+        const subLine = lines[j];
+        if (/Interest\s+from\s+savings/i.test(subLine) ||
+            /Interest\s+on\s+deposit/i.test(subLine) ||
+            /Dividend/i.test(subLine) ||
+            /Salary/i.test(subLine)) {
+          break;
+        }
+        foundNumbers.push(...extractAmounts(subLine));
+      }
+    }
+
+    if (foundNumbers.length > 0) {
+      const val = foundNumbers[foundNumbers.length - 1];
+      if (val > maxValue) maxValue = val;
+    }
+  }
+
+  return maxValue;
 }
 
 /**
@@ -33,8 +74,6 @@ function parseMetadataAndProfile(text: string, lines: string[]): { metadata: any
 
   const panLabelIdx = lines.findIndex(l => /Permanent\s+Account\s+Number\s*\(PAN\)/i.test(l));
   if (panLabelIdx >= 0) {
-    // The value row follows the label row, columns separated by 2+ spaces:
-    // " CYXPA6852K    XXXX XXXX 0899    TARUSH ARORA"
     for (let i = panLabelIdx + 1; i < Math.min(lines.length, panLabelIdx + 3); i++) {
       const cols = lines[i].trim().split(/\s{2,}/).filter(Boolean);
       const panMatch = cols[0] && cols[0].match(/[A-Z]{5}\d{4}[A-Z]/i);
@@ -51,7 +90,9 @@ function parseMetadataAndProfile(text: string, lines: string[]): { metadata: any
 
   const addressLabelIdx = lines.findIndex(l => /^\s*Address\s*$/i.test(l));
   if (addressLabelIdx >= 0 && lines[addressLabelIdx + 1]) {
-    const addr = lines[addressLabelIdx + 1].trim();
+    // Normalize "a,b,c" to "a, b, c" for display - the source PDF strips spaces after
+    // commas in this block, but every other address field in the app is comma-space formatted.
+    const addr = lines[addressLabelIdx + 1].trim().replace(/,(?=\S)/g, ', ');
     if (profile) {
       profile.address = addr;
     } else {
@@ -66,11 +107,12 @@ function parseMetadataAndProfile(text: string, lines: string[]): { metadata: any
  * Parses the top-level "Taxpayer Information Summary" category table:
  *   SR.NO  INFORMATION CATEGORY  PROCESSED BY SYSTEM  ACCEPTED BY TAXPAYER
  *      1   Salary                 18,33,722            18,33,722
- * This table (and its numbered rows) is a fixed part of the TIS format and is not
- * specific to any one taxpayer or category set - it generalizes to any TIS PDF.
- * The same category also gets repeated as a one-line recap before its own detail
- * annexure further down the document; only the first occurrence (the original
- * index table) is kept per SR.NO.
+ * This is the standard numbered-row TIS table format and generalizes to any TIS PDF
+ * using it, regardless of which categories are present. Only the first occurrence of
+ * each SR.NO is kept - the same category is repeated as a one-line recap before its
+ * own detail annexure further down the document.
+ * Returns an empty array (not an error) for text that isn't in this table format -
+ * callers should fall back to `findValueForPatterns` in that case.
  */
 function parseCategories(lines: string[]): Array<{ categoryName: string; processedBySystem: number; acceptedByTaxpayer: number }> {
   const rowPattern = /^\s*(\d+)\s+(.+?)\s{2,}([\d,]+(?:\.\d+)?)\s+([\d,]+(?:\.\d+)?)\s*$/;
@@ -95,16 +137,13 @@ function parseCategories(lines: string[]): Array<{ categoryName: string; process
 
 /**
  * Best-effort parser for the per-category "detail" annexure tables (institution-level
- * breakdown). These rows wrap across multiple physical lines in the linearized PDF
- * text with no reliable column boundaries, which makes them the least robust part of
- * this file. This groups lines into logical rows (starting at a leading row number)
- * and pulls out the amount column(s) plus the parenthesized TAN/PAN-like source code,
- * which is the one consistently-shaped anchor in each row.
- *
- * If this proves too fragile in practice, treat `categories` (parseCategories above)
- * as the reliable source of truth for totals, and consider a layout/coordinate-aware
- * PDF text extraction step for faithful per-institution detail rows instead of
- * strengthening this regex further.
+ * breakdown). Rows wrap across multiple physical lines in the linearized PDF text, so
+ * this groups lines starting at a leading row-part token ("Other" / "SFT" / "TDS/TCS")
+ * into logical rows, then splits the joined text on the description/source boundary
+ * using the trailing parenthesized TAN/PAN-like code as an anchor, and the 1-3 amount
+ * columns after it. This is the least robust part of this file since the source PDF's
+ * column layout isn't preserved in the extracted text; if it proves too fragile,
+ * `categories` (above) remains the reliable source of truth for totals.
  */
 function parseDetails(lines: string[], categories: Array<{ categoryName: string }>): any[] {
   const details: any[] = [];
@@ -123,7 +162,6 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
     const rowStart = line.match(/^\s*(\d+)\s+(SFT|Other|TDS)/i);
     if (!rowStart || !currentCategory) continue;
 
-    // Join this row's continuation lines until the next numbered row / table header / category recap.
     const block: string[] = [line];
     let j = i + 1;
     while (
@@ -135,14 +173,14 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
       block.push(lines[j]);
       j++;
     }
-    const joined = block.join(' ');
+    const joined = block.join(' ').replace(/^\s*\d+\s+/, '');
 
-    const sourceMatch = joined.match(/\(([A-Z0-9]{10,16})\)/);
+    const sourceMatch = joined.match(/\(([A-Z0-9][A-Z0-9.]{8,18}[A-Z0-9])\)/);
     const amounts = extractAmounts(joined.replace(sourceMatch ? sourceMatch[0] : '', ''));
 
     details.push({
       parentCategory: currentCategory,
-      part: rowStart[2],
+      part: rowStart[2].toUpperCase() === 'TDS' ? 'TDS/TCS' : rowStart[2],
       informationSource: sourceMatch ? sourceMatch[1] : undefined,
       reportedBySource: amounts[0],
       processedBySystem: amounts[1],
@@ -155,6 +193,11 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
   return details;
 }
 
+const SALARY_PATTERNS = [/Salary/i];
+const SAVINGS_PATTERNS = [/Interest\s+from\s+savings\s+bank/i, /Savings\s+bank\s+interest/i];
+const DEPOSIT_PATTERNS = [/Interest\s+on\s+deposits?/i, /Deposit\s+interest/i, /Interest\s+from\s+deposits?/i];
+const DIVIDEND_PATTERNS = [/Dividend\s+Income/i, /\bDividend\b/i];
+
 export function parseTISText(text: string): any {
   const lines = text.split('\n');
 
@@ -163,10 +206,13 @@ export function parseTISText(text: string): any {
   const details = parseDetails(lines, categories);
 
   const findCategory = (nameRe: RegExp) => categories.find(c => nameRe.test(c.categoryName));
-  const salaryDerived = findCategory(/^salary$/i)?.processedBySystem || 0;
-  const interestSavings = findCategory(/savings\s+bank/i)?.processedBySystem || 0;
-  const interestDeposit = findCategory(/deposit/i)?.processedBySystem || 0;
-  const dividendIncome = findCategory(/dividend/i)?.processedBySystem || 0;
+
+  // Structured table parse first (most reliable for the standard numbered TIS format);
+  // fall back to flexible label scanning for any other layout.
+  const salaryDerived = findCategory(/^salary$/i)?.processedBySystem || findValueForPatterns(lines, SALARY_PATTERNS);
+  const interestSavings = findCategory(/savings\s+bank/i)?.processedBySystem || findValueForPatterns(lines, SAVINGS_PATTERNS);
+  const interestDeposit = findCategory(/deposit/i)?.processedBySystem || findValueForPatterns(lines, DEPOSIT_PATTERNS);
+  const dividendIncome = findCategory(/dividend/i)?.processedBySystem || findValueForPatterns(lines, DIVIDEND_PATTERNS);
 
   const tis = createEmptyTis();
   const proxy = createTisProxy(tis);

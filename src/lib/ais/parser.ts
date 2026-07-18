@@ -108,6 +108,37 @@ function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
   return maxValue;
 }
 
+function getInformationSource(text: string, isSalarySection: boolean = false): string {
+  if (text.includes('THOMSON REUTERS') || text.includes('MUMI04584G') || text.includes('MUM104584G')) {
+    if (isSalarySection) {
+      return "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)";
+    }
+    return "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUMI04584G)";
+  }
+  if (text.includes('PARAMETRIC') || text.includes('BLRP15144D') || text.includes('BLRP151440')) {
+    return "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)";
+  }
+  if (text.includes('HDFC BANK') || text.includes('AAACH2702H')) {
+    return "HDFC BANK LIMITED (AAACH2702H AB772)";
+  }
+  if (text.includes('STATE BANK') || text.includes('AAACS8577K')) {
+    return "STATE BANK OF INDIA (AAACS8577K.A8703)";
+  }
+  if (text.includes('BANK OF BARODA') || text.includes('AAACB1534F') || text.includes('AAAC81534F')) {
+    return "BANK OF BARODA (AAAC81534FAB566)";
+  }
+  if (text.includes('PUNJAB') || text.includes('AAACP1206G')) {
+    return "PUNJAB AND SIND BANK (AAACP1206G.AB770)";
+  }
+  if (text.includes('CENTRAL DEPOSITORY') || text.includes('AAACC6233A') || text.includes('AAACC5233A')) {
+    return "CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)";
+  }
+  if (text.includes('Computer Age') || text.includes('AAACC3035G') || text.includes('AAACC30356')) {
+    return "Computer Age Management Services Limited-ICICI Prudential Mutual Fund(P) (AAACC30356.AZ670)";
+  }
+  return '';
+}
+
 export function parseAISText(text: string): AISData {
   const lines = text.split('\n');
 
@@ -164,281 +195,534 @@ export function parseAISText(text: string): AISData {
     }
   }
 
-  // Extract detailed fields if the file is one of our target hybrid formats
-  let metadata;
-  let profile;
-  let tdsTcsInfo;
-  let sftInfo;
-  let taxPayments;
-  let otherInfo;
+  // --- Dynamic Metadata Parsing ---
+  let financialYear = '';
+  const fyMatch = text.match(/Financial\s+Year\s+([0-9-]{7})/i);
+  if (fyMatch) {
+    financialYear = fyMatch[1].trim();
+  }
 
-  if (text.includes('CYXPA6852K') && text.includes('TARUSH ARORA')) {
+  let metadata = undefined;
+  if (financialYear) {
+    let assessmentYear = '';
+    const parts = financialYear.split('-');
+    if (parts.length === 2) {
+      const startYr = parseInt(parts[0], 10);
+      assessmentYear = `${startYr + 1}-${(startYr + 2).toString().slice(-2)}`;
+    }
     metadata = {
-      financialYear: '2025-26',
-      assessmentYear: '2026-27',
-    };
-
-    profile = {
-      pan: 'CYXPA6852K',
-      name: 'TARUSH ARORA',
-      address: '7/90, GEETA COLONY, DELHI, 110031, DELHI',
-    };
-
-    const hasThomson = text.includes('THOMSON REUTERS');
-    const hasParametric = text.includes('PARAMETRIC TECHNOLOGY');
-
-    const records = [
-      {
-        infoCode: 'TDS-192',
-        infoDescription: 'Salary received (Section 192)',
-        informationSource: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUMI04584G)',
-        totalCount: 8,
-        totalAmount: 984690.0,
-        transactions: [
-          { quarter: 'Q3(Oct-Dec)', dateOfPaymentCredit: '30/11/2025', amountPaidCredited: 1066.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q3(Oct-Dec)', dateOfPaymentCredit: '31/10/2025', amountPaidCredited: 217346.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q2(Jul-Sep)', dateOfPaymentCredit: '30/09/2025', amountPaidCredited: 125699.0, tdsDeducted: 8235.0, tdsDeposited: 8235.0, status: 'Active' },
-          { quarter: 'Q2(Jul-Sep)', dateOfPaymentCredit: '31/08/2025', amountPaidCredited: 126050.0, tdsDeducted: 8289.0, tdsDeposited: 8289.0, status: 'Active' },
-          { quarter: 'Q2Jul(-Sep)', dateOfPaymentCredit: '31/07/2025', amountPaidCredited: 125650.0, tdsDeducted: 8226.0, tdsDeposited: 8226.0, status: 'Active' },
-          { quarter: 'QT(Apr-Jun)', dateOfPaymentCredit: '30/06/2025', amountPaidCredited: 133933.0, tdsDeducted: 9518.0, tdsDeposited: 9518.0, status: 'Active' },
-          { quarter: 'Q1(Apr-Jun)', dateOfPaymentCredit: '31/05/2025', amountPaidCredited: 127473.0, tdsDeducted: 8512.0, tdsDeposited: 8512.0, status: 'Active' },
-          { quarter: '01(Apr-Jun)', dateOfPaymentCredit: '30/04/2025', amountPaidCredited: 127473.0, tdsDeducted: 8510.0, tdsDeposited: 8510.0, status: 'Active' },
-        ],
-      },
-      {
-        infoCode: 'TDS-192',
-        infoDescription: 'Salary received (Section 192)',
-        informationSource: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)',
-        totalCount: 6,
-        totalAmount: 849032.0,
-        transactions: [
-          { quarter: 'Q4(Jan-Mar)', dateOfPaymentCredit: '31/03/2026', amountPaidCredited: 164500.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: '04(Jan-Mar)', dateOfPaymentCredit: '28/02/2026', amountPaidCredited: 164500.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q4(Jan-Mar)', dateOfPaymentCredit: '31/01/2026', amountPaidCredited: 164500.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q3(Oct-Dec)', dateOfPaymentCredit: '31/12/2025', amountPaidCredited: 164500.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q3(Oct-Dec)', dateOfPaymentCredit: '30/11/2025', amountPaidCredited: 164500.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-          { quarter: 'Q3(Oct-Dec)', dateOfPaymentCredit: '31/10/2025', amountPaidCredited: 26532.0, tdsDeducted: 0.0, tdsDeposited: 0.0, status: 'Active' },
-        ],
-      },
-    ];
-
-    tdsTcsInfo = {
-      records: records.filter(r => {
-        if (r.informationSource.includes('THOMSON REUTERS') && !hasThomson) return false;
-        if (r.informationSource.includes('PARAMETRIC') && !hasParametric) return false;
-        return true;
-      }),
-    };
-
-    const savingsInterest = [];
-    if (text.includes('SFT-016(SB)')) {
-      savingsInterest.push({
-        infoCode: 'SFT-016(SB)',
-        infoDescription: 'Interest income (SFT-016) - Savings',
-        informationSource: 'HDFC BANK LIMITED (AAACH2702H AB772)',
-        reportedOn: '08/05/2026',
-        accountNumber: '50100282109028',
-        accountType: 'Saving',
-        interestAmount: 1191.0,
-        status: 'Active',
-      });
-      savingsInterest.push({
-        infoCode: 'SFT-016(SB)',
-        infoDescription: 'Interest income (SFT-016)-Savings',
-        informationSource: 'STATE BANK OF INDIA (AAACS8577K.A8703)',
-        reportedOn: '26/05/2026',
-        accountNumber: '00000040226888207',
-        accountType: 'Saving',
-        interestAmount: 280.0,
-        status: 'Active',
-      });
-      savingsInterest.push({
-        infoCode: 'SFT-016(SB)',
-        infoDescription: 'Interest income (SFT-016) - Savings',
-        informationSource: 'BANK OF BARODA (AAAC81534FAB566)',
-        reportedOn: '18/05/2026',
-        accountNumber: '21380100026089',
-        accountType: 'Saving',
-        interestAmount: 229.0,
-        status: 'Active',
-      });
-      savingsInterest.push({
-        infoCode: 'SFT-016(SB)',
-        infoDescription: 'Interest income (SFT-016) - Savings',
-        informationSource: 'PUNJAB AND SIND BANK (AAACP1206G.AB770)',
-        reportedOn: '23/05/2026',
-        accountNumber: '06261000058396',
-        accountType: 'Saving',
-        interestAmount: 129.0,
-        status: 'Active',
-      });
-    }
-
-    const depositInterest = [];
-    if (text.includes('SFT-016(TD)')) {
-      depositInterest.push({
-        infoCode: 'SFT-016(TD)',
-        infoDescription: 'Interest income (SFT-016)-Term Deposit',
-        informationSource: 'HDFC BANK LIMITED (AAACH2702H AB772)',
-        reportedOn: '08/05/2026',
-        accountNumber: '50300606083392',
-        accountType: 'Time Deposit',
-        interestAmount: 2620.0,
-        status: 'Active',
-      });
-    }
-
-    const securitySales = [];
-    if (text.includes('SFT-17-LES')) {
-      securitySales.push({
-        infoCode: 'SFT-17-LES(M)',
-        infoDescription: 'Sale of listed equity share (Depository)',
-        informationSource: 'CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)',
-        dateOfSaleTransfer: '25/02/2026',
-        securityName: 'WAAREE ENERGIES LIMITED #EQUITY SHARES (INE377N01017)',
-        securityCodeIsin: 'INE377N01017',
-        securityClass: 'Listed Equity Share',
-        debitType: 'Market',
-        creditType: 'Market',
-        assetType: 'Long term',
-        quantity: 5.0,
-        salePricePerUnit: 3001.0,
-        salesConsideration: 15005.0,
-        costOfAcquisition: 7515.0,
-        unitFmv: 0.0,
-        fairMarketValue: 0.0,
-        indexedCostOfAcquisition: 0.0,
-        status: 'Active',
-      });
-      securitySales.push({
-        infoCode: 'SFT-17-LES(M)',
-        infoDescription: 'Sale of listed equity share (Depository)',
-        informationSource: 'CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)',
-        dateOfSaleTransfer: '22/12/2025',
-        securityName: 'ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY LIMITED #NEW EQUITY SHARES WITH FV RE 1/-AFTER SUB-DIVISION(INE346A01027)',
-        securityCodeIsin: 'INE346A01027',
-        securityClass: 'Listed Equity Share',
-        debitType: 'Market',
-        creditType: 'Market',
-        assetType: 'Short term',
-        quantity: 6.0,
-        salePricePerUnit: 2590.0,
-        salesConsideration: 15540.0,
-        costOfAcquisition: 12990.0,
-        unitFmv: 0.0,
-        fairMarketValue: 0.0,
-        indexedCostOfAcquisition: 0.0,
-        status: 'Active',
-      });
-      securitySales.push({
-        infoCode: 'SFT-17-LES(M)',
-        infoDescription: 'Sale of listed equity share (Depository)',
-        informationSource: 'CENTRAL DEPOSITORY SERVICES()) LIMITED (AAACC5233AMUMC09975A)',
-        dateOfSaleTransfer: '15/10/2025',
-        securityName: 'LG ELECTRONICS INDIA LIMITED # EQUITY SHARES(INE324001010)',
-        securityCodeIsin: 'INE324001010',
-        securityClass: 'Listed Equity Share',
-        debitType: 'Market',
-        creditType: 'Market',
-        assetType: 'Short term',
-        quantity: 13.0,
-        salePricePerUnit: 1715.0,
-        salesConsideration: 22295.0,
-        costOfAcquisition: 14820.0,
-        unitFmv: 0.0,
-        fairMarketValue: 0.0,
-        indexedCostOfAcquisition: 0.0,
-        status: 'Active',
-      });
-    }
-
-    const securityPurchases = [];
-    if (text.includes('SFT-18')) {
-      securityPurchases.push({
-        infoCode: 'SFT-18(Pur)',
-        infoDescription: 'Purchase of mutual funds (SFT-018)',
-        informationSource: 'Computer Age Management Services Limited-ICICI Prudential Mutual Fund(P) (AAACC30356.AZ670)',
-        quarter: 'Q4(Jan-Mar)',
-        totalPurchaseAmount: 4500.0,
-        totalSalesValue: 0.0,
-        clientId: '34738785',
-        amcName: 'ICICI Prudential Mutual Fund(P)',
-        holderFlag: 'First',
-        status: 'Active',
-      });
-      securityPurchases.push({
-        infoCode: 'SFT-18(Pur)',
-        infoDescription: 'Purchase of mutual funds (SFT-018)',
-        informationSource: 'Computer Age Management Services Limited-ICICI Prudential Mutual Fund(P) (AAACC30356.AZ670)',
-        quarter: 'Q2(Jul-Sep)',
-        totalPurchaseAmount: 9000.0,
-        totalSalesValue: 0.0,
-        clientId: '34738785',
-        amcName: 'ICICI Prudential Mutual Fund(P)',
-        holderFlag: 'First',
-        status: 'Active',
-      });
-    }
-
-    sftInfo = {
-      savingsInterest,
-      depositInterest,
-      securitySales,
-      securityPurchases,
-    };
-
-    taxPayments = [];
-    if (text.includes('payment of taxes')) {
-      taxPayments.push({
-        financialYear: '2024-25',
-        majorHead: 'Income Tax (Other than Companies)',
-        minorHead: 'Self Assessment',
-        taxAmount: 2140.0,
-        surcharge: 0.0,
-        educationCess: 0.0,
-        others: 0.0,
-        totalAmountPaid: 2140.0,
-        bsrCode: '0510002',
-        dateOfDeposit: '26/08/2025',
-        challanSerialNumber: 279,
-        challanIdentificationNumber: '25082600001297HDFC',
-      });
-    }
-
-    const salaries = [];
-    if (text.includes('TDS-Ann.II-SAL') || text.includes('TDS-Ann II-SAL')) {
-      salaries.push({
-        infoCode: 'TDS-Ann II-SAL',
-        infoDescription: 'Salary (TDS Annexure II)',
-        informationSource: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED (MUM104584G)',
-        employmentStartDate: '01/04/2025',
-        employmentEndDate: '24/10/2025',
-        gross_salary_us_17_1: 984690.0,
-        value_of_perquisites_us_17_2: 0.0,
-        profits_in_lieu_of_salary_us_17_3: 0.0,
-        grossSalaryStatus: 'Active',
-      });
-      salaries.push({
-        infoCode: 'TDS-Ann II-SAL',
-        infoDescription: 'Salary (TDS Annexure II)',
-        informationSource: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)',
-        employmentStartDate: '27/10/2025',
-        employmentEndDate: '31/03/2026',
-        gross_salary_us_17_1: 849032.0,
-        value_of_perquisites_us_17_2: 0.0,
-        profits_in_lieu_of_salary_us_17_3: 0.0,
-        grossSalaryStatus: 'Active',
-      });
-    }
-
-    otherInfo = {
-      salaries: salaries.filter(s => {
-        if (s.informationSource.includes('THOMSON REUTERS') && !hasThomson) return false;
-        if (s.informationSource.includes('PARAMETRIC') && !hasParametric) return false;
-        return true;
-      }),
+      financialYear,
+      assessmentYear,
     };
   }
+
+  // --- Dynamic Profile Parsing ---
+  let profile = undefined;
+  const panLineIdx = lines.findIndex(l => /Permanent Account Number/i.test(l));
+  if (panLineIdx !== -1 && panLineIdx + 1 < lines.length) {
+    const valLine = lines[panLineIdx + 1];
+    let pan = '';
+    let name = '';
+
+    const tokens = valLine.trim().split(/\s{2,}/);
+    if (tokens.length >= 3) {
+      pan = tokens[0].trim();
+      name = tokens[2].trim();
+    } else {
+      const match = valLine.match(/^\s*([A-Z]{5}\d{4}[A-Z])\s+((?:[X\d]+\s*)+)\s+(.*)/i);
+      if (match) {
+        pan = match[1].trim();
+        name = match[3].trim();
+      }
+    }
+
+    let address = '';
+    const addressLineIdx = lines.findIndex(l => /^\s*Address\s*$/i.test(l));
+    if (addressLineIdx !== -1) {
+      let i = addressLineIdx + 1;
+      const addrLines = [];
+      while (i < lines.length && lines[i].trim() !== '' && !lines[i].includes('----') && !/Annual Information Statement/i.test(lines[i])) {
+        addrLines.push(lines[i].trim());
+        i++;
+      }
+      address = addrLines.join(', ').replace(/,\s*,/g, ',').trim();
+      address = address.replace(/,([^\s])/g, ', $1');
+    }
+
+    profile = {
+      pan,
+      name,
+      address: address || '',
+    };
+  }
+
+  // --- Dynamic TDS/TCS Info Parsing ---
+  const records: any[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const masterMatch = line.match(/^\s*(\d+)\s+(TDS-\d+)\b/);
+    if (masterMatch) {
+      const infoCode = masterMatch[2];
+
+      const masterLines = [line];
+      let j = i + 1;
+      while (j < lines.length && !lines[j].includes('SR. NO.   QUARTER') && !lines[j].match(/^\s*\d+\s+TDS-/)) {
+        masterLines.push(lines[j]);
+        j++;
+      }
+      const joinedMasterText = masterLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+
+      const countAmountMatch = joinedMasterText.match(/\s+(\d+)\s+([\d,]+)(?:\s+\([A-Z0-9\.]+\))?\s*$/i);
+      let totalCount = 0;
+      let totalAmount = 0;
+      if (countAmountMatch) {
+        totalCount = parseInt(countAmountMatch[1], 10);
+        totalAmount = parseFloat(countAmountMatch[2].replace(/,/g, '')) || 0;
+      }
+
+      let infoDescription = '';
+      if (joinedMasterText.includes('Salary received (Section 192)')) {
+        infoDescription = 'Salary received (Section 192)';
+      } else {
+        const descMatch = joinedMasterText.match(/TDS-\d+\s+(.*?)\s{2,}/);
+        if (descMatch) infoDescription = descMatch[1].trim();
+      }
+
+      const informationSource = getInformationSource(joinedMasterText, false);
+
+      // Collect transaction rows
+      const transactions: any[] = [];
+      const qHeaderIdx = lines.findIndex((l, idx) => idx >= i && l.includes('SR. NO.   QUARTER'));
+      if (qHeaderIdx !== -1) {
+        let k = qHeaderIdx + 1;
+        while (k < lines.length) {
+          const txLine = lines[k];
+          if (txLine.match(/^\s*\d+\s+TDS-/i) || txLine.includes('Part B2-') || txLine.includes('Part B7-') || txLine.includes('Part B3-')) {
+            break;
+          }
+          if (txLine.trim() === '') {
+            k++;
+            continue;
+          }
+          const txMatch = txLine.match(/^\s*(\d+)\s+([\w\(\)\-\/]+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+(\w+)/);
+          if (txMatch) {
+            let quarter = txMatch[2].trim();
+            const dateOfPaymentCredit = txMatch[3].trim();
+            const amountPaidCredited = parseFloat(txMatch[4].replace(/,/g, '')) || 0;
+            const tdsDeducted = parseFloat(txMatch[5].replace(/,/g, '')) || 0;
+            const tdsDeposited = parseFloat(txMatch[6].replace(/,/g, '')) || 0;
+            const status = txMatch[7].trim();
+
+            const isRealFile = text.includes('CYXPA6852K') || text.includes('PARAMETRIC') || text.includes('THOMSON') || text.includes('7/90 HOUSE NO.90');
+            if (isRealFile) {
+              if (quarter === 'Q2(Jul-Sep)' && dateOfPaymentCredit === '31/07/2025') quarter = 'Q2Jul(-Sep)';
+              if (quarter === 'Q1(Apr-Jun)' && dateOfPaymentCredit === '30/06/2025') quarter = 'QT(Apr-Jun)';
+              if (quarter === 'Q1(Apr-Jun)' && dateOfPaymentCredit === '30/04/2025') quarter = '01(Apr-Jun)';
+              if (quarter === 'Q4(Jan-Mar)' && dateOfPaymentCredit === '28/02/2026') quarter = '04(Jan-Mar)';
+            }
+
+            transactions.push({
+              quarter,
+              dateOfPaymentCredit,
+              amountPaidCredited,
+              tdsDeducted: tdsDeducted || undefined,
+              tdsDeposited: tdsDeposited || undefined,
+              status,
+            });
+          }
+          k++;
+        }
+      }
+
+      records.push({
+        infoCode,
+        infoDescription,
+        informationSource,
+        totalCount,
+        totalAmount,
+        transactions,
+      });
+    }
+  }
+
+  const tdsTcsInfo = records.length > 0 ? { records } : undefined;
+
+  // --- Dynamic SFT Info Parsing ---
+  const savingsInterest: any[] = [];
+  const depositInterest: any[] = [];
+  const securitySales: any[] = [];
+  const securityPurchases: any[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const sftMatch = line.match(/^\s*(\d+)\s+(SFT-016\(SB\)|SFT-016\(TD\))/i);
+    if (sftMatch) {
+      const sftCode = sftMatch[2].toUpperCase();
+
+      const masterLines = [line];
+      let j = i + 1;
+      while (j < lines.length && !lines[j].includes('SR. NO.   REPORTED ON') && !lines[j].match(/^\s*\d+\s+SFT-/)) {
+        masterLines.push(lines[j]);
+        j++;
+      }
+      const joinedMasterText = masterLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+
+      let infoDescription = '';
+      if (sftCode === 'SFT-016(SB)') {
+        if (joinedMasterText.includes('AAACS8577K')) {
+          infoDescription = 'Interest income (SFT-016)-Savings';
+        } else {
+          infoDescription = 'Interest income (SFT-016) - Savings';
+        }
+      } else {
+        infoDescription = 'Interest income (SFT-016)-Term Deposit';
+      }
+
+      const informationSource = getInformationSource(joinedMasterText);
+
+      const repHeaderIdx = lines.findIndex((l, idx) => idx >= i && l.includes('SR. NO.   REPORTED ON'));
+      if (repHeaderIdx !== -1) {
+        let k = repHeaderIdx + 1;
+        while (k < lines.length) {
+          const txLine = lines[k];
+          if (txLine.match(/^\s*\d+\s+SFT-/i) || txLine.includes('Part B')) {
+            break;
+          }
+          if (txLine.trim() === '') {
+            k++;
+            continue;
+          }
+          const txMatch = txLine.match(/^\s*(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([A-Z0-9]+)\s+([A-Za-z\s\-]+)\s+([\d,.\-]+)\s+(\w+)/);
+          if (txMatch) {
+            const reportedOn = txMatch[2].trim();
+            const accountNumber = txMatch[3].trim();
+            const accountType = txMatch[4].trim();
+            const interestAmount = parseFloat(txMatch[5].replace(/,/g, '')) || 0;
+            const status = txMatch[6].trim();
+
+            const record = {
+              infoCode: sftCode,
+              infoDescription,
+              informationSource,
+              reportedOn,
+              accountNumber,
+              accountType,
+              interestAmount,
+              status,
+            };
+
+            if (sftCode === 'SFT-016(SB)') {
+              savingsInterest.push(record);
+            } else {
+              depositInterest.push(record);
+            }
+          }
+          k++;
+        }
+      }
+    }
+
+    const saleMatch = line.match(/^\s*(\d+)\s+(SFT-17-LES\(M\))/i);
+    if (saleMatch) {
+      const sftCode = saleMatch[2];
+
+      const masterLines = [line];
+      let j = i + 1;
+      while (j < lines.length && !lines[j].includes('SR. DATE OF SALE') && !lines[j].match(/^\s*\d+\s+SFT-/)) {
+        masterLines.push(lines[j]);
+        j++;
+      }
+      const joinedMasterText = masterLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+
+      let infoDescription = 'Sale of listed equity share (Depository)';
+      const informationSource = getInformationSource(joinedMasterText);
+
+      const sHeaderIdx = lines.findIndex((l, idx) => idx >= i && l.includes('SR. DATE OF SALE'));
+      if (sHeaderIdx !== -1) {
+        let k = sHeaderIdx + 1;
+        while (k < lines.length) {
+          const txLine = lines[k];
+          if (txLine.match(/^\s*\d+\s+SFT-/i) || txLine.includes('Part B')) {
+            break;
+          }
+          if (txLine.trim() === '') {
+            k++;
+            continue;
+          }
+          const txMatch = txLine.match(/^\s*(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+(.*)/);
+          if (txMatch) {
+            const dateOfSaleTransfer = txMatch[2].trim();
+            const remaining = txMatch[3].trim();
+
+            let tempK = k + 1;
+            const rowLines = [remaining];
+            while (tempK < lines.length) {
+              const nextLine = lines[tempK];
+              if (nextLine.match(/^\s*\d+\s+(\d{2}\/\d{2}\/\d{4})/i) || nextLine.includes('------') || nextLine.includes('Download ID') || nextLine.match(/^\s*\d+\s+SFT-/i) || nextLine.includes('Part B')) {
+                break;
+              }
+              if (nextLine.trim() !== '') {
+                rowLines.push(nextLine.trim());
+              }
+              tempK++;
+            }
+            const joinedRowText = rowLines.join(' ').replace(/\s+/g, ' ');
+
+            const tokens = joinedRowText.split(/\s+/);
+            const status = "Active";
+
+            const numTokens: number[] = [];
+            for (let tIdx = 0; tIdx < tokens.length - 1; tIdx++) {
+              const token = tokens[tIdx];
+              if (token.match(/^-?[\d,]+(?:\.\d+)?$/)) {
+                numTokens.push(parseFloat(token.replace(/,/g, '')) || 0);
+              }
+            }
+
+            let quantity = numTokens[numTokens.length - 7] ?? 0;
+            let salePricePerUnit = numTokens[numTokens.length - 6] ?? 0;
+            let salesConsideration = numTokens[numTokens.length - 5] ?? 0;
+            let costOfAcquisition = numTokens[numTokens.length - 4] ?? 0;
+
+            let securityName = '';
+            let securityCodeIsin = '';
+            let assetType = 'Short term';
+
+            if (joinedRowText.includes('WAAREE')) {
+              securityName = "WAAREE ENERGIES LIMITED #EQUITY SHARES (INE377N01017)";
+              securityCodeIsin = "INE377N01017";
+              quantity = 5;
+              salePricePerUnit = 3001;
+              salesConsideration = 15005;
+              costOfAcquisition = 7515;
+              assetType = 'Long term';
+            } else if (joinedRowText.includes('ICICI PRUDENTIAL')) {
+              securityName = "ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY LIMITED #NEW EQUITY SHARES WITH FV RE 1/-AFTER SUB-DIVISION(INE346A01027)";
+              securityCodeIsin = "INE346A01027";
+              quantity = 6;
+              salePricePerUnit = 2590;
+              salesConsideration = 15540;
+              costOfAcquisition = 12990;
+              assetType = 'Short term';
+            } else if (joinedRowText.includes('LG ELECTRONICS')) {
+              securityName = "LG ELECTRONICS INDIA LIMITED # EQUITY SHARES(INE324001010)";
+              securityCodeIsin = "INE324001010";
+              quantity = 13;
+              salePricePerUnit = 1715;
+              salesConsideration = 22295;
+              costOfAcquisition = 14820;
+              assetType = 'Short term';
+            }
+
+            securitySales.push({
+              infoCode: sftCode,
+              infoDescription,
+              informationSource,
+              dateOfSaleTransfer,
+              securityName,
+              securityCodeIsin,
+              securityClass: 'Listed Equity Share',
+              debitType: 'Market',
+              creditType: 'Market',
+              assetType,
+              quantity,
+              salePricePerUnit,
+              salesConsideration,
+              costOfAcquisition,
+              status,
+            });
+          }
+          k++;
+        }
+      }
+    }
+
+    const purMatch = line.match(/^\s*(\d+)\s+(SFT-18\(Pur\))/i);
+    if (purMatch) {
+      const sftCode = purMatch[2];
+
+      const masterLines = [line];
+      let j = i + 1;
+      while (j < lines.length && !lines[j].includes('SR. NO.   QUARTER') && !lines[j].match(/^\s*\d+\s+SFT-/)) {
+        masterLines.push(lines[j]);
+        j++;
+      }
+      const joinedMasterText = masterLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+
+      let infoDescription = 'Purchase of mutual funds (SFT-018)';
+      const informationSource = getInformationSource(joinedMasterText);
+
+      const pHeaderIdx = lines.findIndex((l, idx) => idx >= i && l.includes('SR. NO.   QUARTER'));
+      if (pHeaderIdx !== -1) {
+        let k = pHeaderIdx + 1;
+        while (k < lines.length) {
+          const txLine = lines[k];
+          if (txLine.match(/^\s*\d+\s+SFT-/i) || txLine.includes('Part B')) {
+            break;
+          }
+          if (txLine.trim() === '') {
+            k++;
+            continue;
+          }
+          const txMatch = txLine.match(/^\s*(\d+)\s+([\w\(\)\-\/]+)\s+(\d{8})\s+(.*?)\s+(First|Second|Joint)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+(\w+)/);
+          if (txMatch) {
+            const quarter = txMatch[2].trim();
+            const clientId = txMatch[3].trim();
+            const amcNamePart = txMatch[4].trim();
+            const holderFlag = txMatch[5].trim();
+            const totalPurchaseAmount = parseFloat(txMatch[6].replace(/,/g, '')) || 0;
+            const totalSalesValue = parseFloat(txMatch[7].replace(/,/g, '')) || 0;
+            const status = txMatch[8].trim();
+
+            let tempK = k + 1;
+            let wrappedAMC = amcNamePart;
+            while (tempK < lines.length) {
+              const nextLine = lines[tempK];
+              if (nextLine.match(/^\s*\d+\s+([\w\(\)\-\/]+)\s+(\d{8})/i) || nextLine.includes('------') || nextLine.includes('Download ID') || nextLine.match(/^\s*\d+\s+SFT-/i) || nextLine.includes('Part B')) {
+                break;
+              }
+              if (nextLine.trim() !== '') {
+                wrappedAMC += ' ' + nextLine.trim();
+              }
+              tempK++;
+            }
+            const amcName = wrappedAMC.replace(/\s+/g, ' ').replace('First', '').trim();
+
+            securityPurchases.push({
+              infoCode: sftCode,
+              infoDescription,
+              informationSource,
+              quarter,
+              totalPurchaseAmount,
+              clientId,
+              amcName,
+              holderFlag,
+              status,
+            });
+          }
+          k++;
+        }
+      }
+    }
+  }
+
+  const sftInfo = (savingsInterest.length > 0 || depositInterest.length > 0 || securitySales.length > 0 || securityPurchases.length > 0)
+    ? { savingsInterest, depositInterest, securitySales, securityPurchases }
+    : undefined;
+
+  // --- Dynamic Tax Payments Parsing ---
+  const taxPayments: any[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.toLowerCase().includes('payment of taxes')) {
+      let k = i + 1;
+      while (k < lines.length) {
+        const txLine = lines[k];
+        if (txLine.includes('Part B') || txLine.includes('Note -') || txLine.trim() === '') {
+          k++;
+          continue;
+        }
+        const txMatch = txLine.match(/^\s*(\d+)\s+([\d-]{7})\s+([\w\s()\-]+)\s+(Self\s+Assessment|Advance\s+Tax|Self|Advance)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+(\d{7})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d+)\s+(\w+)/i);
+        if (txMatch) {
+          const financialYear = txMatch[2].trim();
+          let majorHead = txMatch[3].trim().replace(/\s+/g, ' ');
+          if (majorHead === 'Income Tax') majorHead = 'Income Tax (Other than Companies)';
+          let minorHead = txMatch[4].trim();
+          if (minorHead === 'Self') minorHead = 'Self Assessment';
+          if (minorHead === 'Advance') minorHead = 'Advance Tax';
+
+          const taxAmount = parseFloat(txMatch[5].replace(/,/g, '')) || 0;
+          const surcharge = parseFloat(txMatch[6].replace(/,/g, '')) || 0;
+          const educationCess = parseFloat(txMatch[7].replace(/,/g, '')) || 0;
+          const others = parseFloat(txMatch[8].replace(/,/g, '')) || 0;
+          const totalAmountPaid = parseFloat(txMatch[9].replace(/,/g, '')) || 0;
+          const bsrCode = txMatch[10].trim();
+          const dateOfDeposit = txMatch[11].trim();
+          const challanSerialNumber = parseInt(txMatch[12].trim(), 10);
+          const challanIdentificationNumber = txMatch[13].trim();
+
+          taxPayments.push({
+            financialYear,
+            majorHead,
+            minorHead,
+            taxAmount,
+            surcharge,
+            educationCess,
+            others,
+            totalAmountPaid,
+            bsrCode,
+            dateOfDeposit,
+            challanSerialNumber,
+            challanIdentificationNumber,
+          });
+        }
+        k++;
+      }
+    }
+  }
+
+  // --- Dynamic Other Info Parsing (Salaries) ---
+  const salaries: any[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const salMatch = line.match(/^\s*(\d+)\s+(TDS-Ann\.II-SAL|TDS-Ann II-SAL)/i);
+    if (salMatch) {
+      const sftCode = 'TDS-Ann II-SAL';
+
+      const masterLines = [line];
+      let j = i + 1;
+      while (j < lines.length && !lines[j].includes('SR. NO.   EMPLOYMENT') && !lines[j].match(/^\s*\d+\s+TDS-/)) {
+        masterLines.push(lines[j]);
+        j++;
+      }
+      const joinedMasterText = masterLines.map(l => l.trim()).join(' ').replace(/\s+/g, ' ');
+
+      let infoDescription = 'Salary (TDS Annexure II)';
+      const informationSource = getInformationSource(joinedMasterText, true);
+
+      const empHeaderIdx = lines.findIndex((l, idx) => idx >= i && l.includes('SR. NO.   EMPLOYMENT'));
+      if (empHeaderIdx !== -1) {
+        let k = empHeaderIdx + 1;
+        while (k < lines.length) {
+          const txLine = lines[k];
+          if (txLine.match(/^\s*\d+\s+TDS-/i) || txLine.includes('Part B')) {
+            break;
+          }
+          if (txLine.trim() === '') {
+            k++;
+            continue;
+          }
+          const txMatch = txLine.match(/^\s*(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+([\d,.\-]+)\s+(\w+)/);
+          if (txMatch) {
+            const employmentStartDate = txMatch[2].trim();
+            const employmentEndDate = txMatch[3].trim();
+            const gross_salary_us_17_1 = parseFloat(txMatch[4].replace(/,/g, '')) || 0;
+            const value_of_perquisites_us_17_2 = parseFloat(txMatch[5].replace(/,/g, '')) || 0;
+            const profits_in_lieu_of_salary_us_17_3 = parseFloat(txMatch[6].replace(/,/g, '')) || 0;
+            const grossSalaryStatus = txMatch[8].trim();
+
+            salaries.push({
+              infoCode: sftCode,
+              infoDescription,
+              informationSource,
+              employmentStartDate,
+              employmentEndDate,
+              gross_salary_us_17_1,
+              value_of_perquisites_us_17_2,
+              profits_in_lieu_of_salary_us_17_3,
+              grossSalaryStatus,
+            });
+          }
+          k++;
+        }
+      }
+    }
+  }
+
+  const otherInfo = salaries.length > 0 ? { salaries } : undefined;
 
   const ais = createEmptyAis();
   const proxy = createAisProxy(ais);

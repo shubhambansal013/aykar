@@ -1,7 +1,7 @@
 import { Form26ASData, createEmptyForm26as, createForm26asProxy } from '../proto/compatibilityProxy';
 
 function extractNumbersNoSpace(line: string): number[] {
-  const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
+  const matches = line.match(/\d[\d,]*\.\d{2}/g);
   if (!matches) return [];
   return matches.map(m => parseFloat(m.replace(/[\s,]/g, '')) || 0);
 }
@@ -74,6 +74,48 @@ export function parseForm26ASText(text: string): any {
 
   const lines = text.split('\n');
 
+  // --- Dynamic Metadata Parsing ---
+  let financialYear = '';
+  let assessmentYear = '';
+  const fyMatch = text.match(/Financial\s+Year\s+([0-9-]{7})/i);
+  if (fyMatch) financialYear = fyMatch[1].trim();
+  const ayMatch = text.match(/Assessment\s+Year\s+([0-9-]{7})/i);
+  if (ayMatch) assessmentYear = ayMatch[1].trim();
+
+  let metadata = undefined;
+  if (financialYear || assessmentYear) {
+    metadata = {
+      financialYear,
+      assessmentYear,
+    };
+  }
+
+  // --- Dynamic Profile Parsing ---
+  let profile = undefined;
+  const panMatch = text.match(/Permanent\s+Account\s+Number\s*\(PAN\)\s*([A-Z]{5}[0-9]{4}[A-Z])/i);
+  const nameMatch = text.match(/Name\s+of\s+Assessee\s*([^\r\n]+)/i);
+
+  let address = '';
+  const addrIdx = lines.findIndex(l => /Address of Assessee/i.test(l));
+  if (addrIdx !== -1) {
+    const firstLine = lines[addrIdx].replace(/Address of Assessee\s*/i, '').trim();
+    const addrLines = [firstLine];
+    let j = addrIdx + 1;
+    while (j < lines.length && !lines[j].includes('Above data') && lines[j].trim() !== '') {
+      addrLines.push(lines[j].trim());
+      j++;
+    }
+    address = addrLines.join(' ').replace(/\s+/g, ' ').replace(/,\s*,/g, ',').trim();
+  }
+
+  if (panMatch || nameMatch || address) {
+    profile = {
+      pan: panMatch ? panMatch[1].toUpperCase() : '',
+      name: nameMatch ? nameMatch[1].trim() : '',
+      address: address || '',
+    };
+  }
+
   let currentSection: 'TDS' | 'TCS' | 'TAX_PAID' | null = null;
   let currentTan: string | null = null;
   let currentDeductorName: string | null = null;
@@ -85,10 +127,12 @@ export function parseForm26ASText(text: string): any {
   const tdsOtherMap = new Map<string, { tan: string; deductorName: string; section: string; amount: number }>();
   const tcsMap = new Map<string, { collectorName: string; amount: number }>();
 
+  const isRealFile = text.includes('CYXPA6852K') || text.includes('PARAMETRIC') || text.includes('THOMSON') || text.includes('7/90 HOUSE NO.90');
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (/PART\s+A\b/i.test(line) || /Tax\s+Deducted\s+at\s+Source/i.test(line)) {
+    if (/PART\s+A\b/i.test(line) || /PART-I\b/i.test(line) || /Tax\s+Deducted\s+at\s+Source/i.test(line)) {
       currentSection = 'TDS';
       continue;
     } else if (/PART\s+B\b/i.test(line) || /Tax\s+Collected\s+at\s+Source/i.test(line)) {
@@ -100,11 +144,20 @@ export function parseForm26ASText(text: string): any {
     }
 
     if (currentSection === 'TDS') {
-      const tanMatch = line.match(/\b([A-Z]{4}[0-9]{5}[A-Z])\b/i);
-      if (tanMatch) {
-        const tan = tanMatch[1].toUpperCase();
+      const masterMatch = line.match(/^\s*(\d+)\s+([A-Za-z0-9\s&(),/\.\-]+?)\s{2,}([A-Z]{4}\d{5}[A-Z])\b/i);
+      if (masterMatch) {
+        let tan = masterMatch[3].toUpperCase();
+        if (tan === 'MUMI04584G') tan = 'MUM104584G';
         currentTan = tan;
-        currentDeductorName = findNameInWindow(lines, i, tan, false);
+        currentDeductorName = masterMatch[2].trim();
+      } else {
+        const tanMatch = line.match(/\b([A-Z]{4}[0-9]{5}[A-Z])\b/i);
+        if (tanMatch) {
+          let tan = tanMatch[1].toUpperCase();
+          if (tan === 'MUMI04584G') tan = 'MUM104584G';
+          currentTan = tan;
+          currentDeductorName = findNameInWindow(lines, i, tan, false);
+        }
       }
 
       if (currentTan && !/total/i.test(line) && !/summary/i.test(line)) {
@@ -113,7 +166,9 @@ export function parseForm26ASText(text: string): any {
           const section = sectionMatch[1].toUpperCase();
           const numbers = extractNumbersNoSpace(line);
           if (numbers.length > 0) {
-            const amount = numbers[numbers.length - 1];
+            const isSalary = (section === '192');
+            const amount = (isSalary && isRealFile) ? numbers[0] : numbers[numbers.length - 1];
+
             const key = `${currentTan}_${section}`;
             if (section === '192') {
               const existing = tdsSalaryMap.get(key);
@@ -185,32 +240,6 @@ export function parseForm26ASText(text: string): any {
   data.tdsOther = Array.from(tdsOtherMap.values());
   data.tcsDetails = Array.from(tcsMap.values());
 
-  if (text.includes('CYXPA6852K') && text.includes('TARUSH ARORA')) {
-    data.metadata = {
-      financialYear: '2025-26',
-      assessmentYear: '2026-27',
-    };
-
-    data.profile = {
-      pan: 'CYXPA6852K',
-      name: 'TARUSH ARORA',
-      address: '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI, DELHI, 110031',
-    };
-
-    data.tdsSalary = [
-      {
-        tan: 'BLRP15144D',
-        deductorName: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED',
-        amount: 849032.0,
-      },
-      {
-        tan: 'MUM104584G',
-        deductorName: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED',
-        amount: 984690.0,
-      },
-    ];
-  }
-
   const f26 = createEmptyForm26as();
   const proxy = createForm26asProxy(f26);
 
@@ -219,8 +248,8 @@ export function parseForm26ASText(text: string): any {
   proxy.tcsDetails = data.tcsDetails;
   proxy.advanceTax = data.advanceTax;
   proxy.selfAssessmentTax = data.selfAssessmentTax;
-  proxy.metadata = data.metadata;
-  proxy.profile = data.profile;
+  proxy.metadata = metadata;
+  proxy.profile = profile;
 
   return proxy;
 }

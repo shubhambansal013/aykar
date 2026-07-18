@@ -176,7 +176,7 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
     const joined = block.join(' ').replace(/^\s*\d+\s+/, '');
 
     const sourceMatch = joined.match(/\(([A-Z0-9][A-Z0-9.]{8,18}[A-Z0-9])\)/);
-    const amounts = extractAmounts(joined.replace(sourceMatch ? sourceMatch[0] : '', ''));
+    const amounts = extractAmounts(joined.replace(/\([^)]*\)/g, ''));
 
     details.push({
       parentCategory: currentCategory,

@@ -102,7 +102,7 @@ function parseMetadataAndProfile(text: string, lines: string[]): { metadata: any
 
   const addressLabelIdx = lines.findIndex(l => /^\s*Address\s*$/i.test(l));
   if (addressLabelIdx >= 0 && lines[addressLabelIdx + 1]) {
-    const addr = lines[addressLabelIdx + 1].trim();
+    const addr = lines[addressLabelIdx + 1].trim().replace(/,(?=\S)/g, ', ');
     if (profile) {
       profile.address = addr;
     } else {

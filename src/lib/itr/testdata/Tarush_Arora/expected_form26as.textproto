@@ -9,10 +9,10 @@ profile {
 tds_salary {
   tan: "BLRP15144D"
   deductor_name: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED"
-  amount: 849032
+  amount: 0
 }
 tds_salary {
-  tan: "MUM104584G"
+  tan: "MUMI04584G"
   deductor_name: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED"
-  amount: 984690
+  amount: 51290
 }

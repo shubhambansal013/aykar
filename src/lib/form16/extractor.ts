@@ -1,4 +1,6 @@
-export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
+import { NormalizedIntermediateForm } from './NormalizedIntermediateForm';
+
+export async function extractIntermediateFormFromPDF(data: ArrayBuffer): Promise<NormalizedIntermediateForm> {
   try {
     const isMock = data.byteLength <= 100;
     const isNode = typeof process !== 'undefined' && process.release && process.release.name === 'node';
@@ -8,7 +10,6 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
 
     // Point to the worker source from a reliable CDN
     if (typeof window !== 'undefined' && 'Worker' in window) {
-      // Using unpkg as a fallback since cdnjs might be lagging or have different path structures for newer versions
       pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
     }
 
@@ -17,68 +18,15 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
     });
 
     const pdf = await loadingTask.promise;
-    let fullText = '';
+    const pagesItems: any[][] = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const items = textContent.items as any[];
-
-      // Check if items have transform matrices for spatial layout reconstruction
-      const hasTransform = items.length > 0 && items.every(item => item && Array.isArray(item.transform) && item.transform.length >= 6);
-
-      if (hasTransform) {
-        // Group by Y coordinate (transform[5]) with a tolerance of 4.0 units
-        const TOLERANCE = 4.0;
-        const rows: { y: number; items: any[] }[] = [];
-
-        for (const item of items) {
-          const x = item.transform[4];
-          const y = item.transform[5];
-          const str = item.str;
-
-          // Find if there's an existing row within tolerance
-          let matchedRow = rows.find(r => Math.abs(r.y - y) <= TOLERANCE);
-          if (matchedRow) {
-            matchedRow.items.push({ x, str });
-          } else {
-            rows.push({ y, items: [{ x, str }] });
-          }
-        }
-
-        // Sort rows by Y-coordinate descending (top of the page first)
-        rows.sort((a, b) => b.y - a.y);
-
-        // Within each row, sort items by X-coordinate ascending
-        const reconstructedLines = rows.map(row => {
-          row.items.sort((a, b) => a.x - b.x);
-          let lineStr = '';
-          for (let idx = 0; idx < row.items.length; idx++) {
-            const cur = row.items[idx];
-            if (idx > 0) {
-              const prev = row.items[idx - 1];
-              if (cur.x - prev.x > 120 || (prev.x < 280 && cur.x >= 280)) {
-                lineStr += '  ';
-              } else {
-                lineStr += ' ';
-              }
-            }
-            lineStr += cur.str;
-          }
-          return lineStr;
-        });
-
-        fullText += reconstructedLines.join('\n') + '\n';
-      } else {
-        // Fallback to sequential extraction if transform is not available
-        const pageText = items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
-      }
+      pagesItems.push(textContent.items as any[]);
     }
 
-    return fullText;
+    return NormalizedIntermediateForm.fromPdfContent(pagesItems);
   } catch (error) {
     console.error('Failed to extract text from PDF:', error);
     if (error instanceof Error && error.message.includes('worker')) {
@@ -86,4 +34,9 @@ export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
     }
     throw error;
   }
+}
+
+export async function extractTextFromPDF(data: ArrayBuffer): Promise<string> {
+  const intermediate = await extractIntermediateFormFromPDF(data);
+  return intermediate.getFullText() + '\n';
 }

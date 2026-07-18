@@ -1,6 +1,7 @@
 import { Form16Data } from '../proto/compatibilityProxy';
 import { extractionConfig } from './extractionConfig';
 import { ParserUtils } from './ParserUtils';
+import { NormalizedIntermediateForm } from './NormalizedIntermediateForm';
 
 /**
  * SalaryParser extracts Part B salary elements, gross components, exempt allowances u/s 10,
@@ -18,35 +19,85 @@ export class SalaryParser {
     const config = extractionConfig.salary;
     const grossSalaryBlock = ParserUtils.getScopedBlock(text, config.grossSalaryBlock, 600);
 
+    // Create Intermediate Form representation
+    const lines = text.split('\n');
+    const form = new NormalizedIntermediateForm([{ pageNumber: 1, items: [], lines }]);
+
+    this.parseGrossSalaryComponentsFuzzy(form, data);
     this.parseGrossSalaryComponents(text, grossSalaryBlock, data);
     this.parseGrossSalaryFallbacks(text, data);
     this.parseExemptAllowances(text, data);
+    this.parseSection16DeductionsFuzzy(form, data);
     this.parseSection16Deductions(text, data);
     this.calculateDerivedSalaryFields(data);
   }
 
   /**
-   * Parses Gross Salary components from the isolated Gross Salary block context.
+   * Parses Gross Salary components using label-anchored search on intermediate form first.
+   */
+  private static parseGrossSalaryComponentsFuzzy(form: NormalizedIntermediateForm, data: Form16Data): void {
+    // 17(1) Salary
+    const s17_1 = form.findNumberNearLabel('section 17(1)') ||
+                  form.findNumberNearLabel('provisions contained in section 17(1)') ||
+                  form.findNumberNearLabel('provisions contained in sec 17(1)');
+    if (s17_1 !== null && s17_1 > 0) {
+      data.salary.salaryAsPer17_1 = s17_1;
+    }
+
+    // 17(2) Perquisites
+    const s17_2 = form.findNumberNearLabel('section 17(2)') ||
+                  form.findNumberNearLabel('Value of perquisites under section 17(2)') ||
+                  form.findNumberNearLabel('Value of perquisites under sec 17(2)');
+    if (s17_2 !== null && s17_2 > 0) {
+      data.salary.perquisites17_2 = s17_2;
+    }
+
+    // 17(3) Profits in lieu
+    const s17_3 = form.findNumberNearLabel('section 17(3)') ||
+                  form.findNumberNearLabel('Profits in lieu of salary under section 17(3)') ||
+                  form.findNumberNearLabel('Profits in lieu of salary under sec 17(3)');
+    if (s17_3 !== null && s17_3 > 0) {
+      data.salary.profitsInLieu17_3 = s17_3;
+    }
+
+    // Total gross salary
+    const gross = form.findNumberNearLabel('Gross Salary') ||
+                  form.findNumberNearLabel('Total Gross Salary');
+    if (gross !== null && gross > 0) {
+      data.salary.grossSalary = gross;
+    }
+  }
+
+  /**
+   * Parses Gross Salary components from the isolated Gross Salary block context (original exact regex logic).
    */
   private static parseGrossSalaryComponents(text: string, grossSalaryBlock: string, data: Form16Data): void {
     const config = extractionConfig.salary;
     if (!grossSalaryBlock) return;
 
     // (a) Section 17(1)
-    const aMatch = ParserUtils.extractAmount(grossSalaryBlock, config.salaryAsPer17_1);
-    if (aMatch > 0) data.salary.salaryAsPer17_1 = aMatch;
+    if (data.salary.salaryAsPer17_1 === 0) {
+      const aMatch = ParserUtils.extractAmount(grossSalaryBlock, config.salaryAsPer17_1);
+      if (aMatch > 0) data.salary.salaryAsPer17_1 = aMatch;
+    }
 
     // (b) Section 17(2)
-    const bMatch = ParserUtils.extractAmount(grossSalaryBlock, config.perquisites17_2);
-    if (bMatch > 0) data.salary.perquisites17_2 = bMatch;
+    if (data.salary.perquisites17_2 === 0) {
+      const bMatch = ParserUtils.extractAmount(grossSalaryBlock, config.perquisites17_2);
+      if (bMatch > 0) data.salary.perquisites17_2 = bMatch;
+    }
 
     // (c) Section 17(3)
-    const cMatch = ParserUtils.extractAmount(grossSalaryBlock, config.profitsInLieu17_3);
-    if (cMatch > 0) data.salary.profitsInLieu17_3 = cMatch;
+    if (data.salary.profitsInLieu17_3 === 0) {
+      const cMatch = ParserUtils.extractAmount(grossSalaryBlock, config.profitsInLieu17_3);
+      if (cMatch > 0) data.salary.profitsInLieu17_3 = cMatch;
+    }
 
     // (d) Total / Gross Salary
-    const dMatch = ParserUtils.extractAmount(grossSalaryBlock, config.grossSalary);
-    if (dMatch > 0) data.salary.grossSalary = dMatch;
+    if (data.salary.grossSalary === 0) {
+      const dMatch = ParserUtils.extractAmount(grossSalaryBlock, config.grossSalary);
+      if (dMatch > 0) data.salary.grossSalary = dMatch;
+    }
   }
 
   /**
@@ -101,7 +152,11 @@ export class SalaryParser {
         const code = this.extractExemptAllowanceCode(trimmed);
 
         if (amount > 0 && nature) {
-          data.salary.exemptAllowancesUs10.push({ code, nature, amount });
+          // Prevent duplicates
+          const exists = data.salary.exemptAllowancesUs10.some(item => item.nature === nature && item.amount === amount);
+          if (!exists) {
+            data.salary.exemptAllowancesUs10.push({ code, nature, amount });
+          }
         }
       }
     }
@@ -143,14 +198,43 @@ export class SalaryParser {
   }
 
   /**
-   * Extracts Section 16 deductions like standard deduction, professional tax, etc.
+   * Parses Section 16 deductions using label-anchored search on intermediate form first.
+   */
+  private static parseSection16DeductionsFuzzy(form: NormalizedIntermediateForm, data: Form16Data): void {
+    const std = form.findNumberNearLabel('Standard deduction under section 16') ||
+                form.findNumberNearLabel('Standard deduction');
+    if (std !== null && std > 0) {
+      data.salary.standardDeduction16ia = std;
+    }
+
+    const ent = form.findNumberNearLabel('Entertainment allowance');
+    if (ent !== null && ent > 0) {
+      data.salary.entertainmentAllowance16ii = ent;
+    }
+
+    const prof = form.findNumberNearLabel('Tax on employment under section 16') ||
+                 form.findNumberNearLabel('Tax on employment') ||
+                 form.findNumberNearLabel('Professional tax');
+    if (prof !== null && prof > 0) {
+      data.salary.professionalTax16iii = prof;
+    }
+  }
+
+  /**
+   * Extracts Section 16 deductions like standard deduction, professional tax, etc. (original exact regex logic).
    */
   private static parseSection16Deductions(text: string, data: Form16Data): void {
     const config = extractionConfig.salary;
 
-    data.salary.standardDeduction16ia = ParserUtils.extractAmount(text, config.standardDeduction16ia);
-    data.salary.entertainmentAllowance16ii = ParserUtils.extractAmount(text, config.entertainmentAllowance16ii);
-    data.salary.professionalTax16iii = ParserUtils.extractAmount(text, config.professionalTax16iii);
+    if (data.salary.standardDeduction16ia === 0) {
+      data.salary.standardDeduction16ia = ParserUtils.extractAmount(text, config.standardDeduction16ia);
+    }
+    if (data.salary.entertainmentAllowance16ii === 0) {
+      data.salary.entertainmentAllowance16ii = ParserUtils.extractAmount(text, config.entertainmentAllowance16ii);
+    }
+    if (data.salary.professionalTax16iii === 0) {
+      data.salary.professionalTax16iii = ParserUtils.extractAmount(text, config.professionalTax16iii);
+    }
 
     data.salary.totalDeductionsUs16 =
       data.salary.standardDeduction16ia +

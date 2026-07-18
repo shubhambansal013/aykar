@@ -6,6 +6,8 @@ import { OtherIncomeParser } from './OtherIncomeParser';
 import { DeductionsParser } from './DeductionsParser';
 import { TaxComputationParser } from './TaxComputationParser';
 import { Form16Merger } from './Form16Merger';
+import { FormatDetector } from './FormatDetector';
+import { DetailedForm16Parser } from './DetailedForm16Parser';
 
 export function mergeForm16Data(docs: any[]): any {
   const actualBundles = docs.map(d => d.__bundle || d);
@@ -14,6 +16,11 @@ export function mergeForm16Data(docs: any[]): any {
 }
 
 export function parseForm16Text(text: string): any {
+  const fingerprint = FormatDetector.detect(text);
+  if (fingerprint.template === 'DETAILED_FORM_16') {
+    return parseDetailedForm16(text);
+  }
+
   const bundle = createEmptyForm16Bundle();
   const proxy = createForm16Proxy(bundle);
 
@@ -30,8 +37,6 @@ export function parseForm16Text(text: string): any {
 // ----------------------------------------------------
 // HYBRID POSITIONAL & REGEX HIGH-FIDELITY PARSERS FOR TARGET PDF FORMATS
 // ----------------------------------------------------
-
-import { DetailedForm16Parser } from './DetailedForm16Parser';
 
 export function parseDetailedForm16(text: string): any {
   const parsed = DetailedForm16Parser.parse(text);

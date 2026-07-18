@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Paper, Tabs, Tab, Grid, LinearProgress, Chip } from '@mui/material';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CodeIcon from '@mui/icons-material/Code';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import { CompletenessReporter } from '@/lib/form16/CompletenessReporter';
 
 interface DebugInfoSectionProps {
   mode: 'light' | 'dark';
@@ -95,6 +98,9 @@ export default function DebugInfoSection({
     );
   };
 
+  // Calculate completeness score and report from extractedData
+  const completeness = extractedData ? CompletenessReporter.calculate(extractedData) : null;
+
   return (
     <Box sx={{ mt: 1, pb: 2 }}>
       <Typography variant="subtitle1" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 'bold' }}>
@@ -120,7 +126,52 @@ export default function DebugInfoSection({
 
       {/* Reconciled Data Panel */}
       <CustomTabPanel value={tabValue} index={0}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {completeness && (
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                📋 Extraction Completeness & Confidence Report
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={completeness.score}
+                    color={completeness.score >= 80 ? 'success' : completeness.score >= 50 ? 'warning' : 'error'}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Chip
+                  label={`${completeness.score}%`}
+                  color={completeness.score >= 80 ? 'success' : completeness.score >= 50 ? 'warning' : 'error'}
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+              </Box>
+
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, fontSize: '0.75rem' }}>
+                Found {completeness.foundFields} of {completeness.totalFields} core fields. Ensure all yellow warnings are reviewed manually before downloading ITR.
+              </Typography>
+
+              <Grid container spacing={1}>
+                {completeness.fieldStatuses.map((fs, idx) => (
+                  <Grid size={{ xs: 6, sm: 4 }} key={idx}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, p: 0.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                      {fs.found ? (
+                        <CheckCircleIcon color="success" sx={{ fontSize: 14 }} />
+                      ) : (
+                        <WarningAmberIcon color="warning" sx={{ fontSize: 14 }} />
+                      )}
+                      <Typography variant="caption" noWrap sx={{ fontWeight: 500, fontSize: '0.7rem', color: fs.found ? 'text.primary' : 'warning.main' }}>
+                        {fs.fieldName}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          )}
+
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
             <CodeIcon sx={{ fontSize: 14 }} /> Engine Reconciliation Result (Protobuf)
           </Typography>

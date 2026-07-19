@@ -1,0 +1,193 @@
+taxpayer_profile {
+  pan: "CYXPA6852K"
+  name: "TARUSH ARORA"
+  address: ""
+}
+certificates {
+  certificate_number: "SFOLYRA"
+  employer_profile {
+    tan: "MUMI04584G"
+    pan: "AABCI0605H"
+    name: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED"
+    address: "Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra"
+    email: "Payrollhelpdesk.India@thomsonreuters.com"
+    phone: "+(91)80-"
+    cit_tds_address: "The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road, Mumbai - 400002"
+  }
+  employment_period {
+    start_date: "01-Apr-2025"
+    end_date: "24-Oct-2025"
+    assessment_year: "2026-27"
+    employee_reference_no: "6126833"
+  }
+  part_a {
+    quarter_summaries {
+      quarter: "Q1"
+      receipt_number: "QWAZAUWA"
+      amount_paid_credited: 388879
+      tax_deducted: 26540
+      tax_deposited: 26540
+    }
+    quarter_summaries {
+      quarter: "Q2"
+      receipt_number: "QWCGAVQG"
+      amount_paid_credited: 377399
+      tax_deducted: 24750
+      tax_deposited: 24750
+    }
+    quarter_summaries {
+      quarter: "Q3"
+      receipt_number: "QWEJAOOC"
+      amount_paid_credited: 218412
+    }
+    challan_deposits {
+      tax_deposited: 8510
+      bsr_code: "6910013"
+      date_of_deposit: "03-05-2025"
+      challan_serial_number: "01263"
+      matching_status: "F"
+    }
+    challan_deposits {
+      tax_deposited: 8512
+      bsr_code: "6910013"
+      date_of_deposit: "04-06-2025"
+      challan_serial_number: "04949"
+      matching_status: "F"
+    }
+    challan_deposits {
+      tax_deposited: 9518
+      bsr_code: "6910013"
+      date_of_deposit: "03-07-2025"
+      challan_serial_number: "04369"
+      matching_status: "F"
+    }
+    challan_deposits {
+      tax_deposited: 8226
+      bsr_code: "6910013"
+      date_of_deposit: "05-08-2025"
+      challan_serial_number: "10058"
+      matching_status: "F"
+    }
+    challan_deposits {
+      tax_deposited: 8289
+      bsr_code: "6910013"
+      date_of_deposit: "03-09-2025"
+      challan_serial_number: "06380"
+      matching_status: "F"
+    }
+    challan_deposits {
+      tax_deposited: 8235
+      bsr_code: "6910013"
+      date_of_deposit: "03-10-2025"
+      challan_serial_number: "02966"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "06-11-2025"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "05-12-2025"
+      matching_status: "F"
+    }
+    total_amount_paid: 984690
+    total_tds_deducted: 51290
+    total_tds_deposited: 51290
+  }
+  part_b {
+    salary_us_17_1: 984690
+    total_gross_salary: 984690
+    standard_deduction: 75000
+    total_section16_deductions: 75000
+    income_chargeable_under_salaries: 909690
+    gross_total_income: 909690
+    chapter_via_deductions {
+    }
+    total_taxable_income: 909690
+  }
+  perquisites_details {
+  }
+  verification {
+    signatory_name: "KUMAR VIJETA"
+    parent_name: "UMESH PRASAD"
+    designation: "DIRECTOR PAYROLL OPERATIONS APAC UK"
+    place: "MUMBAI SUBURBAN"
+    date: "05-Jun-2026"
+  }
+}
+certificates {
+  certificate_number: "UXBGJYA"
+  employer_profile {
+    tan: "BLRP15144D"
+    pan: "AABCP2629J"
+    name: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED"
+    address: "16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD, BANGALORE - 560025 Karnataka"
+    email: "SHCHOUDHARY@PTC.COM"
+    phone: "+(91)80-8197124546"
+    cit_tds_address: "The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032"
+  }
+  employment_period {
+    start_date: "27-Oct-2025"
+    end_date: "31-Mar-2026"
+    assessment_year: "2026-27"
+    employee_reference_no: "1"
+  }
+  part_a {
+    quarter_summaries {
+      quarter: "Q3"
+      receipt_number: "QWEIJEDD"
+      amount_paid_credited: 355532
+    }
+    quarter_summaries {
+      quarter: "Q4"
+      receipt_number: "QWGHYABG"
+      amount_paid_credited: 493500
+    }
+    challan_deposits {
+      date_of_deposit: "05-11-2025"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "05-12-2025"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "07-01-2026"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "05-02-2026"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "05-03-2026"
+      matching_status: "F"
+    }
+    challan_deposits {
+      date_of_deposit: "21-04-2026"
+      matching_status: "F"
+    }
+    total_amount_paid: 849032
+  }
+  part_b {
+    salary_us_17_1: 849032
+    total_gross_salary: 849032
+    standard_deduction: 75000
+    total_section16_deductions: 75000
+    income_chargeable_under_salaries: 774032
+    gross_total_income: 774032
+    chapter_via_deductions {
+    }
+    total_taxable_income: 774032
+    tax_on_total_income: 18701.6
+  }
+  perquisites_details {
+  }
+  verification {
+    signatory_name: "ARVIND LAXMAN BODGAL"
+    parent_name: "LAXMAN RAMCHANDRA BODGAL"
+    designation: "GROUP LEAD ACCOUNTING"
+    place: "BANGALORE"
+    date: "03-Jun-2026"
+  }
+}

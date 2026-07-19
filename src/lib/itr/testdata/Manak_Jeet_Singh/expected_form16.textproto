@@ -1,0 +1,73 @@
+metadata {
+  generation_date {
+  }
+}
+taxpayer_profile {
+  pan: "AFNPS1912F"
+  name: "MANAK JEET SINGH"
+  address: "1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana"
+}
+certificates {
+  certificate_number: "GEN-001"
+  employer_profile {
+    tan: "HYDQ00152F"
+    pan: "AAACQ2188G"
+    name: "OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED"
+    address: "5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana"
+  }
+  employment_period {
+    start_date: "01-Apr-2025"
+    end_date: "31-Mar-2026"
+    assessment_year: "2026-27"
+  }
+  part_a {
+  }
+  part_b {
+    salary_us_17_1: 7275532
+    perquisites_us_17_2: 5004
+    total_gross_salary: 7280536
+    section10_exemptions {
+      amount: 1226539
+    }
+    total_section10_exemptions: 1226539
+    standard_deduction: 50000
+    professional_tax: 2400
+    total_section16_deductions: 52400
+    income_chargeable_under_salaries: 6001597
+    gross_total_income: 6001597
+    chapter_via_deductions {
+      sec_80_c {
+        gross_amount: 150000
+        qualifying_amount: 150000
+        deductible_amount: 150000
+      }
+      sec_80CC_c {
+      }
+      sec_80CCD_1 {
+      }
+      sec_80CCD_1_b {
+        gross_amount: 49705
+        qualifying_amount: 49705
+        deductible_amount: 49705
+      }
+      sec_80CCD_2 {
+      }
+      sec_80_d {
+        gross_amount: 22184
+        qualifying_amount: 22184
+        deductible_amount: 22184
+      }
+      sec_80_e {
+      }
+      sec_80_g {
+      }
+      sec_80TT_a {
+      }
+    }
+    total_chapter_via_deductions: 221889
+    total_taxable_income: 5779708
+    tax_payable: 1769096
+  }
+  verification {
+  }
+}

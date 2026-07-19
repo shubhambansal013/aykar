@@ -1,0 +1,13 @@
+
+> temp-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 522ms
+
+○ Compiling / ...
+ HEAD / 200 in 6.6s (next.js: 6.1s, application-code: 520ms)
+ GET / 200 in 225ms (next.js: 6ms, application-code: 219ms)
+ GET / 200 in 158ms (next.js: 4ms, application-code: 154ms)

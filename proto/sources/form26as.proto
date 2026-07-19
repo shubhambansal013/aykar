@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package tax.sources.form26as;
+
+import "common/common.proto";
+
+message Form26AS {
+  tax.common.DocumentMetadata metadata = 1;
+  tax.common.TaxpayerProfile profile = 2;
+  repeated TdsSalary tds_salary = 3;
+  repeated TdsOther tds_other = 4;
+  repeated TcsDetail tcs_details = 5;
+  repeated TaxChallan advance_tax = 6;
+  repeated TaxChallan self_assessment_tax = 7;
+}
+
+message TdsSalary {
+  string tan = 1;
+  string deductor_name = 2;
+  double amount = 3;
+}
+
+message TdsOther {
+  string tan = 1;
+  string deductor_name = 2;
+  string section = 3;
+  double amount = 4;
+}
+
+message TcsDetail {
+  string collector_name = 1;
+  double amount = 2;
+}
+
+message TaxChallan {
+  string bsr_code = 1;
+  string date = 2;
+  string challan_no = 3;
+  double amount = 4;
+}

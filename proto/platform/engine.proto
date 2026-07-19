@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package tax.platform.engine;
+
+import "sources/form16.proto";
+import "sources/ais.proto";
+import "sources/tis.proto";
+import "sources/form26as.proto";
+
+message EngineReconciliationResult {
+  tax.sources.form16.Form16Bundle form16_data = 1;
+  optional tax.sources.ais.AnnualInformationStatement ais_data = 2;
+  optional tax.sources.tis.TaxpayerInformationSummary tis_data = 3;
+  optional tax.sources.form26as.Form26AS form26as_data = 4;
+
+  TaxCredits tax_credits = 5;
+  repeated string discrepancies = 6;
+  repeated DetectedIncomeSource detected_income_sources = 7;
+
+  double calculated_tax_old_regime = 8;
+  double calculated_tax_new_regime = 9;
+}
+
+message TaxCredits {
+  double tds_salary = 1;
+  double tds_other = 2;
+  double tcs = 3;
+  double advance_tax = 4;
+  double self_assessment_tax = 5;
+}
+
+message DetectedIncomeSource {
+  string source = 1;
+  string category = 2; // e.g., "interestSavings", "interestDeposit", "dividendIncome", "salary", "other"
+  double amount = 3;
+  bool confirmed = 4;
+}

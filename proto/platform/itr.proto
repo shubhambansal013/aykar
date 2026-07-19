@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package tax.platform.itr;
+
+message ItrJson {
+  Itr ITR = 1;
+}
+
+message Itr {
+  Itr1 ITR1 = 1;
+}
+
+message Itr1 {
+  CreationInfo CreationInfo = 1;
+  FormItr1 Form_ITR1 = 2;
+  PersonalInfo PersonalInfo = 3;
+  FilingStatus FilingStatus = 4;
+  Itr1IncomeDeductions ITR1_IncomeDeductions = 5;
+  Itr1TaxComputation ITR1_TaxComputation = 6;
+  TaxPaid TaxPaid = 7;
+  Refund Refund = 8;
+  Verification Verification = 9;
+}
+
+message CreationInfo {
+  string SWVersionNo = 1;
+  string SWCreatedBy = 2;
+  string JSONCreatedBy = 3;
+  string JSONCreationDate = 4;
+  string IntermediaryCity = 5;
+  string Digest = 6;
+}
+
+message FormItr1 {
+  string FormName = 1;
+  string Description = 2;
+  string AssessmentYear = 3;
+  string SchemaVer = 4;
+  string FormVer = 5;
+}
+
+message PersonalInfo {
+  AssesseeName AssesseeName = 1;
+  string PAN = 2;
+  string Address = 3; // JSON/String string representation for simplicity
+  string SecondaryAdd = 4; // 'Y' or 'N'
+  string DOB = 5;
+  string EmployerCategory = 6;
+}
+
+message AssesseeName {
+  optional string FirstName = 1;
+  optional string MiddleName = 2;
+  string SurNameOrOrgName = 3;
+}
+
+message FilingStatus {
+  int32 ReturnFileSec = 1;
+  string OptOutNewTaxRegime = 2; // 'Y' or 'N'
+  string AsseseeRepFlg = 3; // 'Y' or 'N'
+  string ItrFilingDueDate = 4;
+}
+
+message Itr1IncomeDeductions {
+  double GrossSalary = 1;
+  double Salary = 2;
+  double PerquisitesValue = 3;
+  double ProfitsInSalary = 4;
+  AllwncExemptUs10 AllwncExemptUs10 = 5;
+  double NetSalary = 6;
+  double DeductionUs16ia = 7;
+  double EntertainmentAlw16ii = 8;
+  double ProfessionalTaxUs16iii = 9;
+  double DeductionUs16 = 10;
+  double IncomeFromSal = 11;
+  double TotalIncomeChargeableUnHP = 12;
+  double IncomeOthSrc = 13;
+  double GrossTotIncome = 14;
+  double GrossTotIncomeIncLTCG112A = 15;
+  DeductUndChapVIA DeductUndChapVIA = 16;
+  double TotalIncome = 17;
+}
+
+message AllwncExemptUs10 {
+  repeated AllwncExemptUs10Dtls AllwncExemptUs10Dtls = 1;
+  double TotalAllwncExemptUs10 = 2;
+}
+
+message AllwncExemptUs10Dtls {
+  string SalNatureDesc = 1;
+  double SalOthAmount = 2;
+}
+
+message DeductUndChapVIA {
+  double Section80C = 1;
+  double Section80CCC = 2;
+  double Section80CCDEmployeeOrSE = 3;
+  double Section80CCD1B = 4;
+  double Section80CCDEmployer = 5;
+  double Section80D = 6;
+  double Section80E = 7;
+  double Section80G = 8;
+  double Section80TTA = 9;
+  double TotalChapVIADeductions = 10;
+}
+
+message Itr1TaxComputation {
+  double TotalTaxPayable = 1;
+  double Rebate87A = 2;
+  double TaxPayableOnRebate = 3;
+  double EducationCess = 4;
+  double GrossTaxLiability = 5;
+  double Section89 = 6;
+  double NetTaxLiability = 7;
+  double TotalIntrstPay = 8;
+  IntrstPay IntrstPay = 9;
+  double TotTaxPlusIntrstPay = 10;
+}
+
+message IntrstPay {
+  double IntrstPayUs234A = 1;
+  double IntrstPayUs234B = 2;
+  double IntrstPayUs234C = 3;
+  double LateFilingFee234F = 4;
+}
+
+message TaxPaid {
+  TaxesPaid TaxesPaid = 1;
+  double BalTaxPayable = 2;
+}
+
+message TaxesPaid {
+  double AdvanceTax = 1;
+  double TDS = 2;
+  double TCS = 3;
+  double SelfAssessmentTax = 4;
+  double TotalTaxesPaid = 5;
+}
+
+message Refund {
+  double RefundDue = 1;
+  string BankAccountDtls = 2;
+}
+
+message Verification {
+  Declaration Declaration = 1;
+  string Capacity = 2; // 'S' or 'R'
+  string Place = 3;
+}
+
+message Declaration {
+  string AssesseeVerName = 1;
+  string FatherName = 2;
+  string AssesseeVerPAN = 3;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseForm16Text } from './parser';
+import { parseForm16Text, mergeForm16Data } from './parser';
 import { BasicInfoParser } from './BasicInfoParser';
 import { ParserUtils } from './ParserUtils';
 
@@ -392,6 +392,17 @@ describe('ParserUtils additional coverage tests', () => {
     });
   });
 
+  it('should fallback to sum of individual allowances when Total Exempt Allowances is missing', () => {
+    const text = `
+      Allowances to the extent exempt u/s 10
+      Exempt Allowance 10(13A) 25,000.00
+      Exempt Allowance 10(14) 15,000.00
+      Total Exempt Allowances
+    `;
+    const result = parseForm16Text(text);
+    expect(result.salary.totalExemptAllowances).toBe(40000);
+  });
+
   it('should correctly extract Form-16 data for OPTUM/MANAK JEET SINGH and verify ITR json structure', () => {
     const optumForm16Text = `
       Name and address of the Employer/Specified Bank: OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED, 5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana
@@ -544,5 +555,85 @@ describe('ParserUtils additional coverage tests', () => {
     expect(parsed.totalChapterVIADeductions).toBe(expectedJson.totalChapterVIADeductions);
     expect(parsed.totalIncome).toBe(expectedJson.totalIncome);
     expect(parsed.taxPayable).toBe(expectedJson.taxPayable);
+  });
+});
+
+describe('mergeForm16Data', () => {
+  it('should return empty template when given empty array', () => {
+    const result = mergeForm16Data([]);
+    expect(result.salary.grossSalary).toBe(0);
+    expect(result.employer.name).toBe('');
+  });
+
+  it('should return cloned single document when array has one element', () => {
+    const doc = parseForm16Text('Gross Salary 500,000.00');
+    const result = mergeForm16Data([doc]);
+    expect(result.salary.grossSalary).toBe(500000);
+  });
+
+  it('should merge duplicate/same employer (Part A + Part B) correctly', () => {
+    const docA = parseForm16Text(`
+      Name and address of the Employer: Acme Corp
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: BLRG25952D
+      Period with the Employer To 31-Mar-2026 From 01-Apr-2025
+      Tax Payable 10,000.00
+    `);
+    const docB = parseForm16Text(`
+      Name and address of the Employer: Acme Corp
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: BLRG25952D
+      Salary as per section 17(1) 1,000,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+    `);
+
+    const merged = mergeForm16Data([docA, docB]);
+
+    expect(merged.employer.name).toBe('Acme Corp');
+    expect(merged.employer.tan).toBe('BLRG25952D');
+    expect(merged.employee.pan).toBe('CESPB7152N');
+    expect(merged.salary.salaryAsPer17_1).toBe(1000000);
+    expect(merged.salary.grossSalary).toBe(1000000);
+    expect(merged.salary.standardDeduction16ia).toBe(75000);
+    expect(merged.taxPayable).toBe(10000);
+    expect(merged.period.from).toBe('01-Apr-2025');
+    expect(merged.period.to).toBe('31-Mar-2026');
+  });
+
+  it('should merge multiple different employers (job change) correctly', () => {
+    const doc1 = parseForm16Text(`
+      Name and address of the Employer: Acme Corp
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: BLRG25952D
+      Period with the Employer To 31-Aug-2025 From 01-Apr-2025
+      Salary as per section 17(1) 500,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      80C 100,000.00
+    `);
+    const doc2 = parseForm16Text(`
+      Name and address of the Employer: Beta Inc
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: NEWG12345T
+      Period with the Employer To 31-Mar-2026 From 01-Sep-2025
+      Salary as per section 17(1) 700,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      80C 50,000.00
+      Allowances to the extent exempt u/s 10
+      Exempt Allowance 10(13A) 20,000.00
+      Total Exempt Allowances 20,000.00
+    `);
+
+    const merged = mergeForm16Data([doc1, doc2]);
+
+    expect(merged.employer.name).toBe('Acme Corp / Beta Inc');
+    expect(merged.employer.tan).toBe('BLRG25952D / NEWG12345T');
+    expect(merged.salary.salaryAsPer17_1).toBe(1200000);
+    expect(merged.salary.grossSalary).toBe(1200000);
+    // Standard deduction should be capped/maxed at 75k and not summed to 150k
+    expect(merged.salary.standardDeduction16ia).toBe(75000);
+    expect(merged.deductions80C).toBe(150000);
+    expect(merged.salary.totalExemptAllowances).toBe(20000);
+    expect(merged.period.from).toBe('01-Apr-2025');
+    expect(merged.period.to).toBe('31-Mar-2026');
   });
 });

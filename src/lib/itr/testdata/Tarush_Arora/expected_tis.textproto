@@ -1,0 +1,117 @@
+metadata {
+  financial_year: "2025-26"
+}
+profile {
+  pan: "CYXPA6852K"
+  name: "TARUSH ARORA"
+  address: "7/90, GEETA COLONY, DELHI, 110031, DELHI"
+}
+categories {
+  category_name: "Salary"
+  processed_by_system: 1833722
+  accepted_by_taxpayer: 1833722
+}
+categories {
+  category_name: "Interest from savings bank"
+  processed_by_system: 1829
+  accepted_by_taxpayer: 1829
+}
+categories {
+  category_name: "Interest from deposit"
+  processed_by_system: 2620
+  accepted_by_taxpayer: 2620
+}
+categories {
+  category_name: "Sale of securities and units of mutual fund"
+  processed_by_system: 52840
+  accepted_by_taxpayer: 52840
+}
+categories {
+  category_name: "Purchase of securities and units of mutual funds"
+  processed_by_system: 13499
+  accepted_by_taxpayer: 13499
+}
+details {
+  parent_category: "Salary"
+  part: "Other"
+  information_source: "MUMI04584G"
+  reported_by_source: 984690
+  processed_by_system: 984690
+  accepted_by_taxpayer: 984690
+}
+details {
+  parent_category: "Salary"
+  part: "TDS/TCS"
+  information_source: "MUMI04584G"
+  reported_by_source: 984690
+}
+details {
+  parent_category: "Salary"
+  part: "Other"
+  information_source: "BLRP15144D"
+  reported_by_source: 849032
+  processed_by_system: 849032
+  accepted_by_taxpayer: 849032
+}
+details {
+  parent_category: "Salary"
+  part: "TDS/TCS"
+  information_source: "BLRP15144D"
+  reported_by_source: 849032
+}
+details {
+  parent_category: "Interest from savings bank"
+  part: "SFT"
+  information_source: "AAACH2702H.AB772"
+  reported_by_source: 1191
+  processed_by_system: 1191
+  accepted_by_taxpayer: 1191
+}
+details {
+  parent_category: "Interest from savings bank"
+  part: "SFT"
+  information_source: "AAACS8577K.AB703"
+  reported_by_source: 280
+  processed_by_system: 280
+  accepted_by_taxpayer: 280
+}
+details {
+  parent_category: "Interest from savings bank"
+  part: "SFT"
+  information_source: "AAACB1534F.AB566"
+  reported_by_source: 229
+  processed_by_system: 229
+  accepted_by_taxpayer: 229
+}
+details {
+  parent_category: "Interest from savings bank"
+  part: "SFT"
+  information_source: "AAACP1206G.AB770"
+  reported_by_source: 129
+  processed_by_system: 129
+  accepted_by_taxpayer: 129
+}
+details {
+  parent_category: "Interest from deposit"
+  part: "SFT"
+  information_source: "AAACH2702H.AB772"
+  reported_by_source: 2620
+  processed_by_system: 2620
+  accepted_by_taxpayer: 2620
+}
+details {
+  parent_category: "Sale of securities and units of mutual fund"
+  part: "SFT"
+  information_source: "AAACC6233AMUMC09975A"
+  reported_by_source: 52840
+  processed_by_system: 52840
+  accepted_by_taxpayer: 52840
+}
+details {
+  parent_category: "Purchase of securities and units of mutual funds"
+  part: "SFT"
+  information_source: "AAACC3035G.AZ670"
+  reported_by_source: 13499
+  processed_by_system: 13499
+  accepted_by_taxpayer: 13499
+}

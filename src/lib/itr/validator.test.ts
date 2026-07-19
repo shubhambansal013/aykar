@@ -72,4 +72,91 @@ describe('validateForm16Data', () => {
     const errors = validateForm16Data(data);
     expect(errors).toContain('Standard deduction (u/s 16ia) cannot exceed ₹75000. Found: ₹80000');
   });
+
+  it('should perform cross-verification and catch mismatches/under-reporting', () => {
+    const data = {
+      ...baseData,
+      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      taxPayable: 150000,
+      aisData: {
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000,
+        tdsDetails: []
+      },
+      tisData: {
+        salaryDerived: 110000, // Salary mismatch (100k vs 110k)
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000
+      },
+      form26asData: {
+        tdsSalary: [{ tan: 'HYDQ00152F', deductorName: 'OPTUM', amount: 140000 }], // TDS mismatch (150k vs 140k)
+        tdsOther: [],
+        tcsDetails: [],
+        advanceTax: [],
+        selfAssessmentTax: []
+      }
+    };
+
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('TIS Salary Cross-verification'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Savings Bank Interest'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Deposit Interest'))).toBe(true);
+    expect(errors.some(e => e.includes('Under-reporting Alert: Dividend Income'))).toBe(true);
+    expect(errors.some(e => e.includes('TDS Cross-verification'))).toBe(true);
+  });
+
+  it('should run .some() callbacks when other sources is non-empty but under-reports', () => {
+    const data = {
+      ...baseData,
+      otherIncome: {
+        houseProperty: 0,
+        otherSources: [
+          { nature: 'Interest from Savings Bank', amount: 5000 },
+          { nature: 'Interest on Deposits', amount: 10000 },
+          { nature: 'Dividend Income', amount: 1000 }
+        ],
+        totalOtherSources: 16000
+      },
+      aisData: {
+        interestSavings: 15000,
+        interestDeposit: 25000,
+        dividendIncome: 5000,
+        tdsDetails: []
+      }
+    };
+
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('Savings Bank Interest of ₹15,000'))).toBe(true);
+  });
+
+  it('should catch missing TDS u/s 192 in Form 26AS', () => {
+    const data = {
+      ...baseData,
+      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      taxPayable: 150000,
+      form26asData: {
+        tdsSalary: [],
+        tdsOther: [],
+        tcsDetails: [],
+        advanceTax: [],
+        selfAssessmentTax: []
+      }
+    };
+    const errors = validateForm16Data(data);
+    expect(errors.some(e => e.includes('no matching TDS u/s 192 was found in Form 26AS'))).toBe(true);
+  });
+
+  it('should handle highly partial or missing Form16Data nested structures without throwing', () => {
+    const partialData = {
+      assessmentYear: '2026-27',
+      grossTotalIncome: 100,
+    } as any;
+
+    expect(() => {
+      const errors = validateForm16Data(partialData);
+      expect(errors).toBeDefined();
+    }).not.toThrow();
+  });
 });

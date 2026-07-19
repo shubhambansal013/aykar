@@ -60,10 +60,13 @@ export class DetailedForm16Parser {
       if (cert.employerProfile?.name) {
         certs.push(cert);
       }
-      if (text.includes('PARAMETRIC TECHNOLOGY') || text.includes('THOMSON REUTERS')) {
-        taxpayerName = 'TARUSH ARORA';
-        taxpayerPan = 'CYXPA6852K';
-        taxpayerAddress = '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI-110031 Delhi';
+      if (!taxpayerPan) {
+        const identity = this.parseTaxpayerIdentity(text);
+        if (identity.pan) {
+          taxpayerName = identity.name;
+          taxpayerPan = identity.pan;
+          taxpayerAddress = identity.address;
+        }
       }
     }
 
@@ -91,6 +94,61 @@ export class DetailedForm16Parser {
       certificates: Array.from(mergedCertsMap.values()),
       metadata: undefined,
     };
+  }
+
+  /**
+   * Extracts the employee/taxpayer's own PAN, name, and address from a Form-16 text.
+   * Tries two layouts seen across this generator's Form-16 variants, in order:
+   *
+   *  1. A clean metadata header some certificates include up top:
+   *       "Employee Name:   TARUSH ARORA"
+   *       "Employee PAN:   CYXPA6852K"
+   *
+   *  2. A footer line present on every certificate:
+   *       "Certificate Number: ...   TAN of Employer: ...   PAN of Employee: CYXPA6852K   Assessment Year: ..."
+   *     which gives the PAN but not the name. When only this is available, the name is
+   *     recovered from the two-column "Name and address of the Employer / Name and
+   *     address of the Employee" block: the employee's name sits on its own line in
+   *     that block and (unlike the employer's name, already parsed by
+   *     parseEmployerProfile) is a short ALL-CAPS line with no digits.
+   *
+   * Address is intentionally left blank when it can't be found via strategy 1 - the
+   * employee's address is interleaved with the employer's address in the same wrapped
+   * two-column text, and reliably splitting the two columns needs layout/coordinate-aware
+   * PDF extraction rather than line-based regex. Returning an empty address here is safer
+   * than fabricating one from a heuristic that can't be validated.
+   */
+  private static parseTaxpayerIdentity(text: string): { pan: string; name: string; address: string } {
+    const lines = text.split('\n');
+
+    const cleanHeaderPan = text.match(/Employee\s*PAN\s*:\s*([A-Z]{5}\d{4}[A-Z])/i);
+    const cleanHeaderName = text.match(/Employee\s*Name\s*:\s*(.+)/i);
+    if (cleanHeaderPan) {
+      return {
+        pan: cleanHeaderPan[1].toUpperCase(),
+        name: cleanHeaderName ? cleanHeaderName[1].trim() : '',
+        address: '',
+      };
+    }
+
+    const footerPan = text.match(/PAN\s+of\s+Employee\s*:\s*([A-Z]{5}\d{4}[A-Z])/i);
+    if (!footerPan) {
+      return { pan: '', name: '', address: '' };
+    }
+
+    let name = '';
+    const blockIdx = lines.findIndex(l => /Name\s+and\s+address\s+of\s+the\s+Employer/i.test(l));
+    if (blockIdx >= 0) {
+      for (let i = blockIdx + 1; i < Math.min(lines.length, blockIdx + 15); i++) {
+        const candidate = lines[i].trim();
+        if (/^[A-Z][A-Z.\s]{2,40}$/.test(candidate) && !/LIMITED|PRIVATE|BANK|TOWER|FLOOR|ROAD/i.test(candidate)) {
+          name = candidate;
+          break;
+        }
+      }
+    }
+
+    return { pan: footerPan[1].toUpperCase(), name, address: '' };
   }
 
   /**

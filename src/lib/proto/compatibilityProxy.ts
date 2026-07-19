@@ -704,7 +704,12 @@ export function createForm16Proxy(bundle: any): Form16Data {
         });
       }
       if (prop === 'totalExemptAllowances') return cert.partB?.totalSection10Exemptions || 0;
-      if (prop === 'netSalary') return (bundle as any)._customNetSalary || 0;
+      // Net Salary = Gross Salary - exempt allowances u/s 10 (same formula as
+      // SalaryParser.ts, Form16Merger.ts, and FieldCues.tsx's own consistency check).
+      // This used to read an ephemeral `_customNetSalary` shadow property that nothing
+      // in the certificate-based parsing path ever set, so it silently defaulted to 0
+      // regardless of Gross Salary. Net Salary is derived, not independently stored.
+      if (prop === 'netSalary') return (cert.partB?.totalGrossSalary || 0) - (cert.partB?.totalSection10Exemptions || 0);
       if (prop === 'standardDeduction16ia') return cert.partB?.standardDeduction || 0;
       if (prop === 'entertainmentAllowance16ii') return cert.partB?.entertainmentAllowance || 0;
       if (prop === 'professionalTax16iii') return cert.partB?.professionalTax || 0;
@@ -731,7 +736,10 @@ export function createForm16Proxy(bundle: any): Form16Data {
         }));
       }
       if (prop === 'totalExemptAllowances') cert.partB.totalSection10Exemptions = Number(value);
-      if (prop === 'netSalary') (bundle as any)._customNetSalary = Number(value);
+      // netSalary has no setter: it's derived (see getter above), not independently
+      // stored. If the UI needs Net Salary to be directly editable, that edit should
+      // go to grossSalary / totalExemptAllowances instead, so the derived value and
+      // its inputs can't drift out of sync again.
       if (prop === 'standardDeduction16ia') cert.partB.standardDeduction = Number(value);
       if (prop === 'entertainmentAllowance16ii') cert.partB.entertainmentAllowance = Number(value);
       if (prop === 'professionalTax16iii') cert.partB.professionalTax = Number(value);

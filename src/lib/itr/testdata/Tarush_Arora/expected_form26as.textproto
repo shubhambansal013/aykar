@@ -9,7 +9,6 @@ profile {
 tds_salary {
   tan: "BLRP15144D"
   deductor_name: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED"
-  amount: 0
 }
 tds_salary {
   tan: "MUMI04584G"

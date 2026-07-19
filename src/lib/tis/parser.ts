@@ -176,7 +176,15 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
     const joined = block.join(' ').replace(/^\s*\d+\s+/, '');
 
     const sourceMatch = joined.match(/\(([A-Z0-9][A-Z0-9.]{8,18}[A-Z0-9])\)/);
-    const amounts = extractAmounts(joined.replace(/\([^)]*\)/g, ''));
+    // Only strip the specific known boilerplate annotation "(Section NNN)" - it's the
+    // one confirmed to cause contamination (the section number itself getting misread
+    // as an amount). A blanket "\([^)]*\)" strip is unsafe here: the PDF sometimes wraps
+    // a parenthetical annotation like "(TDS ... Annexure II)" across two physical lines,
+    // and when those get joined with a space, the actual amount columns for that row can
+    // end up sitting between the still-open "(" and its closing ")" - stripping generically
+    // would delete real amounts, not just the annotation.
+    const withoutSourceCode = sourceMatch ? joined.replace(sourceMatch[0], '') : joined;
+    const amounts = extractAmounts(withoutSourceCode.replace(/\(Section\s+\d+\)/gi, ''));
 
     details.push({
       parentCategory: currentCategory,

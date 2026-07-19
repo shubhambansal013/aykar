@@ -118,6 +118,7 @@ export default function Home() {
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
+  const [aisTisError, setAisTisError] = useState<string | null>(null);
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);

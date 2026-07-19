@@ -1,4 +1,4 @@
-import { Form16Data, AISData, TISData, Form26ASData, ReconciledTaxData } from '../types';
+import { Form16Data, AISData, TISData, Form26ASData, ReconciledTaxData } from '../proto/compatibilityProxy';
 
 export function reconcileAllDocuments(
   form16: Form16Data,

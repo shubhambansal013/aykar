@@ -1,11 +1,9 @@
 import React from 'react';
-import { Form16Data, ReconciledTaxData } from '@/lib/types';
+import { Form16Data, ReconciledTaxData, createForm16Proxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { TextField, Tooltip, InputAdornment } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
-import { EngineMapper } from '@/lib/proto/mappers/engineMapper';
-import { Form16Mapper } from '@/lib/proto/mappers/form16Mapper';
 import { EngineReconciliationResult } from '@/generated/platform/engine';
 import { Form16Bundle } from '@/generated/sources/form16';
 
@@ -19,13 +17,16 @@ const TAN_REGEX = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
 
 export function ensureForm16Data(obj: any): Form16Data | null {
   if (!obj) return null;
+  if (obj.__isForm16Proxy) {
+    return obj as any;
+  }
   if ('form16Data' in obj || 'discrepancies' in obj) {
-    return EngineMapper.toDomain(obj as EngineReconciliationResult);
+    return createEngineProxy(obj as EngineReconciliationResult);
   }
   if ('certificates' in obj && 'taxpayerProfile' in obj) {
-    return Form16Mapper.toDomain(obj as Form16Bundle);
+    return createForm16Proxy(obj as Form16Bundle);
   }
-  return obj as Form16Data;
+  return createForm16Proxy(obj);
 }
 
 export function getFieldCue(path: string, dataInput: any): FieldCue {

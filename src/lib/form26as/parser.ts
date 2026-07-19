@@ -1,4 +1,4 @@
-import { Form26ASData } from '../types';
+import { Form26ASData, createEmptyForm26as, createForm26asProxy } from '../proto/compatibilityProxy';
 
 function extractNumbersNoSpace(line: string): number[] {
   const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
@@ -63,8 +63,20 @@ function findNameInWindow(lines: string[], centerIdx: number, targetTan: string,
   return isCollector ? 'Unknown Collector' : 'Unknown Deductor';
 }
 
-export function parseForm26ASText(text: string): Form26ASData {
-  const data: Form26ASData = {
+/**
+ * The standard Form 26AS "Sr.No  Name of Deductor  TAN  Amount Paid  Tax Deducted  TDS
+ * Deposited" summary row puts the deductor's name and TAN on the same line, in that
+ * order. This is a much more reliable source for the name than scanning neighboring
+ * lines (findNameInWindow, above) - use it when the row matches this shape.
+ */
+function findNameOnSummaryRow(line: string, tan: string): string | null {
+  const pattern = new RegExp(`^\\s*\\d+\\s+(.+?)\\s{2,}${tan}\\b`, 'i');
+  const m = line.match(pattern);
+  return m ? m[1].trim() : null;
+}
+
+export function parseForm26ASText(text: string): any {
+  const data: any = {
     tdsSalary: [],
     tdsOther: [],
     tcsDetails: [],
@@ -104,7 +116,7 @@ export function parseForm26ASText(text: string): Form26ASData {
       if (tanMatch) {
         const tan = tanMatch[1].toUpperCase();
         currentTan = tan;
-        currentDeductorName = findNameInWindow(lines, i, tan, false);
+        currentDeductorName = findNameOnSummaryRow(line, tan) || findNameInWindow(lines, i, tan, false);
       }
 
       if (currentTan && !/total/i.test(line) && !/summary/i.test(line)) {
@@ -138,7 +150,7 @@ export function parseForm26ASText(text: string): Form26ASData {
       if (tanMatch) {
         const tan = tanMatch[1].toUpperCase();
         currentTcsTan = tan;
-        currentCollectorName = findNameInWindow(lines, i, tan, true);
+        currentCollectorName = findNameOnSummaryRow(line, tan) || findNameInWindow(lines, i, tan, true);
       }
 
       if (currentTcsTan && !/total/i.test(line) && !/summary/i.test(line)) {
@@ -185,35 +197,55 @@ export function parseForm26ASText(text: string): Form26ASData {
   data.tdsOther = Array.from(tdsOtherMap.values());
   data.tcsDetails = Array.from(tcsMap.values());
 
-  if (text.includes('CYXPA6852K') && text.includes('TARUSH ARORA')) {
+  // Taxpayer identity + FY/AY come from the standard Form 26AS header block, which is
+  // consistent across taxpayers - not specific to any one PAN. (This used to be a
+  // hardcoded block gated on one taxpayer's PAN/name that also overwrote tdsSalary
+  // above with wrong values - each employer's TDS amount was set to their *salary*
+  // figure, not their actual TDS. tdsSalary above is already computed correctly and
+  // generically from the per-deductor rows; it no longer gets overwritten here.)
+  const fyMatch = text.match(/Financial\s+Year\s+(\d{4})-(\d{2})/i);
+  if (fyMatch) {
+    const startYear = parseInt(fyMatch[1], 10);
     data.metadata = {
-      financialYear: '2025-26',
-      assessmentYear: '2026-27',
+      financialYear: `${fyMatch[1]}-${fyMatch[2]}`,
+      assessmentYear: `${startYear + 1}-${String(startYear + 2).slice(-2)}`,
     };
-
-    data.profile = {
-      pan: 'CYXPA6852K',
-      name: 'TARUSH ARORA',
-      address: '7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI, DELHI, 110031',
-    };
-
-    data.tdsSalary = [
-      {
-        tan: 'BLRP15144D',
-        deductorName: 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED',
-        amount: 849032.0,
-      },
-      {
-        tan: 'MUM104584G',
-        deductorName: 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED',
-        amount: 984690.0,
-      },
-    ];
   }
 
-  return data;
+  const panMatch = text.match(/Permanent\s+Account\s+Number\s*\(PAN\)\s+([A-Z]{5}\d{4}[A-Z])/i);
+  const nameMatch = text.match(/Name\s+of\s+Assessee\s+(.+)/i);
+  const addressLabelIdx = lines.findIndex(l => /Address\s+of\s+Assessee/i.test(l));
+  if (panMatch || nameMatch) {
+    let address = '';
+    if (addressLabelIdx >= 0) {
+      // Address can wrap onto the following line in the source text.
+      address = [lines[addressLabelIdx].replace(/.*Address\s+of\s+Assessee\s*/i, ''), lines[addressLabelIdx + 1]]
+        .filter(Boolean)
+        .map(s => s.trim())
+        .join(' ')
+        .trim();
+    }
+    data.profile = {
+      pan: panMatch ? panMatch[1].toUpperCase() : '',
+      name: nameMatch ? nameMatch[1].trim() : '',
+      address,
+    };
+  }
+
+  const f26 = createEmptyForm26as();
+  const proxy = createForm26asProxy(f26);
+
+  proxy.tdsSalary = data.tdsSalary;
+  proxy.tdsOther = data.tdsOther;
+  proxy.tcsDetails = data.tcsDetails;
+  proxy.advanceTax = data.advanceTax;
+  proxy.selfAssessmentTax = data.selfAssessmentTax;
+  proxy.metadata = data.metadata;
+  proxy.profile = data.profile;
+
+  return proxy;
 }
 
-export function parseDetailedForm26AS(text: string): Form26ASData {
+export function parseDetailedForm26AS(text: string): any {
   return parseForm26ASText(text);
 }

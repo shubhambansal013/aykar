@@ -43,6 +43,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.0.0",
     "jsdom": "^29.1.1",
+    "protobufjs": "^8.7.1",
     "tailwindcss": "^4",
     "ts-proto": "^2.6.1",
     "typescript": "^5",

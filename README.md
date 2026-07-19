@@ -1,13 +1,28 @@
-# Aykar Hello World
+# Aykar ITR Filing Assistant
 
-A simple Next.js TypeScript application adapted for Cloudflare using OpenNext.
+A highly-deterministic, schema-validated Next.js TypeScript application designed to parse tax documents (Form-16, AIS, TIS, 26AS) and reconcile them to produce a compliant, portal-ready Indian Income Tax Return (ITR) JSON. Optimized for Cloudflare Workers using the OpenNext adapter.
 
-## Getting Started
+---
+
+## 📚 Technical & Developer Documentation
+
+To contribute effectively or understand the design of the Aykar codebase, please review the following documentation:
+
+- **[Developer Guide (docs/developer_guide.md)](docs/developer_guide.md)** — **Start here!** This document describes core tech stacks, Protobuf architecture, dynamic imports for PDF.js, Vitest/Testing Library test patterns, Resizable right-panel states, and troubleshooting tips.
+- **[Architecture & Reconciliation (docs/architecture.md)](docs/architecture.md)** — Describes the core design principle: *Deterministic logic owns the numbers; AI is only used for genuinely unstructured inputs.*
+- **[Clean Code & Readability Guidelines (docs/readability.md)](docs/readability.md)** — Outlines coding standards inspired by Robert C. Martin ("Uncle Bob"), highlighting Single Responsibility components, proper naming, pure functions, and avoiding nested state mutation side effects.
+- **[Form-16 Parser Configuration (docs/extraction_config.md)](docs/extraction_config.md)** — Shows how Form-16 visual layout boundaries, column numeric tokens, and regexes are fully decoupled from processing code.
+- **[Form-16 & ITR Mapping Logic (docs/logic.md)](docs/logic.md)** — Explains the heuristic mappings, validation rules, and deduction limit caps enforced during translation.
+- **[Gemini API Key Configuration (docs/gemini_setup.md)](docs/gemini_setup.md)** — Practical guide on adding your API keys across dev, preview, and Cloudflare Worker staging/production environments.
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20 or later
-- npm
+- **Node.js:** v22.0.0 or later (required for compatibility with newer Wrangler versions)
+- **Package Manager:** npm
 
 ### Installation
 
@@ -17,49 +32,60 @@ npm install
 
 ### Local Development
 
-Run the Next.js development server:
+Run the standard Next.js development server:
 
 ```bash
 npm run dev
 ```
 
-Preview the application in the Cloudflare Workers runtime locally:
+### Protocol Buffers
+
+If you update any schemas under `/proto`, regenerate the TypeScript types:
+
+```bash
+npm run proto:generate
+```
+
+---
+
+## 🧪 Testing and Verification
+
+The test suite is built on Vitest and uses JSDOM to render and test components.
+
+```bash
+# Run tests locally (interactive watch mode)
+npx vitest
+
+# Run all tests once
+npm run test
+```
+
+*Note: Code coverage is strictly monitored in the CI pipeline with an **80% threshold** across statements, branches, functions, and lines.*
+
+---
+
+## 🌐 Deployment & CI/CD
+
+### CI/CD Pipeline
+
+The application triggers automated builds and deployments via GitHub Actions (`.github/workflows/deploy.yml` & `ci.yml`) on pull requests and pushes to `main` (Production) and `staging` (Staging).
+
+The following secrets must be configured in your repository for deployment:
+- `CLOUDFLARE_API_TOKEN`: Worker deployment token with appropriate permissions.
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account identifier.
+
+### Local Preview
+
+To preview the built application inside the local Cloudflare Workers environment (`workerd` via Wrangler):
 
 ```bash
 npm run preview
 ```
 
-## Deployment
-
-### CI/CD Pipeline
-
-The application is automatically deployed to Cloudflare Workers on every push to the `main` branch via GitHub Actions.
-
-### Configuration
-
-The following GitHub Secrets must be configured in the repository for the deployment to work:
-
-- `CLOUDFLARE_API_TOKEN`: Your Cloudflare API Token with Workers deployment permissions.
-- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID.
-
-### AI Features & API Keys Configuration
-
-The AI ITR Filing Assistant uses Gemini for unstructured document parsing and recommendations. This requires configuring a `GEMINI_API_KEY`.
-
-For complete step-by-step instructions on setting up your API key for local development, local preview, staging, and production on Cloudflare, see the [Gemini API Key Configuration Guide](docs/gemini_setup.md).
-
-#### Quick Setup Cheat Sheet:
-- **Local Dev:** Copy `.env.example` to `.env.local` and add `GEMINI_API_KEY`.
-- **Local Preview:** Copy `.dev.vars.example` to `.dev.vars` and add `GEMINI_API_KEY`.
-- **Cloudflare (Prod):** Run `npx wrangler secret put GEMINI_API_KEY --env prod`
-- **Cloudflare (Staging):** Run `npx wrangler secret put GEMINI_API_KEY --env staging`
-
 ### Manual Deployment
 
-To deploy manually from your local machine:
+If you are authenticated with Wrangler and want to manually trigger a local deploy:
 
 ```bash
 npm run deploy
 ```
-
-(Note: You will need to be authenticated with Wrangler.)

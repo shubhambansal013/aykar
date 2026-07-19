@@ -118,6 +118,7 @@ export default function Home() {
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
+  const [aisTisError, setAisTisError] = useState<string | null>(null);
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1186,7 +1187,12 @@ export default function Home() {
               {extractedData && (
                 <>
                   {/* Validation warnings */}
-                  {errors.length > 0 && (
+              {aisTisError && (
+                <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Incompatible Document</AlertTitle>
+                  {aisTisError}
+                </Alert>
+              }
                     <Alert
                       severity="warning"
                       variant="outlined"

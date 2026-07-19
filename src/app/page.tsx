@@ -123,6 +123,49 @@ export default function Home() {
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
+  // Function to check if the text is from AIS/TIS and contains capital gains
+  const checkForAisTisCapitalGains = (text: string): string | null => {
+    const lowerText = text.toLowerCase();
+    
+    // Check for AIS/TIS indicators
+    const aisTisIndicators = [
+      'annual information statement',
+      'taxpayer information summary',
+      'form 26as',
+      'ais',
+      'tis'
+    ];
+    
+    const isAisTis = aisTisIndicators.some(indicator => lowerText.includes(indicator));
+    
+    if (!isAisTis) {
+      return null;
+    }
+    
+    // Check for capital gains indicators
+    const capitalGainsIndicators = [
+      'capital gains',
+      'short term capital gain',
+      'long term capital gain',
+      'stcg',
+      'ltcg',
+      'sale of property',
+      'sale of shares',
+      'sale of securities',
+      'transfer of immovable property',
+      'transfer of mutual fund',
+      'income from capital gains'
+    ];
+    
+    const hasCapitalGains = capitalGainsIndicators.some(indicator => lowerText.includes(indicator));
+    
+    if (hasCapitalGains) {
+      return 'This return requires ITR-2 (for capital gains income), which is not yet supported. Please consult a tax professional or use the appropriate ITR form.';
+    }
+    
+    return null;
+  };
+
 
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
@@ -555,6 +598,14 @@ export default function Home() {
         const selectedFile = selectedFiles[i];
         const arrayBuffer = await selectedFile.arrayBuffer();
         const text = await extractTextFromPDF(arrayBuffer);
+                    // Check for AIS/TIS with capital gains
+                    const aisTisErrorMsg = checkForAisTisCapitalGains(text);
+                    if (aisTisErrorMsg) {
+                        setAisTisError(aisTisErrorMsg);
+                        setExtractedData(null);
+                        setLoading(false);
+                        return;
+                    }
         const parsed = parseForm16Text(text);
         const protoBundle = (parsed as any).__bundle || parsed;
         newList.push({ file: selectedFile, rawText: text, data: protoBundle });
@@ -580,6 +631,14 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+                  // Check for AIS/TIS with capital gains
+                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
+                  if (aisTisErrorMsg) {
+                      setAisTisError(aisTisErrorMsg);
+                      setExtractedData(null);
+                      setLoading(false);
+                      return;
+                  }
       setAisRawText(text);
       const parsed = parseAISText(text);
       const protoAis = (parsed as any).__bundle || parsed;
@@ -603,6 +662,14 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+                  // Check for AIS/TIS with capital gains
+                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
+                  if (aisTisErrorMsg) {
+                      setAisTisError(aisTisErrorMsg);
+                      setExtractedData(null);
+                      setLoading(false);
+                      return;
+                  }
       setTisRawText(text);
       const parsed = parseTISText(text);
       const protoTis = (parsed as any).__bundle || parsed;
@@ -626,6 +693,14 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
+                  // Check for AIS/TIS with capital gains
+                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
+                  if (aisTisErrorMsg) {
+                      setAisTisError(aisTisErrorMsg);
+                      setExtractedData(null);
+                      setLoading(false);
+                      return;
+                  }
       setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
       const proto26as = (parsed as any).__bundle || parsed;

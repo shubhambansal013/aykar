@@ -8,7 +8,7 @@ import { parseTISText } from '@/lib/tis/parser';
 import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
-import { mapForm16ToITR1 } from '@/lib/itr/mapper';
+import { mapToITR, shouldUseITR2 } from '@/lib/itr/mapper';
 import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
@@ -738,7 +738,7 @@ export default function Home() {
         body: JSON.stringify({
           messages: updatedMessages,
           itrData: sendOnlyRawData ? null : domainData,
-          itrJson: sendOnlyRawData ? null : (domainData ? mapForm16ToITR1(domainData, selectedRegime) : null),
+          itrJson: sendOnlyRawData ? null : (domainData ? mapToITR(domainData, selectedRegime, form16List) : null),
           rawText: rawText,
           aisRawText: aisRawText,
           tisRawText: tisRawText,
@@ -1298,10 +1298,30 @@ export default function Home() {
                   {/* Review / Edit Form */}
                   <Card variant="outlined" sx={{ mb: 2.5 }}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
-                          2. Review & Edit Extracted Information
-                        </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
+                            2. Review & Edit Extracted Information
+                          </Typography>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1.5,
+                              bgcolor: 'primary.light',
+                              color: 'primary.dark',
+                              borderColor: 'primary.light',
+                              display: 'inline-flex',
+                              alignItems: 'center'
+                            }}
+                            data-testid="selected-itr-form-badge"
+                          >
+                            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                              Form: {extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
+                            </Typography>
+                          </Paper>
+                        </Box>
                         <Button
                           variant="contained"
                           color="secondary"
@@ -1594,12 +1614,13 @@ export default function Home() {
                           startIcon={<DownloadIcon fontSize="small" />}
                           onClick={() => {
                             if (extractedDataDomain) {
-                              const itrJson = mapForm16ToITR1(extractedDataDomain, selectedRegime);
+                              const isItr2 = shouldUseITR2(extractedDataDomain, form16List.length);
+                              const itrJson = mapToITR(extractedDataDomain, selectedRegime, form16List);
                               const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
                               const url = URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
-                              a.download = `ITR1_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
+                              a.download = `${isItr2 ? 'ITR2' : 'ITR1'}_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
                               a.click();
                             }
                           }}

@@ -340,7 +340,7 @@ describe('Home Page', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByText(/Download ITR JSON/i));
-    expect(mapper.mapForm16ToITR1).toHaveBeenCalled();
+    expect(mapper.mapToITR).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
   }, 45000);

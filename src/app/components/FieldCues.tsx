@@ -200,9 +200,12 @@ export function getFieldCue(path: string, dataInput: any): FieldCue {
 
     // Gross Total Income
     case 'grossTotalIncome': {
-      const calcGTI = (data.salary?.incomeChargeableUnderHeadSalaries || 0) + (data.otherIncome?.houseProperty || 0) + (data.otherIncome?.totalOtherSources || 0);
+      const stcg = (data as any).shortTermCapitalGains || 0;
+      const ltcg = (data as any).longTermCapitalGains112A || 0;
+      const calcGTI = (data.salary?.incomeChargeableUnderHeadSalaries || 0) + (data.otherIncome?.houseProperty || 0) + (data.otherIncome?.totalOtherSources || 0) + stcg + ltcg;
       if (Math.abs((val || 0) - calcGTI) > 1) {
-        return { status: 'error', message: `Gross Total Income (₹${val}) must equal Salaries (₹${data.salary?.incomeChargeableUnderHeadSalaries || 0}) + HP (₹${data.otherIncome?.houseProperty || 0}) + Other Sources (₹${data.otherIncome?.totalOtherSources || 0}) = ₹${calcGTI}.` };
+        const cgStr = (stcg > 0 || ltcg > 0) ? ` + STCG (₹${stcg}) + LTCG112A (₹${ltcg})` : '';
+        return { status: 'error', message: `Gross Total Income (₹${val}) must equal Salaries (₹${data.salary?.incomeChargeableUnderHeadSalaries || 0}) + HP (₹${data.otherIncome?.houseProperty || 0}) + Other Sources (₹${data.otherIncome?.totalOtherSources || 0})${cgStr} = ₹${calcGTI}.` };
       }
       return { status: 'success', message: 'Gross Total Income calculation is consistent.' };
     }
@@ -263,9 +266,12 @@ export function getFieldCue(path: string, dataInput: any): FieldCue {
 
     // Tax Summary
     case 'totalIncome': {
-      const calcTI = Math.max(0, (data.grossTotalIncome || 0) - (data.totalChapterVIADeductions || 0));
+      const stcg = (data as any).shortTermCapitalGains || 0;
+      const ltcg = (data as any).longTermCapitalGains112A || 0;
+      const normalGTI = (data.grossTotalIncome || 0) - stcg - ltcg;
+      const calcTI = Math.max(0, normalGTI - (data.totalChapterVIADeductions || 0)) + stcg + ltcg;
       if (Math.abs((val || 0) - calcTI) > 1) {
-        return { status: 'error', message: `Total Income (₹${val}) must equal Gross Total Income minus Chapter VI-A Deductions = ₹${calcTI}.` };
+        return { status: 'error', message: `Total Income (₹${val}) must equal Gross Total Income minus Chapter VI-A Deductions (capped at normal income) = ₹${calcTI}.` };
       }
       return { status: 'success', message: 'Total Income matches calculation.' };
     }

@@ -26,6 +26,64 @@ export interface DualRegimeComparison {
   optimalRegime: 'OLD' | 'NEW';
 }
 
+const BUDGET_2024_DATE = new Date(2024, 6, 23); // July 23, 2024 (Month is 0-based, so 6 is July)
+
+function parseDateOfSale(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return null;
+}
+
+interface CapitalGainsBreakdown {
+  stcgAtSlab: number;
+  stcgAt20: number;
+  ltcg112a: number;
+}
+
+function extractCapitalGains(data: Form16Data): CapitalGainsBreakdown {
+  let stcgAtSlab = 0;
+  let stcgAt20 = 0;
+  let ltcg112a = 0;
+
+  const aisData = (data as any).aisData;
+  const securitySales = aisData?.sftInfo?.securitySales || [];
+
+  if (securitySales.length > 0) {
+    for (const sale of securitySales) {
+      const gain = (sale.salesConsideration || 0) - (sale.costOfAcquisition || 0);
+      if (sale.assetType === 'Short term') {
+        const saleDate = parseDateOfSale(sale.dateOfSaleTransfer);
+        const isListedEquity = sale.securityClass === 'Listed Equity Share' || sale.infoCode?.startsWith('SFT-17-LES');
+        const isOnOrAfterBudget24 = saleDate && saleDate >= BUDGET_2024_DATE;
+
+        if (isListedEquity && isOnOrAfterBudget24) {
+          stcgAt20 += gain;
+        } else {
+          stcgAtSlab += gain;
+        }
+      } else if (sale.assetType === 'Long term') {
+        ltcg112a += gain;
+      }
+    }
+  } else {
+    // Fallback using flat values
+    stcgAt20 = (data as any).shortTermCapitalGains || 0;
+    ltcg112a = (data as any).longTermCapitalGains112A || 0;
+  }
+
+  return {
+    stcgAtSlab: Math.max(0, stcgAtSlab),
+    stcgAt20: Math.max(0, stcgAt20),
+    ltcg112a: Math.max(0, ltcg112a),
+  };
+}
+
 /**
  * Computes tax payable for Old Regime.
  */
@@ -45,31 +103,45 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
   const housePropertyIncome = otherIncome.houseProperty || 0; // Negative interest on home loan (max negative offset up to -2,00,000)
   const otherSourcesIncome = otherIncome.totalOtherSources || 0;
 
-  const grossTotalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome;
+  const { stcgAtSlab, stcgAt20, ltcg112a } = extractCapitalGains(data);
 
-  const chapterVIADeductions = data.totalChapterVIADeductions || 0;
-  const totalIncome = Math.max(0, grossTotalIncome - chapterVIADeductions);
+  const grossTotalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome + stcgAtSlab + stcgAt20 + ltcg112a;
+
+  const normalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome;
+  const rawDeductions = data.totalChapterVIADeductions || 0;
+  const chapterVIADeductions = Math.min(rawDeductions, Math.max(0, normalIncome));
+
+  const totalIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab + stcgAt20 + ltcg112a;
+
+  const slabTaxableIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab;
 
   // Slab calculation
   let taxBeforeRebate = 0;
-  if (totalIncome > 250000) {
-    if (totalIncome <= 500000) {
-      taxBeforeRebate += (totalIncome - 250000) * 0.05;
+  if (slabTaxableIncome > 250000) {
+    if (slabTaxableIncome <= 500000) {
+      taxBeforeRebate += (slabTaxableIncome - 250000) * 0.05;
     } else {
       taxBeforeRebate += 12500; // 5% on 2.5L
-      if (totalIncome <= 1000000) {
-        taxBeforeRebate += (totalIncome - 500000) * 0.20;
+      if (slabTaxableIncome <= 1000000) {
+        taxBeforeRebate += (slabTaxableIncome - 500000) * 0.20;
       } else {
         taxBeforeRebate += 100000; // 20% on 5L
-        taxBeforeRebate += (totalIncome - 1000000) * 0.30;
+        taxBeforeRebate += (slabTaxableIncome - 1000000) * 0.30;
       }
     }
   }
 
-  // Rebate 87A
+  // Add special rate taxes
+  const stcgTax = stcgAt20 * 0.20;
+  taxBeforeRebate += stcgTax;
+
+  const ltcgTax = Math.max(0, ltcg112a - 125000) * 0.125;
+  taxBeforeRebate += ltcgTax;
+
+  // Rebate 87A (excluding LTCG112A tax)
   let rebate87A = 0;
   if (totalIncome <= 500000) {
-    rebate87A = taxBeforeRebate;
+    rebate87A = Math.max(0, taxBeforeRebate - ltcgTax);
   }
 
   const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate87A);
@@ -134,11 +206,18 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
   const housePropertyIncome = Math.max(0, otherIncome.houseProperty || 0);
   const otherSourcesIncome = otherIncome.totalOtherSources || 0;
 
-  const grossTotalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome;
+  const { stcgAtSlab, stcgAt20, ltcg112a } = extractCapitalGains(data);
 
-  // Chapter VI-A deductions are blocked under New Regime, except Section 80CCD(2)
-  const chapterVIADeductions = data.deductions80CCD2 || 0;
-  const totalIncome = Math.max(0, grossTotalIncome - chapterVIADeductions);
+  const grossTotalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome + stcgAtSlab + stcgAt20 + ltcg112a;
+
+  // Chapter VI-A deductions are blocked under New Regime, except Section 80CCD(2), capped at normal income
+  const normalIncome = incomeFromSalaries + housePropertyIncome + otherSourcesIncome;
+  const rawDeductions = data.deductions80CCD2 || 0;
+  const chapterVIADeductions = Math.min(rawDeductions, Math.max(0, normalIncome));
+
+  const totalIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab + stcgAt20 + ltcg112a;
+
+  const slabTaxableIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab;
 
   // Slab calculation (Budget 2024 Slabs)
   // Up to 3,00,000: Nil
@@ -148,34 +227,41 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
   // 12,00,001 to 15,00,000: 20%
   // Above 15,00,000: 30%
   let taxBeforeRebate = 0;
-  if (totalIncome > 300000) {
-    if (totalIncome <= 700000) {
-      taxBeforeRebate += (totalIncome - 300000) * 0.05;
+  if (slabTaxableIncome > 300000) {
+    if (slabTaxableIncome <= 700000) {
+      taxBeforeRebate += (slabTaxableIncome - 300000) * 0.05;
     } else {
       taxBeforeRebate += 20000; // 5% on 4L (3L to 7L)
-      if (totalIncome <= 1000000) {
-        taxBeforeRebate += (totalIncome - 700000) * 0.10;
+      if (slabTaxableIncome <= 1000000) {
+        taxBeforeRebate += (slabTaxableIncome - 700000) * 0.10;
       } else {
         taxBeforeRebate += 30000; // 10% on 3L (7L to 10L)
-        if (totalIncome <= 1200000) {
-          taxBeforeRebate += (totalIncome - 1000000) * 0.15;
+        if (slabTaxableIncome <= 1200000) {
+          taxBeforeRebate += (slabTaxableIncome - 1000000) * 0.15;
         } else {
           taxBeforeRebate += 30000; // 15% on 2L (10L to 12L)
-          if (totalIncome <= 1500000) {
-            taxBeforeRebate += (totalIncome - 1200000) * 0.20;
+          if (slabTaxableIncome <= 1500000) {
+            taxBeforeRebate += (slabTaxableIncome - 1200000) * 0.20;
           } else {
             taxBeforeRebate += 60000; // 20% on 3L (12L to 15L)
-            taxBeforeRebate += (totalIncome - 1500000) * 0.30;
+            taxBeforeRebate += (slabTaxableIncome - 1500000) * 0.30;
           }
         }
       }
     }
   }
 
-  // Rebate 87A (For New Regime, rebate up to 20,000 is allowed if taxable income <= 7,00,000)
+  // Add special rate taxes
+  const stcgTax = stcgAt20 * 0.20;
+  taxBeforeRebate += stcgTax;
+
+  const ltcgTax = Math.max(0, ltcg112a - 125000) * 0.125;
+  taxBeforeRebate += ltcgTax;
+
+  // Rebate 87A (For New Regime, rebate up to 20,000 is allowed if taxable income <= 7,00,000, excluding LTCG112A tax)
   let rebate87A = 0;
   if (totalIncome <= 700000) {
-    rebate87A = taxBeforeRebate;
+    rebate87A = Math.max(0, taxBeforeRebate - ltcgTax);
   }
 
   const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate87A);
@@ -323,8 +409,10 @@ export function recalculateAllFormFields(data: Form16Data, regime: 'OLD' | 'NEW'
   // 7. Gross Total Income = Salaries + HP + Other Sources
   if (editedPath !== 'grossTotalIncome') {
     const hpIncome = regime === 'OLD' ? (otherIncome.houseProperty || 0) : Math.max(0, otherIncome.houseProperty || 0);
-    const calcGTI = (salary.incomeChargeableUnderHeadSalaries || 0) + hpIncome + (otherIncome.totalOtherSources || 0);
-    if (calcGTI > 0 || salary.incomeChargeableUnderHeadSalaries > 0 || otherIncome.totalOtherSources > 0) {
+    const stcg = (next as any).shortTermCapitalGains || 0;
+    const ltcg = (next as any).longTermCapitalGains112A || 0;
+    const calcGTI = (salary.incomeChargeableUnderHeadSalaries || 0) + hpIncome + (otherIncome.totalOtherSources || 0) + stcg + ltcg;
+    if (calcGTI > 0 || salary.incomeChargeableUnderHeadSalaries > 0 || otherIncome.totalOtherSources > 0 || stcg > 0 || ltcg > 0) {
       next.grossTotalIncome = calcGTI;
     }
   }
@@ -347,7 +435,12 @@ export function recalculateAllFormFields(data: Form16Data, regime: 'OLD' | 'NEW'
 
   // 9. Total Income (Taxable Income)
   if (editedPath !== 'totalIncome') {
-    const calcTI = Math.max(0, (next.grossTotalIncome || 0) - activeDeductions);
+    const hpIncome = regime === 'OLD' ? (otherIncome.houseProperty || 0) : Math.max(0, otherIncome.houseProperty || 0);
+    const normalIncome = (salary.incomeChargeableUnderHeadSalaries || 0) + hpIncome + (otherIncome.totalOtherSources || 0);
+    const stcg = (next as any).shortTermCapitalGains || 0;
+    const ltcg = (next as any).longTermCapitalGains112A || 0;
+    const allowedDeductions = Math.min(activeDeductions, Math.max(0, normalIncome));
+    const calcTI = Math.max(0, normalIncome - allowedDeductions) + stcg + ltcg;
     if (calcTI > 0 || next.grossTotalIncome > 0) {
       next.totalIncome = calcTI;
     }

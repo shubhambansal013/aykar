@@ -159,6 +159,122 @@ describe('taxEngine', () => {
     expect(newRes.totalTaxPayable).toBe(0);
   });
 
+  it('correctly calculates taxes with STCG and LTCG112A under New Regime', () => {
+    const cgData: Form16Data = {
+      ...baseMockData,
+      salary: {
+        ...baseMockData.salary,
+        grossSalary: 600000,
+        totalExemptAllowances: 0,
+        standardDeduction16ia: 50000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 50000,
+        incomeChargeableUnderHeadSalaries: 550000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      deductions80CCD2: 0,
+      totalChapterVIADeductions: 0,
+      // Add capital gains
+      shortTermCapitalGains: 100000, // stcg
+      longTermCapitalGains112A: 200000, // ltcg112a
+    } as any;
+
+    const result = calculateNewRegime(cgData);
+
+    // Normal Income = 550000
+    // Deductions = 0
+    // STCG = 100000 (special 20% default since no securitySales is provided)
+    // LTCG112A = 200000 (12.5% rate above 1.25L exemption)
+    // GTI = 550000 + 100000 + 200000 = 850000
+    // Total Income = 850000
+    // Slab taxable income = 550000
+    // Slab tax (Budget 2024 Slabs):
+    // Up to 3L: 0
+    // 3L to 5.5L: (550000 - 300000) * 5% = 12500
+    // Special taxes:
+    // STCG tax = 100000 * 20% = 20000
+    // LTCG tax = (200000 - 125000) * 12.5% = 75000 * 12.5% = 9375
+    // Tax before rebate = 12500 + 20000 + 9375 = 41875
+    // Rebate 87A = 0 (Total income 850000 > 700000)
+    // Cess = 41875 * 4% = 1675
+    // Total tax payable = 41875 + 1675 = 43550
+    expect(result.grossTotalIncome).toBe(850000);
+    expect(result.totalIncome).toBe(850000);
+    expect(result.taxBeforeRebate).toBe(41875);
+    expect(result.totalTaxPayable).toBe(43550);
+  });
+
+  it('correctly calculates taxes with SFT transaction dates and caps chapter VI-A deductions under Old Regime', () => {
+    const sftCgData: Form16Data = {
+      ...baseMockData,
+      salary: {
+        ...baseMockData.salary,
+        grossSalary: 200000,
+        totalExemptAllowances: 0,
+        standardDeduction16ia: 50000,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: 50000,
+        incomeChargeableUnderHeadSalaries: 150000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      totalChapterVIADeductions: 200000, // greater than normal income (150000)
+      aisData: {
+        sftInfo: {
+          securitySales: [
+            {
+              assetType: 'Short term',
+              dateOfSaleTransfer: '10/05/2024', // Before July 23, 2024 -> slab rate
+              securityClass: 'Listed Equity Share',
+              salesConsideration: 50000,
+              costOfAcquisition: 20000,
+            },
+            {
+              assetType: 'Short term',
+              dateOfSaleTransfer: '15/12/2025', // On/After July 23, 2024 -> 20%
+              securityClass: 'Listed Equity Share',
+              salesConsideration: 80000,
+              costOfAcquisition: 40000,
+            },
+            {
+              assetType: 'Long term',
+              dateOfSaleTransfer: '25/02/2026',
+              securityClass: 'Listed Equity Share',
+              salesConsideration: 150000,
+              costOfAcquisition: 25000, // Gain = 125000 -> LTCG112A
+            }
+          ]
+        }
+      }
+    } as any;
+
+    const result = calculateOldRegime(sftCgData);
+
+    // Normal Income = 150000
+    // Chapter VI-A deductions (200000) capped at normal income -> 150000
+    // Remaining normal income after deduction = 0
+    // STCG_slab = 30000 (10/05/2024)
+    // STCG_special = 40000 (15/12/2025)
+    // LTCG112A = 125000
+    // GTI = 150000 + 30000 + 40000 + 125000 = 345000
+    // Total income = (150000 - 150000) + 30000 + 40000 + 125000 = 195000
+    // Slab taxable income = 0 (after deduction) + 30000 = 30000
+    // Slab tax on 30000 (below 2.5L) = 0
+    // Special rate taxes:
+    // STCG_special tax = 40000 * 20% = 8000
+    // LTCG112A tax = Math.max(0, 125000 - 125000) * 12.5% = 0
+    // Tax before rebate = 8000
+    // Rebate 87A = 8000 (total income 195000 <= 500000)
+    // Net tax = 0
+    expect(result.grossTotalIncome).toBe(345000);
+    expect(result.totalIncome).toBe(195000);
+    expect(result.chapterVIADeductions).toBe(150000);
+    expect(result.taxBeforeRebate).toBe(8000);
+    expect(result.rebate87A).toBe(8000);
+    expect(result.totalTaxPayable).toBe(0);
+  });
+
   describe('recalculateAllFormFields', () => {
     it('correctly recalculates fields under OLD regime when individual components change', () => {
       const data: Form16Data = {

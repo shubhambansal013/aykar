@@ -120,12 +120,17 @@ export function reconcileAllDocuments(
   reconciled.otherIncome.totalOtherSources = reconciled.otherIncome.otherSources.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   // Recalculate GTI, TI, etc.
-  reconciled.grossTotalIncome =
+  const stcg = reconciled.shortTermCapitalGains || 0;
+  const ltcg = reconciled.longTermCapitalGains112A || 0;
+  const normalIncome =
     (reconciled.salary?.incomeChargeableUnderHeadSalaries || 0) +
     (reconciled.otherIncome?.houseProperty || 0) +
     (reconciled.otherIncome?.totalOtherSources || 0);
 
-  reconciled.totalIncome = Math.max(0, reconciled.grossTotalIncome - (reconciled.totalChapterVIADeductions || 0));
+  reconciled.grossTotalIncome = normalIncome + stcg + ltcg;
+
+  const allowedDeductions = Math.min(reconciled.totalChapterVIADeductions || 0, Math.max(0, normalIncome));
+  reconciled.totalIncome = Math.max(0, normalIncome - allowedDeductions) + stcg + ltcg;
 
   // 2. Process Tax Credits
   const credits = {

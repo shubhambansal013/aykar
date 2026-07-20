@@ -8,7 +8,7 @@ import { calculateOldRegime, calculateNewRegime } from './taxEngine';
  * 2. Presence of Multiple Employers (form16List has length > 1)
  */
 export function shouldUseITR2(data: Form16Data, form16ListLength: number = 1): boolean {
-  const activeData = data || {} as Form16Data;
+  const activeData = (data || {}) as ReconciledTaxData;
   const hasCapitalGains = (activeData.shortTermCapitalGains || 0) > 0 || (activeData.longTermCapitalGains112A || 0) > 0;
   const hasMultipleEmployers = form16ListLength > 1;
   return hasCapitalGains || hasMultipleEmployers;
@@ -30,7 +30,7 @@ export function mapToITR(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW', form16
  */
 export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW'): ITR1_JSON {
   const now = new Date().toISOString().split('T')[0];
-  const activeData = data || {} as Form16Data;
+  const activeData = (data || {}) as ReconciledTaxData;
   const employee = activeData.employee || {};
   const employeeName = employee.name || {};
   const salary = activeData.salary || {};
@@ -211,7 +211,7 @@ export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW')
  */
 export function mapToITR2(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW', form16List?: any[]): ITR2_JSON {
   const now = new Date().toISOString().split('T')[0];
-  const activeData = data || {} as Form16Data;
+  const activeData = (data || {}) as ReconciledTaxData;
   const employee = activeData.employee || {};
   const employeeName = employee.name || {};
   const salary = activeData.salary || {};

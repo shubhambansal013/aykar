@@ -9,6 +9,57 @@ profile {
 tds_tcs_info {
 }
 sft_info {
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES(I) LIMITED"
+    date_of_sale_transfer: "25/02/2026"
+    security_name: "WAAREE ENERGIES LIMITED # EQUITY SHARES(INE377N01017)"
+    security_code_isin: "INE377N01017"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Long term"
+    quantity: 5
+    sale_price_per_unit: 3001
+    sales_consideration: 15005
+    cost_of_acquisition: 7515
+    status: "Active"
+  }
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES(I) LIMITED"
+    date_of_sale_transfer: "22/12/2025"
+    security_name: "ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY LIMITED#NEW EQUITY SHARES WITH FV RE.1/-AFTER SUB-DIVISION(INE346A01027)"
+    security_code_isin: "INE346A01027"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Short term"
+    quantity: 6
+    sale_price_per_unit: 2590
+    sales_consideration: 15540
+    cost_of_acquisition: 12990
+    status: "Active"
+  }
+  security_sales {
+    info_code: "SFT-17-LES(M)"
+    info_description: "Sale of listed equity share (Depository)"
+    information_source: "CENTRAL DEPOSITORY SERVICES(I) LIMITED"
+    date_of_sale_transfer: "15/10/2025"
+    security_name: "LG ELECTRONICS INDIA LIMITED # EQUITY SHARES(INE324D01010)"
+    security_code_isin: "INE324D01010"
+    security_class: "Listed Equity Share"
+    debit_type: "Market"
+    credit_type: "Market"
+    asset_type: "Short term"
+    quantity: 13
+    sale_price_per_unit: 1715
+    sales_consideration: 22295
+    cost_of_acquisition: 14820
+    status: "Active"
+  }
 }
 other_info {
 }

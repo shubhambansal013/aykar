@@ -69,6 +69,8 @@ export interface AISData {
   interestSavings: number;
   interestDeposit: number;
   dividendIncome: number;
+  shortTermCapitalGains: number;
+  longTermCapitalGains112A: number;
   tdsDetails: Array<{
     tan: string;
     deductorName: string;
@@ -161,10 +163,12 @@ export interface ReconciledTaxData extends Form16Data {
   discrepancies?: string[];
   detectedIncomeSources?: Array<{
     source: string;
-    category: 'interestSavings' | 'interestDeposit' | 'dividendIncome' | 'salary' | 'other';
+    category: 'interestSavings' | 'interestDeposit' | 'dividendIncome' | 'salary' | 'other' | 'shortTermCapitalGains' | 'longTermCapitalGains112A';
     amount: number;
     confirmed: boolean;
   }>;
+  shortTermCapitalGains?: number;
+  longTermCapitalGains112A?: number;
 }
 
 const mapDeduction = (val: number) => ({
@@ -932,11 +936,13 @@ export function createAisProxy(ais: any): AISData {
   if (!(ais as any)._interestSavings) (ais as any)._interestSavings = 0;
   if (!(ais as any)._interestDeposit) (ais as any)._interestDeposit = 0;
   if (!(ais as any)._dividendIncome) (ais as any)._dividendIncome = 0;
+  if (!(ais as any)._shortTermCapitalGains) (ais as any)._shortTermCapitalGains = 0;
+  if (!(ais as any)._longTermCapitalGains112A) (ais as any)._longTermCapitalGains112A = 0;
   if (!(ais as any)._tdsDetails) (ais as any)._tdsDetails = [];
 
   return new Proxy(ais, {
     ownKeys() {
-      return ['interestSavings', 'interestDeposit', 'dividendIncome', 'tdsDetails', 'metadata', 'profile', 'tdsTcsInfo', 'sftInfo', 'taxPayments', 'demandsAndRefunds', 'otherInfo'];
+      return ['interestSavings', 'interestDeposit', 'dividendIncome', 'shortTermCapitalGains', 'longTermCapitalGains112A', 'tdsDetails', 'metadata', 'profile', 'tdsTcsInfo', 'sftInfo', 'taxPayments', 'demandsAndRefunds', 'otherInfo'];
     },
     getOwnPropertyDescriptor(target, prop) {
       return {
@@ -950,6 +956,8 @@ export function createAisProxy(ais: any): AISData {
       if (prop === 'interestSavings') return (ais as any)._interestSavings;
       if (prop === 'interestDeposit') return (ais as any)._interestDeposit;
       if (prop === 'dividendIncome') return (ais as any)._dividendIncome;
+      if (prop === 'shortTermCapitalGains') return (ais as any)._shortTermCapitalGains;
+      if (prop === 'longTermCapitalGains112A') return (ais as any)._longTermCapitalGains112A;
       if (prop === 'tdsDetails') return (ais as any)._tdsDetails;
       if (prop === '__bundle') return ais;
       if (prop === '__isAisProxy') return true;
@@ -959,6 +967,8 @@ export function createAisProxy(ais: any): AISData {
       if (prop === 'interestSavings') (ais as any)._interestSavings = Number(value);
       else if (prop === 'interestDeposit') (ais as any)._interestDeposit = Number(value);
       else if (prop === 'dividendIncome') (ais as any)._dividendIncome = Number(value);
+      else if (prop === 'shortTermCapitalGains') (ais as any)._shortTermCapitalGains = Number(value);
+      else if (prop === 'longTermCapitalGains112A') (ais as any)._longTermCapitalGains112A = Number(value);
       else if (prop === 'tdsDetails') (ais as any)._tdsDetails = value;
       else {
         (ais as any)[prop] = value;
@@ -1076,7 +1086,7 @@ export function createEngineProxy(res: any): ReconciledTaxData {
   if (!(res as any)._discrepancies) (res as any)._discrepancies = [];
   if (!(res as any)._detectedIncomeSources) (res as any)._detectedIncomeSources = [];
 
-  const engineKeys = ['aisData', 'tisData', 'form26asData', 'taxCredits', 'discrepancies', 'detectedIncomeSources'];
+  const engineKeys = ['aisData', 'tisData', 'form26asData', 'taxCredits', 'discrepancies', 'detectedIncomeSources', 'shortTermCapitalGains', 'longTermCapitalGains112A'];
   const f16Keys = [
     'employer', 'employee', 'assessmentYear', 'period', 'salary', 'otherIncome',
     'grossTotalIncome', 'deductions80C', 'deductions80CCC', 'deductions80CCD1',
@@ -1104,6 +1114,8 @@ export function createEngineProxy(res: any): ReconciledTaxData {
       if (prop === 'taxCredits') return res.taxCredits;
       if (prop === 'discrepancies') return res.discrepancies || (res.discrepancies = []);
       if (prop === 'detectedIncomeSources') return res.detectedIncomeSources || (res.detectedIncomeSources = []);
+      if (prop === 'shortTermCapitalGains') return res.shortTermCapitalGains || 0;
+      if (prop === 'longTermCapitalGains112A') return res.longTermCapitalGains112A || 0;
       if (prop === '__isEngineProxy') return true;
 
       if (prop in f16Proxy || typeof prop === 'string') {
@@ -1120,6 +1132,8 @@ export function createEngineProxy(res: any): ReconciledTaxData {
       else if (prop === 'taxCredits') res.taxCredits = value;
       else if (prop === 'discrepancies') res.discrepancies = value;
       else if (prop === 'detectedIncomeSources') res.detectedIncomeSources = value;
+      else if (prop === 'shortTermCapitalGains') res.shortTermCapitalGains = value;
+      else if (prop === 'longTermCapitalGains112A') res.longTermCapitalGains112A = value;
       else {
         (f16Proxy as any)[prop] = value;
       }

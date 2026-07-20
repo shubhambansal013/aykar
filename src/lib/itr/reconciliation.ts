@@ -95,6 +95,27 @@ export function reconcileAllDocuments(
     upsertOtherSource('Dividend Income', 'dividendIncome', reconciledDividend, aisDividend >= tisDividend ? 'AIS' : 'TIS');
   }
 
+  // Propagate capital gains from AIS
+  reconciled.shortTermCapitalGains = ais?.shortTermCapitalGains || 0;
+  reconciled.longTermCapitalGains112A = ais?.longTermCapitalGains112A || 0;
+
+  if (reconciled.shortTermCapitalGains > 0) {
+    reconciled.detectedIncomeSources!.push({
+      source: 'AIS',
+      category: 'shortTermCapitalGains',
+      amount: reconciled.shortTermCapitalGains,
+      confirmed: true,
+    });
+  }
+  if (reconciled.longTermCapitalGains112A > 0) {
+    reconciled.detectedIncomeSources!.push({
+      source: 'AIS',
+      category: 'longTermCapitalGains112A',
+      amount: reconciled.longTermCapitalGains112A,
+      confirmed: true,
+    });
+  }
+
   // Recalculate other sources sum
   reconciled.otherIncome.totalOtherSources = reconciled.otherIncome.otherSources.reduce((sum, item) => sum + (item?.amount || 0), 0);
 

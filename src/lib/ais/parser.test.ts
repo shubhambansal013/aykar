@@ -85,4 +85,65 @@ Derived Value: 3,500.00
       amount: 5000, // 2,500 + 2,500
     });
   });
+
+  it('should parse security sales transactions and calculate STCG and LTCG(112A) correctly', () => {
+    const text = `
+------------------------------------------------------------------------------------- Annual Information Statement (Part B) --------------------------------------------------------------------------------------
+ (All amount values are in INR)
+ Part B2-Information relating to specified financial transaction (SFT)
+ Sale of securities and units of mutual fund
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+6   SFT-17-LES(M)    Sale of listed equity share (Depository)    CENTRAL DEPOSITORY SERVICES(I) LIMITED  3   52,840.00
+(AAACC6233AMUMC09975A)
+SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
+NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
+VALUE
+1   25/02/2026   WAAREE ENERGIES LIMITED # EQUITY  Listed Market   Market   Long 5.00   3,001.00   15,005   7,515.00   0   0   0   Active
+SHARES(INE377N01017)  Equity Share  term
+ Download ID : CYXPA6852K202607050531     IP Address :
+Generation Date : 05/07/2026, 05:31:10     Page 1 of 2
+ PAN    Name    Financial Year
+ CYXPA6852K    TARUSH ARORA    2025-26
+SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
+NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
+VALUE
+2   22/12/2025   ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY  Listed Market   Market   Short 6.00   2,590.00   15,540   12,990.00   0   0   0   Active
+LIMITED#NEW EQUITY SHARES WITH FV RE.1/-AFTER  Equity Share  term
+SUB-DIVISION(INE346A01027)
+3   15/10/2025   LG ELECTRONICS INDIA LIMITED # EQUITY  Listed Market   Market   Short 13.00   1,715.00   22,295   14,820.00   0   0   0   Active
+SHARES(INE324D01010)  Equity Share  term
+    `;
+
+    const parsed = parseAISText(text);
+    expect(parsed.shortTermCapitalGains).toBe(10025);
+    expect(parsed.longTermCapitalGains112A).toBe(7490);
+
+    const sft = (parsed as any).__bundle?.sftInfo;
+    expect(sft).toBeDefined();
+    expect(sft.securitySales).toHaveLength(3);
+
+    const sale1 = sft.securitySales[0];
+    expect(sale1.securityName).toBe('WAAREE ENERGIES LIMITED # EQUITY SHARES(INE377N01017)');
+    expect(sale1.securityCodeIsin).toBe('INE377N01017');
+    expect(sale1.assetType).toBe('Long term');
+    expect(sale1.quantity).toBe(5);
+    expect(sale1.salesConsideration).toBe(15005);
+    expect(sale1.costOfAcquisition).toBe(7515);
+
+    const sale2 = sft.securitySales[1];
+    expect(sale2.securityName).toBe('ICICI PRUDENTIAL ASSET MANAGEMENT COMPANY LIMITED#NEW EQUITY SHARES WITH FV RE.1/-AFTER SUB-DIVISION(INE346A01027)');
+    expect(sale2.securityCodeIsin).toBe('INE346A01027');
+    expect(sale2.assetType).toBe('Short term');
+    expect(sale2.quantity).toBe(6);
+    expect(sale2.salesConsideration).toBe(15540);
+    expect(sale2.costOfAcquisition).toBe(12990);
+
+    const sale3 = sft.securitySales[2];
+    expect(sale3.securityName).toBe('LG ELECTRONICS INDIA LIMITED # EQUITY SHARES(INE324D01010)');
+    expect(sale3.securityCodeIsin).toBe('INE324D01010');
+    expect(sale3.assetType).toBe('Short term');
+    expect(sale3.quantity).toBe(13);
+    expect(sale3.salesConsideration).toBe(22295);
+    expect(sale3.costOfAcquisition).toBe(14820);
+  });
 });

@@ -544,8 +544,31 @@ export default function Home() {
     currentForm16s: Array<{ file: File; rawText: string; data: Form16Bundle }> = form16List,
     currentAis: AnnualInformationStatement | null = aisData,
     currentTis: TaxpayerInformationSummary | null = tisData,
-    current26as: Form26AS | null = form26asData
+    current26as: Form26AS | null = form26asData,
+    currentAisRaw: string = aisRawText,
+    currentTisRaw: string = tisRawText,
+    current26asRaw: string = form26asRawText
   ) => {
+    // Check all active files for capital gains
+    let cgError: string | null = null;
+    for (const item of currentForm16s) {
+      const err = checkForAisTisCapitalGains(item.rawText);
+      if (err) { cgError = err; break; }
+    }
+    if (!cgError && currentAisRaw) {
+      const err = checkForAisTisCapitalGains(currentAisRaw);
+      if (err) cgError = err;
+    }
+    if (!cgError && currentTisRaw) {
+      const err = checkForAisTisCapitalGains(currentTisRaw);
+      if (err) cgError = err;
+    }
+    if (!cgError && current26asRaw) {
+      const err = checkForAisTisCapitalGains(current26asRaw);
+      if (err) cgError = err;
+    }
+    setAisTisError(cgError);
+
     if (currentForm16s.length === 0) {
       setExtractedData(null);
       setOriginalParsedData(null);
@@ -598,21 +621,13 @@ export default function Home() {
         const selectedFile = selectedFiles[i];
         const arrayBuffer = await selectedFile.arrayBuffer();
         const text = await extractTextFromPDF(arrayBuffer);
-                    // Check for AIS/TIS with capital gains
-                    const aisTisErrorMsg = checkForAisTisCapitalGains(text);
-                    if (aisTisErrorMsg) {
-                        setAisTisError(aisTisErrorMsg);
-                        setExtractedData(null);
-                        setLoading(false);
-                        return;
-                    }
         const parsed = parseForm16Text(text);
         const protoBundle = (parsed as any).__bundle || parsed;
         newList.push({ file: selectedFile, rawText: text, data: protoBundle });
       }
 
       setForm16List(newList);
-      reRunReconciliation(newList, aisData, tisData, form26asData);
+      reRunReconciliation(newList, aisData, tisData, form26asData, aisRawText, tisRawText, form26asRawText);
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
@@ -631,19 +646,11 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
-                  // Check for AIS/TIS with capital gains
-                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
-                  if (aisTisErrorMsg) {
-                      setAisTisError(aisTisErrorMsg);
-                      setExtractedData(null);
-                      setLoading(false);
-                      return;
-                  }
       setAisRawText(text);
       const parsed = parseAISText(text);
       const protoAis = (parsed as any).__bundle || parsed;
       setAisData(protoAis);
-      reRunReconciliation(form16List, protoAis, tisData, form26asData);
+      reRunReconciliation(form16List, protoAis, tisData, form26asData, text, tisRawText, form26asRawText);
     } catch (err) {
       console.error('Error processing AIS PDF:', err);
       alert('Failed to process AIS PDF.');
@@ -662,19 +669,11 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
-                  // Check for AIS/TIS with capital gains
-                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
-                  if (aisTisErrorMsg) {
-                      setAisTisError(aisTisErrorMsg);
-                      setExtractedData(null);
-                      setLoading(false);
-                      return;
-                  }
       setTisRawText(text);
       const parsed = parseTISText(text);
       const protoTis = (parsed as any).__bundle || parsed;
       setTisData(protoTis);
-      reRunReconciliation(form16List, aisData, protoTis, form26asData);
+      reRunReconciliation(form16List, aisData, protoTis, form26asData, aisRawText, text, form26asRawText);
     } catch (err) {
       console.error('Error processing TIS PDF:', err);
       alert('Failed to process TIS PDF.');
@@ -693,19 +692,11 @@ export default function Home() {
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const text = await extractTextFromPDF(arrayBuffer);
-                  // Check for AIS/TIS with capital gains
-                  const aisTisErrorMsg = checkForAisTisCapitalGains(text);
-                  if (aisTisErrorMsg) {
-                      setAisTisError(aisTisErrorMsg);
-                      setExtractedData(null);
-                      setLoading(false);
-                      return;
-                  }
       setForm26asRawText(text);
       const parsed = parseForm26ASText(text);
       const proto26as = (parsed as any).__bundle || parsed;
       setForm26asData(proto26as);
-      reRunReconciliation(form16List, aisData, tisData, proto26as);
+      reRunReconciliation(form16List, aisData, tisData, proto26as, aisRawText, tisRawText, text);
     } catch (err) {
       console.error('Error processing Form 26AS PDF:', err);
       alert('Failed to process Form 26AS PDF.');
@@ -1194,8 +1185,15 @@ export default function Home() {
                 </Card>
               </Box>
 
+              {aisTisError && (
+                <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }} data-testid="ais-tis-error-alert">
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Incompatible Document</AlertTitle>
+                  {aisTisError}
+                </Alert>
+              )}
+
               {/* Miscellaneous/Other Reconciliation Alerts */}
-              {extractedData && otherDiscrepancies.length > 0 && (
+              {extractedData && !aisTisError && otherDiscrepancies.length > 0 && (
                 <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
                   <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
                   <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
@@ -1209,7 +1207,7 @@ export default function Home() {
               )}
 
               {/* Supplementary Income */}
-              {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
+              {extractedDataDomain && !aisTisError && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
                 <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
@@ -1243,7 +1241,7 @@ export default function Home() {
               )}
 
               {/* Tax Regime Comparison Card */}
-              {extractedData && (
+              {extractedData && !aisTisError && (
                 <TaxRegimeComparisonCard
                   extractedData={extractedData}
                   selectedRegime={selectedRegime}
@@ -1259,15 +1257,10 @@ export default function Home() {
                 />
               )}
 
-              {extractedData && (
+              {extractedData && !aisTisError && (
                 <>
                   {/* Validation warnings */}
-              {aisTisError && (
-                <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
-                  <AlertTitle sx={{ fontWeight: 'bold' }}>Incompatible Document</AlertTitle>
-                  {aisTisError}
-                </Alert>
-              }
+              {errors.length > 0 && (
                     <Alert
                       severity="warning"
                       variant="outlined"
@@ -1862,7 +1855,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {aisFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData); }} aria-label="remove ais context">
+                        <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData, '', tisRawText, form26asRawText); }} aria-label="remove ais context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>
@@ -1875,7 +1868,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {tisFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData); }} aria-label="remove tis context">
+                        <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData, aisRawText, '', form26asRawText); }} aria-label="remove tis context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>
@@ -1888,7 +1881,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {form26asFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null); }} aria-label="remove form26as context">
+                        <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null, aisRawText, tisRawText, ''); }} aria-label="remove form26as context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>

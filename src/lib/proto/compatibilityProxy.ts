@@ -454,7 +454,7 @@ function mapFlatToBundle(data: any): Form16Bundle {
 
 function mapFlatToEngineResult(flat: any): EngineReconciliationResult {
   const form16Data = mapFlatToBundle(flat);
-  return {
+  const result: any = {
     form16Data,
     aisData: flat.aisData ? (flat.aisData.__bundle || flat.aisData) : undefined,
     tisData: flat.tisData ? (flat.tisData.__bundle || flat.tisData) : undefined,
@@ -476,6 +476,9 @@ function mapFlatToEngineResult(flat: any): EngineReconciliationResult {
     calculatedTaxOldRegime: 0,
     calculatedTaxNewRegime: 0,
   };
+  result.shortTermCapitalGains = flat.shortTermCapitalGains || 0;
+  result.longTermCapitalGains112A = flat.longTermCapitalGains112A || 0;
+  return result;
 }
 
 function createArrayProxy(arr: any[], onMutate: (newArr: any[]) => void) {

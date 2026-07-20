@@ -5,6 +5,7 @@ import * as extractor from '@/lib/form16/extractor';
 import * as parser from '@/lib/form16/parser';
 import * as validator from '@/lib/itr/validator';
 import * as mapper from '@/lib/itr/mapper';
+import { parseAISText } from '@/lib/ais/parser';
 
 // Mock the libraries
 vi.mock('@/lib/form16/extractor');
@@ -16,7 +17,13 @@ vi.mock('@/lib/form16/parser', async () => {
   };
 });
 vi.mock('@/lib/itr/validator');
-vi.mock('@/lib/itr/mapper');
+vi.mock('@/lib/itr/mapper', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/itr/mapper')>('@/lib/itr/mapper');
+  return {
+    ...actual,
+    mapToITR: vi.fn(actual.mapToITR),
+  };
+});
 vi.mock('@/lib/ais/parser', () => ({
   parseAISText: vi.fn().mockReturnValue({ interestSavings: 1000 })
 }));
@@ -1185,7 +1192,7 @@ describe('Home Page', () => {
     vi.restoreAllMocks();
   }, 45000);
 
-  test('detects capital gains in uploaded AIS/TIS and shows blocking message instead of computing wrong tax', async () => {
+  test('detects capital gains in uploaded AIS/TIS and correctly switches to recommending ITR-2', async () => {
     // 1. Setup mock data for standard Form-16
     const mockF16Text = 'Employer Acme Corp Gross Salary 500,000.00';
     const mockF16Data = {
@@ -1213,6 +1220,19 @@ describe('Home Page', () => {
     vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockF16Data as any);
     vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
 
+    const mockAisCgData = {
+      interestSavings: 1000,
+      shortTermCapitalGains: 15000,
+      longTermCapitalGains112A: 0,
+      sftInfo: {
+        savingsInterest: [],
+        depositInterest: [],
+        securitySales: [],
+        securityPurchases: [],
+      },
+    };
+    vi.mocked(parseAISText).mockReturnValue(mockAisCgData as any);
+
     const { container } = render(<Home />);
 
     // Upload Form-16 first
@@ -1234,26 +1254,16 @@ describe('Home Page', () => {
     expect(aisInput).not.toBeNull();
     fireEvent.change(aisInput!, { target: { files: [file2] } });
 
-    // Expect the blocking error Alert with data-testid="ais-tis-error-alert" to be displayed
-    await waitFor(() => {
-      expect(screen.getByTestId('ais-tis-error-alert')).toBeDefined();
-      expect(screen.getByText(/This return requires ITR-2 \(for capital gains income\)/i)).toBeDefined();
-    });
-
-    // Hides the Regime Comparison Card and the Review/Edit Forms
-    expect(screen.queryByText(/Tax Regime Comparison/i)).toBeNull();
-    expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
-
-    // Now remove the AIS document
-    const removeAisBtn = screen.getByLabelText('remove ais context');
-    fireEvent.click(removeAisBtn);
-
-    // Expect error to be cleared and regime comparison / edit forms to be displayed again
+    // Expect no blocking error Alert with data-testid="ais-tis-error-alert" to be displayed
     await waitFor(() => {
       expect(screen.queryByTestId('ais-tis-error-alert')).toBeNull();
-      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
       expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
     });
+
+    // Verify that it correctly switches to recommending/badge for ITR-2
+    expect(screen.getByTestId('selected-itr-form-badge-summary').textContent).toContain('Form: ITR-2');
+    expect(screen.getByTestId('selected-itr-form-badge').textContent).toContain('Form: ITR-2');
 
     vi.restoreAllMocks();
   }, 45000);

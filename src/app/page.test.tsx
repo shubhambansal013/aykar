@@ -1184,4 +1184,77 @@ describe('Home Page', () => {
 
     vi.restoreAllMocks();
   }, 45000);
+
+  test('detects capital gains in uploaded AIS/TIS and shows blocking message instead of computing wrong tax', async () => {
+    // 1. Setup mock data for standard Form-16
+    const mockF16Text = 'Employer Acme Corp Gross Salary 500,000.00';
+    const mockF16Data = {
+      employer: { name: 'Acme Corp', tan: 'TAN1', pan: 'PAN1', address: 'Addr1' },
+      employee: { name: { firstName: 'John', lastName: 'Doe' }, pan: 'ABCDE1234F', address: 'Addr' },
+      assessmentYear: '2026-27',
+      salary: {
+        grossSalary: 500000,
+        netSalary: 500000,
+        incomeChargeableUnderHeadSalaries: 425000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 425000,
+      totalIncome: 350000,
+      taxPayable: 5000,
+    };
+
+    // 2. Setup mock text for AIS containing capital gains
+    const mockAisCgText = 'ANNUAL INFORMATION STATEMENT - Section containing STCG Capital Gains from sale of shares';
+
+    vi.spyOn(extractor, 'extractTextFromPDF')
+      .mockResolvedValueOnce(mockF16Text)
+      .mockResolvedValueOnce(mockAisCgText);
+
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockF16Data as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const { container } = render(<Home />);
+
+    // Upload Form-16 first
+    const file1 = new File(['dummy1'], 'form16.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file1, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const f16Input = container.querySelector('#file-upload');
+    expect(f16Input).not.toBeNull();
+    fireEvent.change(f16Input!, { target: { files: [file1] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
+    });
+
+    // Now upload AIS with capital gains
+    const file2 = new File(['dummy2'], 'ais_with_cg.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file2, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const aisInput = container.querySelector('#ais-upload');
+    expect(aisInput).not.toBeNull();
+    fireEvent.change(aisInput!, { target: { files: [file2] } });
+
+    // Expect the blocking error Alert with data-testid="ais-tis-error-alert" to be displayed
+    await waitFor(() => {
+      expect(screen.getByTestId('ais-tis-error-alert')).toBeDefined();
+      expect(screen.getByText(/This return requires ITR-2 \(for capital gains income\)/i)).toBeDefined();
+    });
+
+    // Hides the Regime Comparison Card and the Review/Edit Forms
+    expect(screen.queryByText(/Tax Regime Comparison/i)).toBeNull();
+    expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
+
+    // Now remove the AIS document
+    const removeAisBtn = screen.getByLabelText('remove ais context');
+    fireEvent.click(removeAisBtn);
+
+    // Expect error to be cleared and regime comparison / edit forms to be displayed again
+    await waitFor(() => {
+      expect(screen.queryByTestId('ais-tis-error-alert')).toBeNull();
+      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
 });

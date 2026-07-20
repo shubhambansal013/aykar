@@ -8,6 +8,7 @@ message ItrJson {
 
 message Itr {
   Itr1 ITR1 = 1;
+  Itr2 ITR2 = 2;
 }
 
 message Itr1 {
@@ -152,4 +153,84 @@ message Declaration {
   string AssesseeVerName = 1;
   string FatherName = 2;
   string AssesseeVerPAN = 3;
+}
+
+// ==========================================
+// ITR-2 Structures
+// ==========================================
+
+message Itr2 {
+  CreationInfo CreationInfo = 1;
+  FormItr2 Form_ITR2 = 2;
+  PersonalInfo PersonalInfo = 3;
+  FilingStatus FilingStatus = 4;
+  ScheduleS ScheduleS = 5;
+  ScheduleCG ScheduleCG = 6;
+  ScheduleOS ScheduleOS = 7;
+  DeductUndChapVIA DeductUndChapVIA = 8;
+  Itr2TaxComputation ITR2_TaxComputation = 9;
+  TaxPaid TaxPaid = 10;
+  Refund Refund = 11;
+  Verification Verification = 12;
+}
+
+message FormItr2 {
+  string FormName = 1;
+  string Description = 2;
+  string AssessmentYear = 3;
+  string SchemaVer = 4;
+  string FormVer = 5;
+}
+
+message ScheduleS {
+  repeated EmployerSalary Details = 1;
+  double TotalSalaries = 2;
+}
+
+message EmployerSalary {
+  string EmployerName = 1;
+  string EmployerTAN = 2;
+  string EmployerPAN = 3;
+  string Address = 4;
+  double SalaryUs171 = 5;
+  double PerquisitesUs172 = 6;
+  double ProfitsInSalaryUs173 = 7;
+  AllwncExemptUs10 AllwncExemptUs10 = 8;
+  double NetSalary = 9;
+  double DeductionUs16ia = 10;
+  double EntertainmentAlw16ii = 11;
+  double ProfessionalTaxUs16iii = 12;
+  double DeductionUs16 = 13;
+  double IncomeFromSal = 14;
+}
+
+message ScheduleCG {
+  double ShortTermCapitalGains = 1;
+  double LongTermCapitalGains112A = 2;
+}
+
+message ScheduleOS {
+  double InterestSavings = 1;
+  double InterestDeposit = 2;
+  double DividendIncome = 3;
+  double TotalIncomeOthSrc = 4;
+  repeated OtherSourceDtls OtherSourceDetails = 5;
+}
+
+message OtherSourceDtls {
+  string Nature = 1;
+  double Amount = 2;
+}
+
+message Itr2TaxComputation {
+  double TotalTaxPayable = 1;
+  double Rebate87A = 2;
+  double TaxPayableOnRebate = 3;
+  double EducationCess = 4;
+  double GrossTaxLiability = 5;
+  double Section89 = 6;
+  double NetTaxLiability = 7;
+  double TotalIntrstPay = 8;
+  IntrstPay IntrstPay = 9;
+  double TotTaxPlusIntrstPay = 10;
 }

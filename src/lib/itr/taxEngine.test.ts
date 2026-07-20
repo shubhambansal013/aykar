@@ -82,26 +82,25 @@ describe('taxEngine', () => {
   it('correctly calculates New Tax Regime details', () => {
     const result = calculateNewRegime(baseMockData);
 
-    // New Regime calculations:
+    // New Regime calculations (Budget 2025 Slabs):
     // Gross Salary = 1200000
     // Exempt Allowances = 0 (Blocked)
     // Net Salary = 1200000
-    // Deductions u/s 16 = 50000 standard deduction (professional tax/entertainment allowance blocked)
+    // Deductions u/s 16 = 50000 standard deduction (using standardDeduction16ia from baseMockData)
     // Salaries Income = 1150000
     // House Property = 0 (loss not allowed)
     // Other sources = 10000
     // GTI = 1150000 + 10000 = 1160000
     // Chapter VI-A deductions = 20000 (Employer NPS 80CCD2 only, other deductions blocked)
     // Total income = 1140000
-    // Tax computation (Budget 2024 Slabs):
-    // Up to 3L: 0
-    // 3L to 7L: 20000
-    // 7L to 10L: 30000
-    // 10L to 11.4L (140000): 140000 * 15% = 21000
-    // Tax before rebate = 71000
-    // Rebate = 0 (Total income > 700000)
-    // Cess = 71000 * 4% = 2840
-    // Total tax payable = 73840
+    // Tax computation (Budget 2025 Slabs):
+    // Up to 4L: 0
+    // 4L to 8L: 20000
+    // 8L to 11.4L: (1140000 - 800000) * 10% = 34000
+    // Tax before rebate = 54000
+    // Rebate = 54000 (Total income 1140000 <= 1200000, rebate up to 60000)
+    // Cess = 0
+    // Total tax payable = 0
     expect(result.grossSalary).toBe(1200000);
     expect(result.totalExemptAllowances).toBe(0);
     expect(result.netSalary).toBe(1200000);
@@ -113,16 +112,16 @@ describe('taxEngine', () => {
     expect(result.grossTotalIncome).toBe(1160000);
     expect(result.chapterVIADeductions).toBe(20000);
     expect(result.totalIncome).toBe(1140000);
-    expect(result.taxBeforeRebate).toBe(71000);
-    expect(result.rebate87A).toBe(0);
-    expect(result.cess).toBe(2840);
-    expect(result.totalTaxPayable).toBe(73840);
+    expect(result.taxBeforeRebate).toBe(54000);
+    expect(result.rebate87A).toBe(54000);
+    expect(result.cess).toBe(0);
+    expect(result.totalTaxPayable).toBe(0);
   });
 
   it('correctly compares tax regimes and recommends optimal choice', () => {
     const comparison = compareTaxRegimes(baseMockData);
     expect(comparison.oldRegime.totalTaxPayable).toBe(75920);
-    expect(comparison.newRegime.totalTaxPayable).toBe(73840);
+    expect(comparison.newRegime.totalTaxPayable).toBe(0); // Under Budget 2025, New Regime tax is 0 due to 12L rebate
     expect(comparison.optimalRegime).toBe('NEW');
   });
 
@@ -150,12 +149,12 @@ describe('taxEngine', () => {
     expect(oldRes.rebate87A).toBe(10000);
     expect(oldRes.totalTaxPayable).toBe(0);
 
-    // Under New Regime: NTI = 450000. <= 7L, so rebate applies.
-    // Tax = (450000 - 300000) * 5% = 7500. Rebate = 7500. Net tax = 0.
+    // Under New Regime: NTI = 450000. <= 12L, so rebate applies.
+    // Tax = (450000 - 400000) * 5% = 2500. Rebate = 2500. Net tax = 0.
     const newRes = calculateNewRegime(lowIncomeData);
     expect(newRes.totalIncome).toBe(450000);
-    expect(newRes.taxBeforeRebate).toBe(7500);
-    expect(newRes.rebate87A).toBe(7500);
+    expect(newRes.taxBeforeRebate).toBe(2500);
+    expect(newRes.rebate87A).toBe(2500);
     expect(newRes.totalTaxPayable).toBe(0);
   });
 
@@ -188,21 +187,31 @@ describe('taxEngine', () => {
     // LTCG112A = 200000 (12.5% rate above 1.25L exemption)
     // GTI = 550000 + 100000 + 200000 = 850000
     // Total Income = 850000
-    // Slab taxable income = 550000
-    // Slab tax (Budget 2024 Slabs):
-    // Up to 3L: 0
-    // 3L to 5.5L: (550000 - 300000) * 5% = 12500
+    // Slab taxable income = 550000 (standard slabs)
+    // Slab tax (Budget 2025 Slabs):
+    // Up to 4L: 0
+    // 4L to 5.5L: (550000 - 400000) * 5% = 7500
     // Special taxes:
     // STCG tax = 100000 * 20% = 20000
     // LTCG tax = (200000 - 125000) * 12.5% = 75000 * 12.5% = 9375
-    // Tax before rebate = 12500 + 20000 + 9375 = 41875
-    // Rebate 87A = 0 (Total income 850000 > 700000)
-    // Cess = 41875 * 4% = 1675
-    // Total tax payable = 41875 + 1675 = 43550
+    // Tax before rebate = 7500 + 20000 + 9375 = 36875
+    // Rebate 87A = 0 (Total income 850000 > 700000) wait, total income is 850k.
+    // Under Budget 2025, rebate limit is 12,00,000! So 850k <= 12,00,000, hence rebate applies!
+    // But rebate u/s 87A does NOT apply to LTCG112A (by law, and the code subtracts ltcgTax from taxBeforeRebate: Math.max(0, taxBeforeRebate - ltcgTax) => Math.max(0, 36875 - 9375) = 27500).
+    // And is rebate allowed on special rate STCG @ 20%?
+    // Let's check: Yes, under section 87A, rebate is allowed against tax on short term capital gain under section 111A, but Budget 2025/CBDT clarified that rebate u/s 87A is not applicable to special rate tax or STCG/LTCG. Let's see: `specialTax = ltcgTax + stcgTax` in our code blocks rebate on STCG and LTCG.
+    // Let's verify our code's rebate:
+    // `const specialTax = ltcgTax + stcgTax;` -> `specialTax = 9375 + 20000 = 29375`
+    // `rebate87A = Math.min(60000, Math.max(0, taxBeforeRebate - specialTax))` => `Math.min(60000, Math.max(0, 36875 - 29375)) = 7500`.
+    // So `rebate87A = 7500`.
+    // `taxAfterRebate = taxBeforeRebate - rebate87A = 36875 - 7500 = 29375`.
+    // `cess = 29375 * 0.04 = 1175`.
+    // `totalTaxPayable = 29375 + 1175 = 30550`.
     expect(result.grossTotalIncome).toBe(850000);
     expect(result.totalIncome).toBe(850000);
-    expect(result.taxBeforeRebate).toBe(41875);
-    expect(result.totalTaxPayable).toBe(43550);
+    expect(result.taxBeforeRebate).toBe(36875);
+    expect(result.rebate87A).toBe(7500);
+    expect(result.totalTaxPayable).toBe(30550);
   });
 
   it('correctly calculates taxes with SFT transaction dates and caps chapter VI-A deductions under Old Regime', () => {
@@ -318,7 +327,7 @@ describe('taxEngine', () => {
       expect(result.salary.incomeChargeableUnderHeadSalaries).toBe(957500);
       expect(result.otherIncome.totalOtherSources).toBe(15000);
       expect(result.grossTotalIncome).toBe(957500 - 20000 + 15000); // 952500
-      expect(result.totalChapterVIADeductions).toBe(155000);
+      expect(result.totalChapterVIADeductions).toBe(155000); // 100000 + 20000 + 25000 + 10000
       expect(result.totalIncome).toBe(952500 - 155000); // 797500
       expect(result.taxPayable).toBeGreaterThan(0);
     });

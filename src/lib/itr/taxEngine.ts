@@ -18,6 +18,10 @@ export interface TaxRegimeDetails {
   totalTaxPayable: number;
   refundDue: number;
   balanceTaxPayable: number;
+  // Extended fields for step-by-step breakdown rendering in the UI
+  slabTaxBreakdown?: Array<{ range: string; rate: number; taxableAmount: number; tax: number }>;
+  specialTaxBreakdown?: Array<{ name: string; rate: number; income: number; tax: number }>;
+  marginalRelief87A?: number;
 }
 
 export interface DualRegimeComparison {
@@ -84,6 +88,57 @@ function extractCapitalGains(data: Form16Data): CapitalGainsBreakdown {
   };
 }
 
+export interface SlabTaxDetail {
+  range: string;
+  rate: number;
+  taxableAmount: number;
+  tax: number;
+}
+
+// Slabs defined under Budget 2025 (FY 2025-26) / Budget 2026
+const NEW_REGIME_SLABS = [
+  { limit: 400000, rate: 0.0, label: 'Up to ₹4,00,000' },
+  { limit: 800000, rate: 0.05, label: '₹4,00,001 to ₹8,00,000' },
+  { limit: 1200000, rate: 0.10, label: '₹8,00,001 to ₹12,00,000' },
+  { limit: 1600000, rate: 0.15, label: '₹12,00,001 to ₹16,00,000' },
+  { limit: 2000000, rate: 0.20, label: '₹16,00,001 to ₹20,00,000' },
+  { limit: 2400000, rate: 0.25, label: '₹20,00,001 to ₹24,00,000' },
+  { limit: Infinity, rate: 0.30, label: 'Above ₹24,00,000' },
+];
+
+const OLD_REGIME_SLABS = [
+  { limit: 250000, rate: 0.0, label: 'Up to ₹2,50,000' },
+  { limit: 500000, rate: 0.05, label: '₹2,50,001 to ₹5,00,000' },
+  { limit: 1000000, rate: 0.20, label: '₹5,00,001 to ₹10,00,000' },
+  { limit: Infinity, rate: 0.30, label: 'Above ₹10,00,000' },
+];
+
+export function computeSlabTax(income: number, slabs: typeof NEW_REGIME_SLABS): { totalSlabTax: number; breakdown: SlabTaxDetail[] } {
+  let prevLimit = 0;
+  let totalSlabTax = 0;
+  const breakdown: SlabTaxDetail[] = [];
+
+  for (const slab of slabs) {
+    if (income <= prevLimit) {
+      break;
+    }
+    const currentSlabRange = Math.min(income, slab.limit) - prevLimit;
+    if (currentSlabRange > 0) {
+      const tax = currentSlabRange * slab.rate;
+      totalSlabTax += tax;
+      breakdown.push({
+        range: slab.label,
+        rate: slab.rate * 100,
+        taxableAmount: currentSlabRange,
+        tax: tax,
+      });
+    }
+    prevLimit = slab.limit;
+  }
+
+  return { totalSlabTax, breakdown };
+}
+
 /**
  * Computes tax payable for Old Regime.
  */
@@ -115,28 +170,24 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
 
   const slabTaxableIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab;
 
-  // Slab calculation
-  let taxBeforeRebate = 0;
-  if (slabTaxableIncome > 250000) {
-    if (slabTaxableIncome <= 500000) {
-      taxBeforeRebate += (slabTaxableIncome - 250000) * 0.05;
-    } else {
-      taxBeforeRebate += 12500; // 5% on 2.5L
-      if (slabTaxableIncome <= 1000000) {
-        taxBeforeRebate += (slabTaxableIncome - 500000) * 0.20;
-      } else {
-        taxBeforeRebate += 100000; // 20% on 5L
-        taxBeforeRebate += (slabTaxableIncome - 1000000) * 0.30;
-      }
-    }
-  }
+  // Slab calculation using robust helper
+  const { totalSlabTax, breakdown: slabTaxBreakdown } = computeSlabTax(slabTaxableIncome, OLD_REGIME_SLABS);
+  let taxBeforeRebate = totalSlabTax;
 
   // Add special rate taxes
+  const specialTaxBreakdown: Array<{ name: string; rate: number; income: number; tax: number }> = [];
+
   const stcgTax = stcgAt20 * 0.20;
   taxBeforeRebate += stcgTax;
+  if (stcgAt20 > 0) {
+    specialTaxBreakdown.push({ name: 'Short Term Capital Gain (Special Rate)', rate: 20, income: stcgAt20, tax: stcgTax });
+  }
 
   const ltcgTax = Math.max(0, ltcg112a - 125000) * 0.125;
   taxBeforeRebate += ltcgTax;
+  if (ltcg112a > 0) {
+    specialTaxBreakdown.push({ name: 'Long Term Capital Gain u/s 112A', rate: 12.5, income: ltcg112a, tax: ltcgTax });
+  }
 
   // Rebate 87A (excluding LTCG112A tax)
   let rebate87A = 0;
@@ -181,6 +232,9 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
     totalTaxPayable,
     refundDue: Math.round(refundDue),
     balanceTaxPayable: Math.round(balanceTaxPayable),
+    slabTaxBreakdown,
+    specialTaxBreakdown,
+    marginalRelief87A: 0,
   };
 }
 
@@ -195,9 +249,9 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
   const totalExemptAllowances = 0; // Strip HRA / exempt allowances in New Regime
   const netSalary = grossSalary;
 
-  // Under New Regime: Standard Deduction is allowed, usually 50,000
+  // Under New Regime (Budget 2025): Standard Deduction is allowed, usually 75,000
   // Professional tax and entertainment allowances are blocked
-  const standardDeduction = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : 50000;
+  const standardDeduction = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : 75000;
   const otherDeductionsUs16 = 0;
 
   const incomeFromSalaries = Math.max(0, netSalary - standardDeduction);
@@ -219,49 +273,42 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
 
   const slabTaxableIncome = Math.max(0, normalIncome - chapterVIADeductions) + stcgAtSlab;
 
-  // Slab calculation (Budget 2024 Slabs)
-  // Up to 3,00,000: Nil
-  // 3,00,001 to 7,00,000: 5%
-  // 7,00,001 to 10,00,000: 10%
-  // 10,00,001 to 12,00,000: 15%
-  // 12,00,001 to 15,00,000: 20%
-  // Above 15,00,000: 30%
-  let taxBeforeRebate = 0;
-  if (slabTaxableIncome > 300000) {
-    if (slabTaxableIncome <= 700000) {
-      taxBeforeRebate += (slabTaxableIncome - 300000) * 0.05;
-    } else {
-      taxBeforeRebate += 20000; // 5% on 4L (3L to 7L)
-      if (slabTaxableIncome <= 1000000) {
-        taxBeforeRebate += (slabTaxableIncome - 700000) * 0.10;
-      } else {
-        taxBeforeRebate += 30000; // 10% on 3L (7L to 10L)
-        if (slabTaxableIncome <= 1200000) {
-          taxBeforeRebate += (slabTaxableIncome - 1000000) * 0.15;
-        } else {
-          taxBeforeRebate += 30000; // 15% on 2L (10L to 12L)
-          if (slabTaxableIncome <= 1500000) {
-            taxBeforeRebate += (slabTaxableIncome - 1200000) * 0.20;
-          } else {
-            taxBeforeRebate += 60000; // 20% on 3L (12L to 15L)
-            taxBeforeRebate += (slabTaxableIncome - 1500000) * 0.30;
-          }
-        }
-      }
-    }
-  }
+  // Slab calculation (Budget 2025 / Budget 2026 Slabs)
+  const { totalSlabTax, breakdown: slabTaxBreakdown } = computeSlabTax(slabTaxableIncome, NEW_REGIME_SLABS);
+  let taxBeforeRebate = totalSlabTax;
 
   // Add special rate taxes
+  const specialTaxBreakdown: Array<{ name: string; rate: number; income: number; tax: number }> = [];
+
   const stcgTax = stcgAt20 * 0.20;
   taxBeforeRebate += stcgTax;
+  if (stcgAt20 > 0) {
+    specialTaxBreakdown.push({ name: 'Short Term Capital Gain (Special Rate)', rate: 20, income: stcgAt20, tax: stcgTax });
+  }
 
   const ltcgTax = Math.max(0, ltcg112a - 125000) * 0.125;
   taxBeforeRebate += ltcgTax;
+  if (ltcg112a > 0) {
+    specialTaxBreakdown.push({ name: 'Long Term Capital Gain u/s 112A', rate: 12.5, income: ltcg112a, tax: ltcgTax });
+  }
 
-  // Rebate 87A (For New Regime, rebate up to 20,000 is allowed if taxable income <= 7,00,000, excluding LTCG112A tax)
+  // Rebate & Marginal Relief u/s 87A (For New Regime under Budget 2025/2026)
   let rebate87A = 0;
-  if (totalIncome <= 700000) {
-    rebate87A = Math.max(0, taxBeforeRebate - ltcgTax);
+  let marginalRelief87A = 0;
+
+  if (totalIncome <= 1200000) {
+    // Standard Rebate up to ₹60,000 (excluding capital gains taxed at special rates)
+    const specialTax = ltcgTax + stcgTax;
+    rebate87A = Math.min(60000, Math.max(0, taxBeforeRebate - specialTax));
+  } else if (totalIncome <= 1275000) {
+    // Marginal Relief: The tax payable on normal/slab income cannot exceed the income exceeding ₹12,00,000.
+    // Exclude special rate taxes (STCG/LTCG) from the relief logic.
+    const slabTax = totalSlabTax;
+    const excessIncome = totalIncome - 1200000;
+    if (slabTax > excessIncome) {
+      marginalRelief87A = slabTax - excessIncome;
+      rebate87A = marginalRelief87A;
+    }
   }
 
   const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate87A);
@@ -301,6 +348,9 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
     totalTaxPayable,
     refundDue: Math.round(refundDue),
     balanceTaxPayable: Math.round(balanceTaxPayable),
+    slabTaxBreakdown,
+    specialTaxBreakdown,
+    marginalRelief87A,
   };
 }
 
@@ -377,14 +427,14 @@ export function recalculateAllFormFields(data: Form16Data, regime: 'OLD' | 'NEW'
     }
   }
 
-  // 4. Deductions u/s 16
-  const standardDeduction = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : (regime === 'NEW' ? 50000 : 75000);
+  // 4. Deductions u/s 16 (Budget 2025 rules: NEW standard deduction is 75,000, OLD standard deduction is 50,000)
+  const defaultSD = regime === 'NEW' ? 75000 : 50000;
+  const standardDeduction = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : defaultSD;
   if (editedPath !== 'salary.totalDeductionsUs16') {
     if (regime === 'OLD') {
-      const calcDeductions = (salary.standardDeduction16ia || 0) + (salary.entertainmentAllowance16ii || 0) + (salary.professionalTax16iii || 0);
-      if (calcDeductions > 0) {
-        salary.totalDeductionsUs16 = calcDeductions;
-      }
+      const stdDedToUse = salary.standardDeduction16ia > 0 ? salary.standardDeduction16ia : (salary.grossSalary > 0 ? 50000 : 0);
+      const calcDeductions = stdDedToUse + (salary.entertainmentAllowance16ii || 0) + (salary.professionalTax16iii || 0);
+      salary.totalDeductionsUs16 = calcDeductions;
     } else {
       salary.totalDeductionsUs16 = standardDeduction;
     }

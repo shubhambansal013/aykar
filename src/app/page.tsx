@@ -118,53 +118,10 @@ export default function Home() {
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
-  const [aisTisError, setAisTisError] = useState<string | null>(null);
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
-  // Function to check if the text is from AIS/TIS and contains capital gains
-  const checkForAisTisCapitalGains = (text: string): string | null => {
-    const lowerText = text.toLowerCase();
-    
-    // Check for AIS/TIS indicators
-    const aisTisIndicators = [
-      'annual information statement',
-      'taxpayer information summary',
-      'form 26as',
-      'ais',
-      'tis'
-    ];
-    
-    const isAisTis = aisTisIndicators.some(indicator => lowerText.includes(indicator));
-    
-    if (!isAisTis) {
-      return null;
-    }
-    
-    // Check for capital gains indicators
-    const capitalGainsIndicators = [
-      'capital gains',
-      'short term capital gain',
-      'long term capital gain',
-      'stcg',
-      'ltcg',
-      'sale of property',
-      'sale of shares',
-      'sale of securities',
-      'transfer of immovable property',
-      'transfer of mutual fund',
-      'income from capital gains'
-    ];
-    
-    const hasCapitalGains = capitalGainsIndicators.some(indicator => lowerText.includes(indicator));
-    
-    if (hasCapitalGains) {
-      return 'This return requires ITR-2 (for capital gains income), which is not yet supported. Please consult a tax professional or use the appropriate ITR form.';
-    }
-    
-    return null;
-  };
 
 
   // AI Chat States
@@ -549,26 +506,6 @@ export default function Home() {
     currentTisRaw: string = tisRawText,
     current26asRaw: string = form26asRawText
   ) => {
-    // Check all active files for capital gains
-    let cgError: string | null = null;
-    for (const item of currentForm16s) {
-      const err = checkForAisTisCapitalGains(item.rawText);
-      if (err) { cgError = err; break; }
-    }
-    if (!cgError && currentAisRaw) {
-      const err = checkForAisTisCapitalGains(currentAisRaw);
-      if (err) cgError = err;
-    }
-    if (!cgError && currentTisRaw) {
-      const err = checkForAisTisCapitalGains(currentTisRaw);
-      if (err) cgError = err;
-    }
-    if (!cgError && current26asRaw) {
-      const err = checkForAisTisCapitalGains(current26asRaw);
-      if (err) cgError = err;
-    }
-    setAisTisError(cgError);
-
     if (currentForm16s.length === 0) {
       setExtractedData(null);
       setOriginalParsedData(null);
@@ -1185,15 +1122,8 @@ export default function Home() {
                 </Card>
               </Box>
 
-              {aisTisError && (
-                <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }} data-testid="ais-tis-error-alert">
-                  <AlertTitle sx={{ fontWeight: 'bold' }}>Incompatible Document</AlertTitle>
-                  {aisTisError}
-                </Alert>
-              )}
-
               {/* Miscellaneous/Other Reconciliation Alerts */}
-              {extractedData && !aisTisError && otherDiscrepancies.length > 0 && (
+              {extractedData && otherDiscrepancies.length > 0 && (
                 <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
                   <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
                   <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
@@ -1207,7 +1137,7 @@ export default function Home() {
               )}
 
               {/* Supplementary Income */}
-              {extractedDataDomain && !aisTisError && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
+              {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
                 <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
@@ -1241,7 +1171,7 @@ export default function Home() {
               )}
 
               {/* Taxpayer Summary Card */}
-              {extractedData && !aisTisError && extractedDataDomain && (
+              {extractedData && extractedDataDomain && (
                 <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
                   <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -1385,7 +1315,7 @@ export default function Home() {
               )}
 
               {/* Tax Regime Comparison Card */}
-              {extractedData && !aisTisError && (
+              {extractedData && (
                 <TaxRegimeComparisonCard
                   extractedData={extractedData}
                   selectedRegime={selectedRegime}
@@ -1401,7 +1331,7 @@ export default function Home() {
                 />
               )}
 
-              {extractedData && !aisTisError && (
+              {extractedData && (
                 <>
                   {/* Validation warnings */}
               {errors.length > 0 && (

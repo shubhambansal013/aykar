@@ -17,6 +17,11 @@ const FORBIDDEN_PATTERNS = [
   { name: 'Name: Manak', regex: /\bManak\b/i },
   { name: 'Name: Jeet', regex: /\bJeet\b/i },
   { name: 'Name: Singh', regex: /\bSingh\b/i },
+  { name: 'Employer: Parametric Technology', regex: /PARAMETRIC\s+TECHNOLOGY/i },
+  { name: 'Employer: Thomson Reuters', regex: /THOMSON\s+REUTERS/i },
+  { name: 'Employer Email: SHCHOUDHARY@PTC.COM', regex: /SHCHOUDHARY@PTC\.COM/i },
+  { name: 'Employer Email: Payrollhelpdesk.India', regex: /Payrollhelpdesk\.India/i },
+  { name: 'Employer: Optum Global', regex: /OPTUM\s+GLOBAL/i },
 ];
 
 // Helper to strip comments from typescript code to avoid false positives in documentation

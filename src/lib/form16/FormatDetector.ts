@@ -22,9 +22,7 @@ export class FormatDetector {
       'CIT (TDS)',
       'Certificate No',
       'Quarter(s)',
-      'Challan Identification Number',
-      'PARAMETRIC TECHNOLOGY',
-      'THOMSON REUTERS'
+      'Challan Identification Number'
     ];
 
     // Characteristics of Standard Form-16

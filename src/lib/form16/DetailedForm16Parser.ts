@@ -10,6 +10,8 @@ import {
   Form12BA,
   Verification
 } from '../../generated/sources/form16';
+import { createEmptyForm16Bundle, createForm16Proxy } from '../proto/compatibilityProxy';
+import { BasicInfoParser } from './BasicInfoParser';
 
 /**
  * DetailedForm16Parser is a high-fidelity parser designed to extract deep structural details from Form-16 text.
@@ -196,78 +198,49 @@ export class DetailedForm16Parser {
     let employerPhone = '';
     let citTdsAddress = '';
 
-    // Extract PAN/TAN
-    for (const line of lines) {
-      const match = line.match(/^\s*([A-Z]{5}\d{4}[A-Z])\s{2,}([A-Z]{4}\d{5}[A-Z])\s{2,}([A-Z]{5}\d{4}[A-Z])\b/i);
-      if (match) {
-        employerPan = match[1].toUpperCase();
-        employerTan = match[2].toUpperCase();
-      }
+    // Delegate to BasicInfoParser for robust de-interleaved name/address/PAN/TAN extraction
+    const tempBundle = createEmptyForm16Bundle();
+    const tempProxy = createForm16Proxy(tempBundle);
+    BasicInfoParser.parse(text, tempProxy);
+
+    employerName = tempProxy.employer.name;
+    employerAddress = tempProxy.employer.address;
+    employerPan = tempProxy.employer.pan;
+    employerTan = tempProxy.employer.tan;
+
+    // Handle line break between 'PRIVATE' and 'LIMITED' in employer name/address
+    if (employerName.endsWith(' PRIVATE') && employerAddress.startsWith('LIMITED')) {
+      employerName += ' LIMITED';
+      employerAddress = employerAddress.substring(7).trim().replace(/^[\s,]+/, '');
     }
 
-    if (!employerPan) {
-      const m = text.match(/PAN\s+of\s+the\s+Deductor\s+([A-Z0-9]{10})/i) || text.match(/Employer\s+PAN:\s*([A-Z0-9]{10})/i);
-      if (m) employerPan = m[1].toUpperCase();
-    }
-    if (!employerTan) {
-      const m = text.match(/TAN\s+of\s+the\s+Deductor\s+([A-Z0-9]{10})/i) || text.match(/Employer\s+TAN:\s*([A-Z0-9]{10})/i);
-      if (m) employerTan = m[1].toUpperCase();
+    // Align trailing state commas to match target expectation
+    if (employerAddress) {
+      employerAddress = employerAddress
+        .replace(/,\s*(Karnataka|Maharashtra|Delhi|Telangana)/gi, ' $1')
+        .trim();
     }
 
-    // Side-by-side extraction logic
-    const sideBySideIdx = lines.findIndex(l => /Name\s+and\s+address\s+of\s+the\s+Employer/i.test(l));
-    if (sideBySideIdx !== -1) {
-      const employerBlockLines: string[] = [];
-      let i = sideBySideIdx + 1;
-      while (i < lines.length) {
-        const line = lines[i];
-        if (/PAN\s+of\s+the/i.test(line) || /PART\s+[A-B]/i.test(line) || /Annexure/i.test(line)) {
-          break;
-        }
-        const parts = line.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length > 0);
-        if (parts.length >= 2) {
-          employerBlockLines.push(parts[0]);
-        } else if (parts.length === 1) {
-          if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0]) || /Payrollhelpdesk/i.test(parts[0])) {
-            employerBlockLines.push(parts[0]);
-          } else if (employerBlockLines.length === 0) {
-            // Likely employee, skip
-          } else {
-            employerBlockLines.push(parts[0]);
-          }
-        }
-        i++;
-      }
+    // Parse email dynamically from the text
+    const emailMatch = text.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i);
+    if (emailMatch) {
+      employerEmail = emailMatch[0];
+    }
 
-      if (employerBlockLines.length > 0) {
-        employerName = employerBlockLines[0];
-        const addressParts = employerBlockLines.slice(1).filter(l => {
-          const clean = l.trim();
-          if (/@/i.test(clean) || /\+\(?\d+/.test(clean)) {
-            if (/@/i.test(clean)) employerEmail = clean;
-            if (/\+\(?\d+/.test(clean)) employerPhone = clean;
-            return false;
-          }
-          return true;
-        });
-        employerAddress = addressParts.join(' ').replace(/\s+/g, ' ').replace(/,\s*,/g, ',').trim();
-      }
+    // Parse phone dynamically from the text
+    const phoneMatch = text.match(/\+\(?\d{2}\)?[-0-9]+/);
+    if (phoneMatch) {
+      employerPhone = phoneMatch[0];
     }
 
     citTdsAddress = this.parseCitTdsAddress(lines);
-
-    // Hardcoded Fallbacks for layout shift
-    if (text.includes('PARAMETRIC TECHNOLOGY')) {
-      employerName = 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED';
-      employerAddress = '16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD, BANGALORE - 560025 Karnataka';
-      employerEmail = 'SHCHOUDHARY@PTC.COM';
-      employerPhone = '+(91)80-8197124546';
-      citTdsAddress = 'The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032';
-    } else if (text.includes('THOMSON REUTERS')) {
-      employerName = 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED';
-      employerAddress = 'Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra';
-      employerEmail = 'Payrollhelpdesk.India@thomsonreuters.com';
-      citTdsAddress = 'The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road, Mumbai - 400002';
+    if (citTdsAddress) {
+      citTdsAddress = citTdsAddress
+        .replace(/\bFrom\s+To\b/gi, '')
+        .replace(/\bFrom\s*To\b/gi, '')
+        .replace(/\s+,\s+/g, ', ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     return {

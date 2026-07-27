@@ -16,6 +16,77 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { compareTaxRegimes } from '@/lib/itr/taxEngine';
 import { ensureForm16Data } from './FieldCues';
 
+function TaxComputationBreakdown({ regime }: { regime: any }) {
+  if (!regime.slabTaxBreakdown || regime.slabTaxBreakdown.length === 0) return null;
+
+  return (
+    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider' }}>
+      <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main', display: 'block', mb: 1 }}>
+        Step-by-Step Tax Computation Worksheet:
+      </Typography>
+
+      {/* Slab-wise details */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 1 }}>
+        {regime.slabTaxBreakdown.map((slab: any, i: number) => (
+          <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 1 }}>
+            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.725rem' }}>
+              Tax on {slab.range} @ {slab.rate}%:
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem' }}>
+              ₹{slab.tax.toLocaleString('en-IN')}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Special Rate Capital Gains details */}
+      {regime.specialTaxBreakdown && regime.specialTaxBreakdown.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 1, borderTop: '1px dotted', borderColor: 'divider', pt: 1 }}>
+          {regime.specialTaxBreakdown.map((spec: any, i: number) => (
+            <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 1 }}>
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.725rem' }}>
+                {spec.name} @ {spec.rate}%:
+              </Typography>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.725rem' }}>
+                ₹{spec.tax.toLocaleString('en-IN')}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {/* Total Tax and Surcharges / Rebates */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 1, pt: 1, borderTop: '1px dotted', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>Total Tax before Rebate:</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{regime.taxBeforeRebate.toLocaleString('en-IN')}</Typography>
+        </Box>
+
+        {regime.rebate87A > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+              Less: Rebate u/s 87A {regime.marginalRelief87A > 0 ? '(with Marginal Relief)' : ''}:
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
+              -₹{regime.rebate87A.toLocaleString('en-IN')}
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Typography variant="caption" color="textSecondary">Add: Education Cess @ 4.00%:</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{regime.cess.toLocaleString('en-IN')}</Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', bgcolor: 'action.hover', p: 0.5, borderRadius: 0.5, mt: 0.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Net Tax Liability:</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>₹{regime.totalTaxPayable.toLocaleString('en-IN')}</Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 interface TaxRegimeComparisonCardProps {
   extractedData: any;
   selectedRegime: 'OLD' | 'NEW';
@@ -221,6 +292,7 @@ export default function TaxRegimeComparisonCard({
                     <Typography variant="caption" color="textSecondary">Cess:</Typography>
                     <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.cess.toLocaleString('en-IN')}</Typography>
                   </Box>
+                  <TaxComputationBreakdown regime={comparison.oldRegime} />
                 </AccordionDetails>
               </Accordion>
             </Paper>
@@ -350,6 +422,7 @@ export default function TaxRegimeComparisonCard({
                     <Typography variant="caption" color="textSecondary">Cess:</Typography>
                     <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.cess.toLocaleString('en-IN')}</Typography>
                   </Box>
+                  <TaxComputationBreakdown regime={comparison.newRegime} />
                 </AccordionDetails>
               </Accordion>
             </Paper>

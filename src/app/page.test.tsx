@@ -5,6 +5,7 @@ import * as extractor from '@/lib/form16/extractor';
 import * as parser from '@/lib/form16/parser';
 import * as validator from '@/lib/itr/validator';
 import * as mapper from '@/lib/itr/mapper';
+import { parseAISText } from '@/lib/ais/parser';
 
 // Mock the libraries
 vi.mock('@/lib/form16/extractor');
@@ -16,7 +17,13 @@ vi.mock('@/lib/form16/parser', async () => {
   };
 });
 vi.mock('@/lib/itr/validator');
-vi.mock('@/lib/itr/mapper');
+vi.mock('@/lib/itr/mapper', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/itr/mapper')>('@/lib/itr/mapper');
+  return {
+    ...actual,
+    mapToITR: vi.fn(actual.mapToITR),
+  };
+});
 vi.mock('@/lib/ais/parser', () => ({
   parseAISText: vi.fn().mockReturnValue({ interestSavings: 1000 })
 }));
@@ -340,7 +347,7 @@ describe('Home Page', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByText(/Download ITR JSON/i));
-    expect(mapper.mapForm16ToITR1).toHaveBeenCalled();
+    expect(mapper.mapToITR).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
   }, 45000);
@@ -1181,6 +1188,82 @@ describe('Home Page', () => {
     // Verify right panel is open and showing the DebugInfoSection tabs
     expect(screen.getByText('Debug Information & Raw Extracted Documents')).toBeDefined();
     expect(screen.getByText('Engine Reconciliation Result (Protobuf)')).toBeDefined();
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('detects capital gains in uploaded AIS/TIS and correctly switches to recommending ITR-2', async () => {
+    // 1. Setup mock data for standard Form-16
+    const mockF16Text = 'Employer Acme Corp Gross Salary 500,000.00';
+    const mockF16Data = {
+      employer: { name: 'Acme Corp', tan: 'TAN1', pan: 'PAN1', address: 'Addr1' },
+      employee: { name: { firstName: 'John', lastName: 'Doe' }, pan: 'ABCDE1234F', address: 'Addr' },
+      assessmentYear: '2026-27',
+      salary: {
+        grossSalary: 500000,
+        netSalary: 500000,
+        incomeChargeableUnderHeadSalaries: 425000,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 425000,
+      totalIncome: 350000,
+      taxPayable: 5000,
+    };
+
+    // 2. Setup mock text for AIS containing capital gains
+    const mockAisCgText = 'ANNUAL INFORMATION STATEMENT - Section containing STCG Capital Gains from sale of shares';
+
+    vi.spyOn(extractor, 'extractTextFromPDF')
+      .mockResolvedValueOnce(mockF16Text)
+      .mockResolvedValueOnce(mockAisCgText);
+
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockF16Data as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockAisCgData = {
+      interestSavings: 1000,
+      shortTermCapitalGains: 15000,
+      longTermCapitalGains112A: 0,
+      sftInfo: {
+        savingsInterest: [],
+        depositInterest: [],
+        securitySales: [],
+        securityPurchases: [],
+      },
+    };
+    vi.mocked(parseAISText).mockReturnValue(mockAisCgData as any);
+
+    const { container } = render(<Home />);
+
+    // Upload Form-16 first
+    const file1 = new File(['dummy1'], 'form16.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file1, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const f16Input = container.querySelector('#file-upload');
+    expect(f16Input).not.toBeNull();
+    fireEvent.change(f16Input!, { target: { files: [file1] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
+    });
+
+    // Now upload AIS with capital gains
+    const file2 = new File(['dummy2'], 'ais_with_cg.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file2, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const aisInput = container.querySelector('#ais-upload');
+    expect(aisInput).not.toBeNull();
+    fireEvent.change(aisInput!, { target: { files: [file2] } });
+
+    // Expect no blocking error Alert with data-testid="ais-tis-error-alert" to be displayed
+    await waitFor(() => {
+      expect(screen.queryByTestId('ais-tis-error-alert')).toBeNull();
+      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
+    });
+
+    // Verify that it correctly switches to recommending/badge for ITR-2
+    expect(screen.getByTestId('selected-itr-form-badge-summary').textContent).toContain('Form: ITR-2');
+    expect(screen.getByTestId('selected-itr-form-badge').textContent).toContain('Form: ITR-2');
 
     vi.restoreAllMocks();
   }, 45000);

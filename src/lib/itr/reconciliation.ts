@@ -95,16 +95,42 @@ export function reconcileAllDocuments(
     upsertOtherSource('Dividend Income', 'dividendIncome', reconciledDividend, aisDividend >= tisDividend ? 'AIS' : 'TIS');
   }
 
+  // Propagate capital gains from AIS
+  reconciled.shortTermCapitalGains = ais?.shortTermCapitalGains || 0;
+  reconciled.longTermCapitalGains112A = ais?.longTermCapitalGains112A || 0;
+
+  if (reconciled.shortTermCapitalGains > 0) {
+    reconciled.detectedIncomeSources!.push({
+      source: 'AIS',
+      category: 'shortTermCapitalGains',
+      amount: reconciled.shortTermCapitalGains,
+      confirmed: true,
+    });
+  }
+  if (reconciled.longTermCapitalGains112A > 0) {
+    reconciled.detectedIncomeSources!.push({
+      source: 'AIS',
+      category: 'longTermCapitalGains112A',
+      amount: reconciled.longTermCapitalGains112A,
+      confirmed: true,
+    });
+  }
+
   // Recalculate other sources sum
   reconciled.otherIncome.totalOtherSources = reconciled.otherIncome.otherSources.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   // Recalculate GTI, TI, etc.
-  reconciled.grossTotalIncome =
+  const stcg = reconciled.shortTermCapitalGains || 0;
+  const ltcg = reconciled.longTermCapitalGains112A || 0;
+  const normalIncome =
     (reconciled.salary?.incomeChargeableUnderHeadSalaries || 0) +
     (reconciled.otherIncome?.houseProperty || 0) +
     (reconciled.otherIncome?.totalOtherSources || 0);
 
-  reconciled.totalIncome = Math.max(0, reconciled.grossTotalIncome - (reconciled.totalChapterVIADeductions || 0));
+  reconciled.grossTotalIncome = normalIncome + stcg + ltcg;
+
+  const allowedDeductions = Math.min(reconciled.totalChapterVIADeductions || 0, Math.max(0, normalIncome));
+  reconciled.totalIncome = Math.max(0, normalIncome - allowedDeductions) + stcg + ltcg;
 
   // 2. Process Tax Credits
   const credits = {

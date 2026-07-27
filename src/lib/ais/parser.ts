@@ -1,4 +1,148 @@
 import { AISData, createEmptyAis, createAisProxy } from '../proto/compatibilityProxy';
+import { SecuritySale } from '../../generated/sources/ais';
+
+/**
+ * Parses individual SFT-17-LES "Sale of securities and units of mutual fund" records.
+ * Supports multi-line wrapped transaction blocks with page header/footer interruptions.
+ */
+function parseSecuritySales(lines: string[]): SecuritySale[] {
+  const sales: SecuritySale[] = [];
+
+  const startIdx = lines.findIndex(l => /Sale\s+of\s+securities\s+and\s+units/i.test(l));
+  if (startIdx === -1) {
+    return sales;
+  }
+
+  const nextSectionIdx = lines.findIndex(
+    (l, idx) => idx > startIdx && (/Purchase\s+of\s+securities/i.test(l) || /Part\s+B/i.test(l))
+  );
+  const endIdx = nextSectionIdx !== -1 ? nextSectionIdx : lines.length;
+
+  const sectionLines = lines.slice(startIdx, endIdx);
+
+  let activeInfoCode = 'SFT-17-LES(M)';
+  let activeInfoDescription = 'Sale of listed equity share (Depository)';
+  let activeInformationSource = 'CENTRAL DEPOSITORY SERVICES(I) LIMITED';
+
+  for (let i = 0; i < sectionLines.length; i++) {
+    const line = sectionLines[i];
+
+    // Check for SFT summary lines
+    const summaryMatch = line.match(/^\s*(\d+)\s+(SFT-17-LES(?:\([A-Z]\))?)\s+(.+?)\s{2,}(.+?)\s{2,}\d+\s+([\d,.]+)/i);
+    if (summaryMatch) {
+      activeInfoCode = summaryMatch[2].trim();
+      activeInfoDescription = summaryMatch[3].trim();
+      activeInformationSource = summaryMatch[4].trim();
+      continue;
+    }
+
+    // Check for transaction starting lines (e.g., S.No and date)
+    const txStartMatch = line.match(/^\s*(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+(.+)$/);
+    if (txStartMatch) {
+      const blockLines = [line];
+      let j = i + 1;
+      while (j < sectionLines.length) {
+        const subLine = sectionLines[j];
+        if (/^\s*\d+\s+\d{2}\/\d{2}\/\d{4}\b/.test(subLine)) {
+          break;
+        }
+        if (/^\s*\d+\s+SFT-/.test(subLine)) {
+          break;
+        }
+        if (/^\s*(Interest|Purchase|Part\s+B)/i.test(subLine)) {
+          break;
+        }
+        blockLines.push(subLine);
+        j++;
+      }
+
+      // Fast-forward outer loop index
+      i = j - 1;
+
+      // Now parse the collected transaction block
+      const firstLine = blockLines[0].trim();
+      const tokens = firstLine.split(/\s+/);
+      if (tokens.length >= 10) {
+        const status = tokens[tokens.length - 1];
+        const indexedCostOfAcquisition = parseFloat(tokens[tokens.length - 2].replace(/,/g, '')) || 0;
+        const fairMarketValue = parseFloat(tokens[tokens.length - 3].replace(/,/g, '')) || 0;
+        const unitFmv = parseFloat(tokens[tokens.length - 4].replace(/,/g, '')) || 0;
+        const costOfAcquisition = parseFloat(tokens[tokens.length - 5].replace(/,/g, '')) || 0;
+        const salesConsideration = parseFloat(tokens[tokens.length - 6].replace(/,/g, '')) || 0;
+        const salePricePerUnit = parseFloat(tokens[tokens.length - 7].replace(/,/g, '')) || 0;
+        const quantity = parseFloat(tokens[tokens.length - 8].replace(/,/g, '')) || 0;
+        const assetTypePrefix = tokens[tokens.length - 9]; // "Long" or "Short"
+        const creditType = tokens[tokens.length - 10];
+        const debitType = tokens[tokens.length - 11];
+        const securityClassPrefix = tokens[tokens.length - 12]; // "Listed"
+
+        const assetType = assetTypePrefix.toLowerCase().startsWith('long') ? 'Long term' : 'Short term';
+        const securityClass = securityClassPrefix.toLowerCase().startsWith('listed') ? 'Listed Equity Share' : 'Listed Equity Share';
+
+        // Extract and construct security name
+        const firstLineName = tokens.slice(2, tokens.length - 12).join(' ');
+
+        // Collect subsequent lines name parts
+        const cleanedSubLines: string[] = [];
+        const isPageHeaderFooter = (l: string): boolean => {
+          const trimmed = l.trim();
+          return (
+            /Download\s+ID/i.test(trimmed) ||
+            /Generation\s+Date/i.test(trimmed) ||
+            /^\s*PAN\s+Name\s+Financial\s+Year/i.test(trimmed) ||
+            /^\s*[A-Z]{5}\d{4}[A-Z]\s+[A-Z\s]+\s+\d{4}-\d{2}/i.test(trimmed) ||
+            /SR\.\s+DATE\s+OF\s+SALE/i.test(trimmed) ||
+            /NO\.\s+TRANSFER\s+CLASS/i.test(trimmed) ||
+            /^\s*VALUE\s*$/i.test(trimmed)
+          );
+        };
+
+        for (let k = 1; k < blockLines.length; k++) {
+          const subL = blockLines[k].trim();
+          if (isPageHeaderFooter(subL)) continue;
+
+          // Columns are separated by 2 or more spaces; the first part is always the security name
+          const parts = subL.split(/\s{2,}/);
+          const cleaned = parts[0].trim();
+          if (cleaned) {
+            cleanedSubLines.push(cleaned);
+          }
+        }
+
+        const securityName = [firstLineName, ...cleanedSubLines].filter(Boolean).join(' ');
+
+        // Extract ISIN code (12 characters alphanumeric, starting with INE)
+        const isinMatch = securityName.match(/\b(INE[A-Z0-9]{8}\d)\b/);
+        const securityCodeIsin = isinMatch ? isinMatch[1] : '';
+
+        const sale: SecuritySale = {
+          infoCode: activeInfoCode,
+          infoDescription: activeInfoDescription,
+          informationSource: activeInformationSource,
+          dateOfSaleTransfer: txStartMatch[2],
+          securityName,
+          securityCodeIsin,
+          securityClass,
+          debitType,
+          creditType,
+          assetType,
+          quantity,
+          salePricePerUnit,
+          salesConsideration,
+          costOfAcquisition,
+          unitFmv,
+          fairMarketValue,
+          indexedCostOfAcquisition,
+          status,
+        };
+
+        sales.push(sale);
+      }
+    }
+  }
+
+  return sales;
+}
 
 /**
  * Extracts numeric amounts from a line of PDF-extracted text.
@@ -224,22 +368,36 @@ export function parseAISText(text: string): AISData {
     }
   }
 
-  // NOTE: tdsTcsInfo / sftInfo / taxPayments / otherInfo (the per-transaction / per-institution
-  // drill-down used only by the "Inspect Documents" debug view) are intentionally left
-  // undefined here. They used to be entirely hardcoded to one taxpayer's exact transactions,
-  // which is worse than not having them - fabricated data that looks real. None of the
-  // actual tax calculations depend on these four fields (see reconciliation.ts, which only
-  // reads interestSavings / interestDeposit / dividendIncome / tdsDetails, all computed
-  // generically above). Building a faithful generic parser for these nested, multi-line
-  // wrapped tables is a separate, larger effort - flagging as follow-up work rather than
-  // re-hardcoding a "close enough" version.
+  // Parse SFT-17-LES "Sale of securities" transactions
+  const securitySales = parseSecuritySales(lines);
+
+  // Compute aggregate short-term and long-term (112A) capital gains
+  let shortTermCapitalGains = 0;
+  let longTermCapitalGains112A = 0;
+  for (const sale of securitySales) {
+    const gain = (sale.salesConsideration || 0) - (sale.costOfAcquisition || 0);
+    if (sale.assetType === 'Short term') {
+      shortTermCapitalGains += gain;
+    } else if (sale.assetType === 'Long term') {
+      longTermCapitalGains112A += gain;
+    }
+  }
 
   const ais = createEmptyAis();
+  ais.sftInfo = {
+    savingsInterest: [],
+    depositInterest: [],
+    securitySales,
+    securityPurchases: [],
+  };
+
   const proxy = createAisProxy(ais);
 
   proxy.interestSavings = interestSavings;
   proxy.interestDeposit = interestDeposit;
   proxy.dividendIncome = dividendIncome;
+  proxy.shortTermCapitalGains = shortTermCapitalGains;
+  proxy.longTermCapitalGains112A = longTermCapitalGains112A;
   proxy.tdsDetails = Array.from(tdsDetailsMap.values());
   proxy.metadata = metadata;
   proxy.profile = profile;

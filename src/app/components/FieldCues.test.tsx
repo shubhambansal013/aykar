@@ -154,6 +154,16 @@ describe('FieldCues Unit Tests', () => {
   test('getFieldCue validates grossTotalIncome consistency correctly', () => {
     expect(getFieldCue('grossTotalIncome', dummyData).status).toBe('success');
     expect(getFieldCue('grossTotalIncome', { ...dummyData, grossTotalIncome: 500000 }).status).toBe('error');
+
+    // Test with Capital Gains
+    const dummyWithCG = {
+      ...dummyData,
+      shortTermCapitalGains: 30000,
+      longTermCapitalGains112A: 40000,
+      grossTotalIncome: dummyData.grossTotalIncome + 70000,
+    };
+    expect(getFieldCue('grossTotalIncome', dummyWithCG).status).toBe('success');
+    expect(getFieldCue('grossTotalIncome', { ...dummyWithCG, grossTotalIncome: 500000 }).status).toBe('error');
   });
 
   test('getFieldCue validates chapter VIA deductions correctly', () => {

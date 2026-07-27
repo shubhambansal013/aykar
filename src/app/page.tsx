@@ -8,7 +8,7 @@ import { parseTISText } from '@/lib/tis/parser';
 import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
-import { mapForm16ToITR1 } from '@/lib/itr/mapper';
+import { mapToITR, shouldUseITR2 } from '@/lib/itr/mapper';
 import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
@@ -122,6 +122,7 @@ export default function Home() {
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
+
 
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
@@ -500,7 +501,10 @@ export default function Home() {
     currentForm16s: Array<{ file: File; rawText: string; data: Form16Bundle }> = form16List,
     currentAis: AnnualInformationStatement | null = aisData,
     currentTis: TaxpayerInformationSummary | null = tisData,
-    current26as: Form26AS | null = form26asData
+    current26as: Form26AS | null = form26asData,
+    currentAisRaw: string = aisRawText,
+    currentTisRaw: string = tisRawText,
+    current26asRaw: string = form26asRawText
   ) => {
     if (currentForm16s.length === 0) {
       setExtractedData(null);
@@ -560,7 +564,7 @@ export default function Home() {
       }
 
       setForm16List(newList);
-      reRunReconciliation(newList, aisData, tisData, form26asData);
+      reRunReconciliation(newList, aisData, tisData, form26asData, aisRawText, tisRawText, form26asRawText);
     } catch (err) {
       console.error('Error processing PDF:', err);
       alert('Failed to process PDF. Please try again.');
@@ -583,7 +587,7 @@ export default function Home() {
       const parsed = parseAISText(text);
       const protoAis = (parsed as any).__bundle || parsed;
       setAisData(protoAis);
-      reRunReconciliation(form16List, protoAis, tisData, form26asData);
+      reRunReconciliation(form16List, protoAis, tisData, form26asData, text, tisRawText, form26asRawText);
     } catch (err) {
       console.error('Error processing AIS PDF:', err);
       alert('Failed to process AIS PDF.');
@@ -606,7 +610,7 @@ export default function Home() {
       const parsed = parseTISText(text);
       const protoTis = (parsed as any).__bundle || parsed;
       setTisData(protoTis);
-      reRunReconciliation(form16List, aisData, protoTis, form26asData);
+      reRunReconciliation(form16List, aisData, protoTis, form26asData, aisRawText, text, form26asRawText);
     } catch (err) {
       console.error('Error processing TIS PDF:', err);
       alert('Failed to process TIS PDF.');
@@ -629,7 +633,7 @@ export default function Home() {
       const parsed = parseForm26ASText(text);
       const proto26as = (parsed as any).__bundle || parsed;
       setForm26asData(proto26as);
-      reRunReconciliation(form16List, aisData, tisData, proto26as);
+      reRunReconciliation(form16List, aisData, tisData, proto26as, aisRawText, tisRawText, text);
     } catch (err) {
       console.error('Error processing Form 26AS PDF:', err);
       alert('Failed to process Form 26AS PDF.');
@@ -671,7 +675,7 @@ export default function Home() {
         body: JSON.stringify({
           messages: updatedMessages,
           itrData: sendOnlyRawData ? null : domainData,
-          itrJson: sendOnlyRawData ? null : (domainData ? mapForm16ToITR1(domainData, selectedRegime) : null),
+          itrJson: sendOnlyRawData ? null : (domainData ? mapToITR(domainData, selectedRegime, form16List) : null),
           rawText: rawText,
           aisRawText: aisRawText,
           tisRawText: tisRawText,
@@ -1166,6 +1170,150 @@ export default function Home() {
                 </Card>
               )}
 
+              {/* Taxpayer Summary Card */}
+              {extractedData && extractedDataDomain && (
+                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
+                  <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: '800', fontSize: '1.2rem', color: 'primary.main', m: 0 }}>
+                          Taxpayer Assessment & Filing Summary
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          Formal CA Computation Worksheet • Section 139(1) Filing
+                        </Typography>
+                      </Box>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: 2,
+                          bgcolor: 'primary.light',
+                          color: 'primary.dark',
+                          borderColor: 'primary.light',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                        data-testid="selected-itr-form-badge-summary"
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                          Form: {shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2 (Capital Gains / Multi-Employer)' : 'ITR-1 (Sahaj)'}
+                        </Typography>
+                      </Paper>
+                    </Box>
+
+                    <Grid container spacing={3}>
+                      {/* Left Side: Identity Info */}
+                      <Grid size={{ xs: 12, md: 7 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                          Taxpayer Information
+                        </Typography>
+                        <Grid container spacing={1}>
+                          <Grid size={{ xs: 4 }}>
+                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Name:</Typography>
+                          </Grid>
+                          <Grid size={{ xs: 8 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {`${extractedDataDomain.employee?.name?.firstName || ''} ${extractedDataDomain.employee?.name?.middleName || ''} ${extractedDataDomain.employee?.name?.lastName || ''}`.trim().replace(/\s+/g, ' ') || 'N/A'}
+                            </Typography>
+                          </Grid>
+
+                          <Grid size={{ xs: 4 }}>
+                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>PAN:</Typography>
+                          </Grid>
+                          <Grid size={{ xs: 8 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                              {extractedDataDomain.employee?.pan || 'N/A'}
+                            </Typography>
+                          </Grid>
+
+                          <Grid size={{ xs: 4 }}>
+                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Assessment Year:</Typography>
+                          </Grid>
+                          <Grid size={{ xs: 8 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {extractedDataDomain.assessmentYear || '2026-27'}
+                            </Typography>
+                          </Grid>
+
+                          <Grid size={{ xs: 4 }}>
+                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Filing Due Date:</Typography>
+                          </Grid>
+                          <Grid size={{ xs: 8 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              31st July 2026
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Grid>
+
+                      {/* Right Side: Quick Financial Status */}
+                      <Grid size={{ xs: 12, md: 5 }} sx={{ borderLeft: { md: '1px solid' }, borderColor: { md: 'divider' }, pl: { md: 3 } }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                          Computation Summary ({selectedRegime} Regime)
+                        </Typography>
+
+                        {(() => {
+                          const grossTotal = extractedDataDomain.grossTotalIncome || 0;
+                          const taxable = extractedDataDomain.totalIncome || 0;
+                          const payable = extractedDataDomain.taxPayable || 0;
+
+                          const credits = extractedDataDomain.taxCredits || {
+                            tdsSalary: 0,
+                            tdsOther: 0,
+                            tcs: 0,
+                            advanceTax: 0,
+                            selfAssessmentTax: 0,
+                          };
+                          const totalTaxesPaid = (credits.advanceTax || 0) + (credits.tdsSalary || 0) + (credits.tdsOther || 0) + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
+
+                          const isRefund = totalTaxesPaid > payable;
+                          const diffAmount = Math.abs(totalTaxesPaid - payable);
+
+                          return (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{grossTotal.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{taxable.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Total Prepaid Credits:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main' }}>₹{totalTaxesPaid.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Divider sx={{ my: 0.5 }} />
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  p: 1.5,
+                                  textAlign: 'center',
+                                  borderRadius: 2,
+                                  bgcolor: isRefund ? 'success.dark' : 'error.dark',
+                                  color: '#ffffff',
+                                  borderColor: 'transparent',
+                                }}
+                              >
+                                <Typography variant="caption" sx={{ display: 'block', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.7rem', opacity: 0.9 }}>
+                                  {isRefund ? 'ESTIMATED REFUND DUE' : 'NET BALANCE TAX PAYABLE'}
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: '900', m: 0 }}>
+                                  ₹{diffAmount.toLocaleString('en-IN')}
+                                </Typography>
+                              </Paper>
+                            </Box>
+                          );
+                        })()}
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Tax Regime Comparison Card */}
               {extractedData && (
                 <TaxRegimeComparisonCard
@@ -1186,7 +1334,7 @@ export default function Home() {
               {extractedData && (
                 <>
                   {/* Validation warnings */}
-                  {errors.length > 0 && (
+              {errors.length > 0 && (
                     <Alert
                       severity="warning"
                       variant="outlined"
@@ -1224,10 +1372,30 @@ export default function Home() {
                   {/* Review / Edit Form */}
                   <Card variant="outlined" sx={{ mb: 2.5 }}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
-                          2. Review & Edit Extracted Information
-                        </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
+                            2. Review & Edit Extracted Information
+                          </Typography>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1.5,
+                              bgcolor: 'primary.light',
+                              color: 'primary.dark',
+                              borderColor: 'primary.light',
+                              display: 'inline-flex',
+                              alignItems: 'center'
+                            }}
+                            data-testid="selected-itr-form-badge"
+                          >
+                            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                              Form: {extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
+                            </Typography>
+                          </Paper>
+                        </Box>
                         <Button
                           variant="contained"
                           color="secondary"
@@ -1239,11 +1407,11 @@ export default function Home() {
                         </Button>
                       </Box>
 
-                      <Grid container spacing={2}>
+                      <Grid container spacing={3}>
                         {/* 1. General & Filer Information */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            General & Filer Information
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule Part A: General & Filer Information
                             <SectionHeaderBadge count={getSectionVerifiedCount('general', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
@@ -1286,10 +1454,10 @@ export default function Home() {
                           </Grid>
                         </Grid>
 
-                        {/* 2. Detailed Salary & Deductions u/s 16 */}
+                        {/* Schedule S: Salary Details & Multi-Employer breakdown */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Salary Income Details (₹)
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule S: Salary Income & Multi-Employer Details (₹)
                             <SectionHeaderBadge count={getSectionVerifiedCount('salary', extractedData)} mode={mode} />
                           </Typography>
                           {salaryDiscrepancies.length > 0 && (
@@ -1304,6 +1472,46 @@ export default function Home() {
                               </ul>
                             </Alert>
                           )}
+
+                          {/* Multi-Employer detailed breakdown table if multiple files exist */}
+                          {form16List.length > 1 && (
+                            <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.primary', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                🏢 Multi-Employer Consolidation Worksheet
+                              </Typography>
+                              <Box sx={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+                                      <th style={{ padding: '6px 4px' }}>Employer Name</th>
+                                      <th style={{ padding: '6px 4px' }}>TAN</th>
+                                      <th style={{ padding: '6px 4px' }}>Salary 17(1)</th>
+                                      <th style={{ padding: '6px 4px' }}>Exempt u/s 10</th>
+                                      <th style={{ padding: '6px 4px' }}>Deductions u/s 16</th>
+                                      <th style={{ padding: '6px 4px' }}>Net Income</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {form16List.map((item, idx) => {
+                                      const p = createForm16Proxy(item.data);
+                                      const sal = p.salary || {};
+                                      return (
+                                        <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                          <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>{p.employer?.name || 'N/A'}</td>
+                                          <td style={{ padding: '6px 4px', fontFamily: 'monospace' }}>{p.employer?.tan || 'N/A'}</td>
+                                          <td style={{ padding: '6px 4px' }}>₹{(sal.salaryAsPer17_1 || 0).toLocaleString('en-IN')}</td>
+                                          <td style={{ padding: '6px 4px' }}>₹{(sal.totalExemptAllowances || 0).toLocaleString('en-IN')}</td>
+                                          <td style={{ padding: '6px 4px' }}>₹{(sal.totalDeductionsUs16 || 0).toLocaleString('en-IN')}</td>
+                                          <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>₹{(sal.incomeChargeableUnderHeadSalaries || 0).toLocaleString('en-IN')}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </Box>
+                            </Paper>
+                          )}
+
                           <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
                               <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
@@ -1349,18 +1557,15 @@ export default function Home() {
                           />
                         </Grid>
 
-                        {/* 3. Other Income */}
+                        {/* Schedule HP: House Property Income */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Other Income Details (₹)
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule HP: House Property Income Details (₹)
                             <SectionHeaderBadge count={getSectionVerifiedCount('other', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6 }}>
+                            <Grid size={{ xs: 12 }}>
                               <CueTextField label="House Property Income" type="number" path="otherIncome.houseProperty" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.houseProperty', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
                             </Grid>
                           </Grid>
                           <SectionAuditTrail
@@ -1373,10 +1578,37 @@ export default function Home() {
                           />
                         </Grid>
 
-                        {/* 4. Chapter VI-A Deductions */}
+                        {/* Schedule CG: Capital Gains */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Chapter VI-A Deductions (₹)
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule CG: Capital Gains Details (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Short Term Capital Gains (STCG)" type="number" path="shortTermCapitalGains" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('shortTermCapitalGains', v)} />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <CueTextField label="Long Term Capital Gains u/s 112A (LTCG)" type="number" path="longTermCapitalGains112A" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('longTermCapitalGains112A', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* Schedule OS: Income from Other Sources */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule OS: Income from Other Sources (₹)
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12 }}>
+                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
+                            </Grid>
+                          </Grid>
+                        </Grid>
+
+                        {/* Schedule VIA: Chapter VI-A Deductions */}
+                        <Grid size={{ xs: 12 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule VIA: Chapter VI-A Deductions (₹)
                             <SectionHeaderBadge count={getSectionVerifiedCount('deductions', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
@@ -1421,10 +1653,10 @@ export default function Home() {
                           />
                         </Grid>
 
-                        {/* 5. Tax Paid & Credits */}
+                        {/* Schedule TDS: Tax Paid & Credits */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Taxes Paid & Credits (₹)
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule TDS: Taxes Paid & Prepaid Credits (₹)
                             <SectionHeaderBadge count={getSectionVerifiedCount('taxCredits', extractedData)} mode={mode} />
                           </Typography>
                           {tdsDiscrepancies.length > 0 && (
@@ -1458,10 +1690,10 @@ export default function Home() {
                           </Grid>
                         </Grid>
 
-                        {/* 6. Summary */}
+                        {/* Schedule Part B: Tax Computation Summary */}
                         <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 1, borderColor: 'divider', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Tax Computation Summary (₹)
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            Schedule Part B: Tax Computation Summary (₹)
                             <SectionHeaderBadge count={getSectionVerifiedCount('summary', extractedData)} mode={mode} />
                           </Typography>
                           <Grid container spacing={2}>
@@ -1520,12 +1752,13 @@ export default function Home() {
                           startIcon={<DownloadIcon fontSize="small" />}
                           onClick={() => {
                             if (extractedDataDomain) {
-                              const itrJson = mapForm16ToITR1(extractedDataDomain, selectedRegime);
+                              const isItr2 = shouldUseITR2(extractedDataDomain, form16List.length);
+                              const itrJson = mapToITR(extractedDataDomain, selectedRegime, form16List);
                               const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
                               const url = URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.href = url;
-                              a.download = `ITR1_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
+                              a.download = `${isItr2 ? 'ITR2' : 'ITR1'}_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
                               a.click();
                             }
                           }}
@@ -1781,7 +2014,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {aisFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData); }} aria-label="remove ais context">
+                        <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData, '', tisRawText, form26asRawText); }} aria-label="remove ais context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>
@@ -1794,7 +2027,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {tisFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData); }} aria-label="remove tis context">
+                        <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData, aisRawText, '', form26asRawText); }} aria-label="remove tis context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>
@@ -1807,7 +2040,7 @@ export default function Home() {
                         <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
                           {form26asFile.name}
                         </Typography>
-                        <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null); }} aria-label="remove form26as context">
+                        <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null, aisRawText, tisRawText, ''); }} aria-label="remove form26as context">
                           <CloseIcon sx={{ fontSize: 12 }} />
                         </IconButton>
                       </Paper>

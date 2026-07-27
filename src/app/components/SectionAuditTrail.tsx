@@ -117,7 +117,7 @@ export default function SectionAuditTrail({
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}) = <strong>₹{domainData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
+            • <strong>Gross Total Income (GTI):</strong> Salaries (₹{salary.incomeChargeableUnderHeadSalaries?.toLocaleString('en-IN')}) + HP (₹{otherIncome.houseProperty?.toLocaleString('en-IN')}) + Other Sources (₹{otherIncome.totalOtherSources?.toLocaleString('en-IN')}){((domainData as any).shortTermCapitalGains > 0 || (domainData as any).longTermCapitalGains112A > 0) ? ` + Capital Gains (₹${(((domainData as any).shortTermCapitalGains || 0) + ((domainData as any).longTermCapitalGains112A || 0)).toLocaleString('en-IN')})` : ''} = <strong>₹{domainData.grossTotalIncome?.toLocaleString('en-IN')}</strong>
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
             • <strong>Total Taxable Income:</strong> GTI (₹{domainData.grossTotalIncome?.toLocaleString('en-IN')}) - Deductions Allowed (₹{(selectedRegime === 'NEW' ? (domainData.deductions80CCD2 || 0) : (domainData.totalChapterVIADeductions || 0)).toLocaleString('en-IN')}) = <strong>₹{domainData.totalIncome?.toLocaleString('en-IN')}</strong>

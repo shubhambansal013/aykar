@@ -156,4 +156,39 @@ describe('Reconciliation Module', () => {
     expect(reconciled.otherIncome?.otherSources).toBeDefined();
     expect(reconciled.salary?.grossSalary).toBe(0);
   });
+
+  it('should correctly reconcile Capital Gains and cap deductions', () => {
+    const form16Data: Form16Data = {
+      ...mockForm16,
+      salary: {
+        ...mockForm16.salary,
+        incomeChargeableUnderHeadSalaries: 100000,
+      },
+      totalChapterVIADeductions: 150000, // greater than normal income (100000)
+    } as any;
+
+    const aisData: AISData = {
+      interestSavings: 0,
+      interestDeposit: 0,
+      dividendIncome: 0,
+      shortTermCapitalGains: 50000,
+      longTermCapitalGains112A: 75000,
+      tdsDetails: [],
+    };
+
+    const reconciled = reconcileAllDocuments(form16Data, aisData, undefined, undefined);
+
+    // Normal Income = 100000 salary
+    // STCG = 50000
+    // LTCG112A = 75000
+    // GTI = 100000 + 50000 + 75000 = 225000
+    // Deductions capped at 100000
+    // Total income = 0 + 50000 + 75000 = 125000
+    expect(reconciled.shortTermCapitalGains).toBe(50000);
+    expect(reconciled.longTermCapitalGains112A).toBe(75000);
+    expect(reconciled.grossTotalIncome).toBe(225000);
+    expect(reconciled.totalIncome).toBe(125000);
+    expect(reconciled.detectedIncomeSources?.some(x => x.category === 'shortTermCapitalGains')).toBe(true);
+    expect(reconciled.detectedIncomeSources?.some(x => x.category === 'longTermCapitalGains112A')).toBe(true);
+  });
 });

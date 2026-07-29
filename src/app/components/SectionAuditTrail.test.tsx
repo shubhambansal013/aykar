@@ -143,6 +143,6 @@ describe('SectionAuditTrail Unit Tests', () => {
       />
     );
     expect(screen.getByText('TAX COMPUTATION & REFUND BREAKDOWN:')).toBeDefined();
-    expect(screen.getByText(/Balance Tax Payable Calculation:/)).toBeDefined();
+    expect(screen.getByText(/Net Amount Payable \(incl. Interest\):/)).toBeDefined();
   });
 });

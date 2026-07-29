@@ -10,7 +10,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { Form16Data, ReconciledTaxData } from '@/lib/proto/compatibilityProxy';
-import { calculateOldRegime, calculateNewRegime, TaxRegimeDetails } from '@/lib/itr/taxEngine';
+import { calculateOldRegime, calculateNewRegime, computeAllInterest, TaxRegimeDetails } from '@/lib/itr/taxEngine';
 import SourceBadge, { SourceType } from './SourceBadge';
 
 interface TaxComputationProps {
@@ -101,6 +101,8 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
     ? calculateOldRegime(data)
     : calculateNewRegime(data);
 
+  const interest = computeAllInterest(regimeCalc.totalTaxPayable, regimeCalc.totalIncome, data);
+
   const taxCredits = (data as ReconciledTaxData).taxCredits || {
     tdsSalary: 0,
     tdsOther: 0,
@@ -115,11 +117,12 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
     (taxCredits.advanceTax || 0) +
     (taxCredits.selfAssessmentTax || 0);
 
-  const netResult = regimeCalc.totalTaxPayable > totalCredits
-    ? inr(regimeCalc.totalTaxPayable - totalCredits)
-    : inr(totalCredits - regimeCalc.totalTaxPayable);
+  const totalLiabilityWithInterest = regimeCalc.totalTaxPayable + interest.totalInterestPayable;
+  const netResult = totalLiabilityWithInterest > totalCredits
+    ? inr(totalLiabilityWithInterest - totalCredits)
+    : inr(totalCredits - totalLiabilityWithInterest);
 
-  const isRefund = totalCredits > regimeCalc.totalTaxPayable;
+  const isRefund = totalCredits > totalLiabilityWithInterest;
 
   // Build slab detail string
   const slabSummary = regimeCalc.slabTaxBreakdown?.map(s =>
@@ -160,6 +163,24 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
         <LineRow label="Add: Health & Education Cess @ 4%" value={inr(regimeCalc.cess)} operator="add" source="Derived" onClick={mkClick('Cess')} />
         <LineRow label="Gross Tax Liability" value={inr(regimeCalc.totalTaxPayable)} operator="equals" isTotal source="Derived" onClick={mkClick('Gross Tax Liability')} />
 
+        {/* Section: Interest u/s 234A/B/C */}
+        <SectionTitle>Interest & Fees</SectionTitle>
+        {interest.interest234A > 0 && (
+          <LineRow label="Interest u/s 234A (Late Filing)" value={inr(interest.interest234A)} operator="add" source="Derived" onClick={mkClick('Interest 234A')} />
+        )}
+        {interest.interest234B > 0 && (
+          <LineRow label="Interest u/s 234B (Late Payment of Advance Tax)" value={inr(interest.interest234B)} operator="add" source="Derived" onClick={mkClick('Interest 234B')} />
+        )}
+        {interest.interest234C > 0 && (
+          <LineRow label="Interest u/s 234C (Deferment of Advance Tax)" value={inr(interest.interest234C)} operator="add" source="Derived" onClick={mkClick('Interest 234C')} />
+        )}
+        {interest.lateFilingFee234F > 0 && (
+          <LineRow label="Late Filing Fee u/s 234F" value={inr(interest.lateFilingFee234F)} operator="add" source="Derived" onClick={mkClick('Late Filing Fee 234F')} />
+        )}
+        {interest.totalInterestPayable > 0 && (
+          <LineRow label="Total Interest & Fees" value={inr(interest.totalInterestPayable)} operator="equals" isTotal source="Derived" onClick={mkClick('Total Interest & Fees')} />
+        )}
+
         {/* Section: Tax Credits */}
         <SectionTitle>Prepaid Taxes & Credits</SectionTitle>
         {taxCredits.tdsSalary > 0 && (
@@ -194,7 +215,7 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
           }}
         >
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
-            {isRefund ? 'Refund Due' : 'Net Tax Payable'}
+            {isRefund ? 'Refund Due' : 'Net Tax Payable (incl. Interest)'}
           </Typography>
           <Typography
             variant="body1"

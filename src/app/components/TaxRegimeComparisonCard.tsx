@@ -13,11 +13,11 @@ import {
   AccordionDetails
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { compareTaxRegimes } from '@/lib/itr/taxEngine';
+import { compareTaxRegimes, computeAllInterest, InterestDetails } from '@/lib/itr/taxEngine';
 import { ensureForm16Data } from './FieldCues';
 import TaxSlabVisual from './TaxSlabVisual';
 
-function TaxComputationBreakdown({ regime }: { regime: any }) {
+function TaxComputationBreakdown({ regime, interest }: { regime: any; interest?: InterestDetails }) {
   if (!regime.slabTaxBreakdown || regime.slabTaxBreakdown.length === 0) return null;
 
   return (
@@ -83,6 +83,44 @@ function TaxComputationBreakdown({ regime }: { regime: any }) {
           <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Net Tax Liability:</Typography>
           <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main' }}>₹{regime.totalTaxPayable.toLocaleString('en-IN')}</Typography>
         </Box>
+
+        {interest && interest.totalInterestPayable > 0 && (
+          <>
+            <Box sx={{ borderTop: '1px dotted', borderColor: 'divider', pt: 1, mt: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'error.main', display: 'block', mb: 0.5 }}>
+                Interest & Fees (u/s 234A/B/C & 234F):
+              </Typography>
+              {interest.interest234A > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 0.5 }}>
+                  <Typography variant="caption" color="textSecondary">Interest u/s 234A (Late Filing):</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{interest.interest234A.toLocaleString('en-IN')}</Typography>
+                </Box>
+              )}
+              {interest.interest234B > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 0.5 }}>
+                  <Typography variant="caption" color="textSecondary">Interest u/s 234B (Late Payment of Advance Tax):</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{interest.interest234B.toLocaleString('en-IN')}</Typography>
+                </Box>
+              )}
+              {interest.interest234C > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 0.5 }}>
+                  <Typography variant="caption" color="textSecondary">Interest u/s 234C (Deferment of Advance Tax):</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{interest.interest234C.toLocaleString('en-IN')}</Typography>
+                </Box>
+              )}
+              {interest.lateFilingFee234F > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 0.5 }}>
+                  <Typography variant="caption" color="textSecondary">Late Filing Fee u/s 234F:</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{interest.lateFilingFee234F.toLocaleString('en-IN')}</Typography>
+                </Box>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', bgcolor: 'warning.main', color: 'warning.contrastText', p: 0.5, borderRadius: 0.5, mt: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Total Amount Payable (incl. Interest):</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{(regime.totalTaxPayable + interest.totalInterestPayable).toLocaleString('en-IN')}</Typography>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );
@@ -105,6 +143,9 @@ export default function TaxRegimeComparisonCard({
   if (!domainData) return null;
 
   const comparison = compareTaxRegimes(domainData);
+
+  const interestOld = computeAllInterest(comparison.oldRegime.totalTaxPayable, comparison.oldRegime.totalIncome, domainData);
+  const interestNew = computeAllInterest(comparison.newRegime.totalTaxPayable, comparison.newRegime.totalIncome, domainData);
   const savings = Math.abs(comparison.oldRegime.totalTaxPayable - comparison.newRegime.totalTaxPayable);
   const optimalText = comparison.optimalRegime === 'OLD' ? 'Old Tax Regime' : 'New Tax Regime';
   const recommendation = savings > 0
@@ -299,7 +340,7 @@ export default function TaxRegimeComparisonCard({
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.cess.toLocaleString('en-IN')}</Typography>
                     </Box>
-                    <TaxComputationBreakdown regime={comparison.oldRegime} />
+                    <TaxComputationBreakdown regime={comparison.oldRegime} interest={interestOld} />
                   </AccordionDetails>
                 </Accordion>
               )}
@@ -436,7 +477,7 @@ export default function TaxRegimeComparisonCard({
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.cess.toLocaleString('en-IN')}</Typography>
                     </Box>
-                    <TaxComputationBreakdown regime={comparison.newRegime} />
+                    <TaxComputationBreakdown regime={comparison.newRegime} interest={interestNew} />
                   </AccordionDetails>
                 </Accordion>
               )}

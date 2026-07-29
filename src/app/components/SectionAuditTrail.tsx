@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { Form16Data, ReconciledTaxData } from '@/lib/proto/compatibilityProxy';
 import { ensureForm16Data } from './FieldCues';
+import { computeAllInterest } from '@/lib/itr/taxEngine';
 
 interface SectionAuditTrailProps {
   section: 'salary' | 'other' | 'deductions' | 'summary';
@@ -34,8 +35,14 @@ export default function SectionAuditTrail({
 
   const totalTaxesPaid = advanceTax + tdsSalary + tdsOther + tcs + selfAssessmentTax;
   const taxPayable = domainData.taxPayable || 0;
+
+  const interest = computeAllInterest(taxPayable, domainData.totalIncome || 0, domainData);
+  const totalLiabilityWithInterest = taxPayable + interest.totalInterestPayable;
+
   const balanceTaxPayable = Math.max(0, taxPayable - totalTaxesPaid);
   const refundDue = Math.max(0, totalTaxesPaid - taxPayable);
+  const balanceWithInterest = Math.max(0, totalLiabilityWithInterest - totalTaxesPaid);
+  const refundWithInterest = Math.max(0, totalTaxesPaid - totalLiabilityWithInterest);
 
   let innerContent = null;
 
@@ -128,13 +135,25 @@ export default function SectionAuditTrail({
           <Typography variant="caption" sx={{ display: 'block' }}>
             • <strong>Total Taxes Paid & Credits:</strong> TDS (₹{(tdsSalary + tdsOther).toLocaleString('en-IN')} [Source: <strong>Form-16/26AS/AIS</strong>]) + TCS (₹{tcs.toLocaleString('en-IN')} [Source: <strong>26AS</strong>]) + Advance Tax (₹{advanceTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) + Self-Assessment Tax (₹{selfAssessmentTax.toLocaleString('en-IN')} [Source: <strong>26AS Challan</strong>]) = <strong>₹{totalTaxesPaid.toLocaleString('en-IN')}</strong>
           </Typography>
-          {refundDue > 0 ? (
+          {interest.totalInterestPayable > 0 && (
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              • <strong>Interest & Fees (u/s 234A/B/C & 234F):</strong>{' '}
+              {[
+                interest.interest234A > 0 ? `234A: ₹${interest.interest234A.toLocaleString('en-IN')}` : '',
+                interest.interest234B > 0 ? `234B: ₹${interest.interest234B.toLocaleString('en-IN')}` : '',
+                interest.interest234C > 0 ? `234C: ₹${interest.interest234C.toLocaleString('en-IN')}` : '',
+                interest.lateFilingFee234F > 0 ? `234F: ₹${interest.lateFilingFee234F.toLocaleString('en-IN')}` : '',
+              ].filter(Boolean).join(' + ') || 'None'}{' '}
+              = <strong>₹{interest.totalInterestPayable.toLocaleString('en-IN')}</strong>
+            </Typography>
+          )}
+          {refundWithInterest > 0 ? (
             <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'success.main', mt: 0.5 }}>
-              • <strong>Refund Due Calculation:</strong> Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) - Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) = <strong>₹{refundDue.toLocaleString('en-IN')} (Eligible for Refund)</strong>
+              • <strong>Refund Due (incl. Interest):</strong> Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) - Total Liability incl. Interest (₹{totalLiabilityWithInterest.toLocaleString('en-IN')}) = <strong>₹{refundWithInterest.toLocaleString('en-IN')} (Eligible for Refund)</strong>
             </Typography>
           ) : (
             <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: 'error.main', mt: 0.5 }}>
-              • <strong>Balance Tax Payable Calculation:</strong> Calculated Tax Liability (₹{taxPayable.toLocaleString('en-IN')}) - Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) = <strong>₹{balanceTaxPayable.toLocaleString('en-IN')} (Payable)</strong>
+              • <strong>Net Amount Payable (incl. Interest):</strong> Total Liability incl. Interest (₹{totalLiabilityWithInterest.toLocaleString('en-IN')}) - Total Taxes Paid (₹{totalTaxesPaid.toLocaleString('en-IN')}) = <strong>₹{balanceWithInterest.toLocaleString('en-IN')} (Payable)</strong>
             </Typography>
           )}
         </Box>

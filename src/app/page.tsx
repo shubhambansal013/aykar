@@ -50,6 +50,10 @@ import {
   DialogContent,
   Tabs,
   Tab,
+  useMediaQuery,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -63,6 +67,8 @@ import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CodeIcon from '@mui/icons-material/Code';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { AssistantMessage } from '@/app/components/AssistantMessage';
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
@@ -139,6 +145,9 @@ export default function Home() {
   const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'inspect'>('chat');
   const [docTab, setDocTab] = useState<number>(0);
   const [chatWidth, setChatWidth] = useState(600);
+  const [mobileDocOpen, setMobileDocOpen] = useState(false);
+
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Cross-highlighting: when user clicks a computation value, search for it in document viewer
   const [highlightText, setHighlightText] = useState<string>('');
@@ -754,7 +763,21 @@ export default function Home() {
   const handleValueClick = (label: string) => {
     setHighlightText(label);
     setRightPanelTab('inspect');
-    setChatOpen(true);
+    if (isMobile) {
+      setMobileDocOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
+
+  const openRightPanel = (tab: 'chat' | 'inspect', docIndex?: number) => {
+    setRightPanelTab(tab);
+    if (docIndex !== undefined) setDocTab(docIndex);
+    if (isMobile) {
+      setMobileDocOpen(true);
+    } else {
+      setChatOpen(true);
+    }
   };
 
   return (
@@ -768,8 +791,33 @@ export default function Home() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
               ITR Assist
             </Typography>
-            <Tooltip title="Ask AI / Chat">
-              <IconButton onClick={() => setChatOpen((prev) => !prev)} color="inherit" aria-label="open ai chat">
+            {isMobile && (
+              <Tooltip title="View Documents & Chat">
+                <IconButton
+                  onClick={() => {
+                    setMobileDocOpen(true);
+                    setRightPanelTab('inspect');
+                  }}
+                  color="inherit"
+                  aria-label="view documents"
+                >
+                  <DescriptionIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title={isMobile ? 'Ask AI / Chat' : 'Ask AI / Chat'}>
+              <IconButton
+                onClick={() => {
+                  if (isMobile) {
+                    setMobileDocOpen(true);
+                    setRightPanelTab('chat');
+                  } else {
+                    setChatOpen((prev) => !prev);
+                  }
+                }}
+                color="inherit"
+                aria-label="open ai chat"
+              >
                 <ChatIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -790,7 +838,7 @@ export default function Home() {
             minWidth: 0,
             overflowY: 'auto',
             height: '100%',
-            display: { xs: chatOpen ? 'none' : 'block', md: 'block' }
+            display: { xs: 'block', md: 'block' }
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
               {/* Compact Upload Status Bar */}
@@ -805,11 +853,7 @@ export default function Home() {
                       {form16List.length > 0 && (
                         <Paper
                           variant="outlined"
-                            onClick={() => {
-                              setChatOpen(true);
-                              setRightPanelTab('inspect');
-                              setDocTab(0);
-                            }}
+                            onClick={() => openRightPanel('inspect', 0)}
                             sx={{
                               cursor: 'pointer',
                               px: 1,
@@ -833,11 +877,7 @@ export default function Home() {
                       {aisFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDocTab(1);
-                          }}
+                          onClick={() => openRightPanel('inspect', 1)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -861,11 +901,7 @@ export default function Home() {
                       {tisFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDocTab(2);
-                          }}
+                          onClick={() => openRightPanel('inspect', 2)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -889,11 +925,7 @@ export default function Home() {
                       {form26asFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDocTab(3);
-                          }}
+                          onClick={() => openRightPanel('inspect', 3)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -978,11 +1010,7 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                  onClick={() => {
-                                    setChatOpen(true);
-                                    setRightPanelTab('inspect');
-                                    setDocTab(0);
-                                  }}
+                                  onClick={() => openRightPanel('inspect', 0)}
                                   sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
                                   data-testid="view-extracted-form16-btn"
                               >
@@ -1010,11 +1038,7 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                  onClick={() => {
-                                    setChatOpen(true);
-                                    setRightPanelTab('inspect');
-                                    setDocTab(1);
-                                  }}
+                                  onClick={() => openRightPanel('inspect', 1)}
                                   sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
                                   data-testid="view-extracted-ais-btn"
                               >
@@ -1042,11 +1066,7 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                  onClick={() => {
-                                    setChatOpen(true);
-                                    setRightPanelTab('inspect');
-                                    setDocTab(2);
-                                  }}
+                                  onClick={() => openRightPanel('inspect', 2)}
                                   sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
                                   data-testid="view-extracted-tis-btn"
                               >
@@ -1074,11 +1094,7 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                  onClick={() => {
-                                    setChatOpen(true);
-                                    setRightPanelTab('inspect');
-                                    setDocTab(3);
-                                  }}
+                                  onClick={() => openRightPanel('inspect', 3)}
                                   sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
                                   data-testid="view-extracted-form26as-btn"
                               >
@@ -1133,7 +1149,7 @@ export default function Home() {
 
               {/* Taxpayer Summary Card */}
               {extractedData && extractedDataDomain && (
-                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
+                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2, position: { xs: 'sticky', md: 'static' }, top: 0, zIndex: { xs: 10, md: 'auto' } }}>
                   <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                       <Box>
@@ -1337,6 +1353,7 @@ export default function Home() {
                     itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
                     onAiReview={() => handleSendMessage(true)}
                     onValueClick={handleValueClick}
+                    collapsible={isMobile}
                   />
 
                 </>
@@ -1364,10 +1381,10 @@ export default function Home() {
 
           {/* Right Panel: Split-screen Information Panel */}
           <Box sx={{
-            width: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
-            minWidth: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
+            width: chatOpen ? { md: `${chatWidth}px` } : { md: '0px' },
+            minWidth: chatOpen ? { md: `${chatWidth}px` } : { md: '0px' },
             overflow: 'hidden',
-            display: 'flex',
+            display: { xs: 'none', md: 'flex' },
             flexDirection: 'column',
             borderLeft: chatOpen ? '1px solid' : 'none',
             borderColor: 'divider',
@@ -1541,11 +1558,7 @@ export default function Home() {
                         color="primary"
                         size="small"
                         startIcon={<CodeIcon sx={{ fontSize: 12 }} />}
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDocTab(0);
-                          }}
+                          onClick={() => openRightPanel('inspect', 0)}
                         data-testid="parsed-itr-badge"
                         sx={{
                           textTransform: 'none',
@@ -1694,9 +1707,168 @@ export default function Home() {
           </Box>
         </Box>
 
+        {/* Mobile Dialog for Document Viewer & Chat */}
+        <Dialog
+          fullScreen
+          open={isMobile && mobileDocOpen}
+          onClose={() => setMobileDocOpen(false)}
+          data-testid="mobile-doc-dialog"
+        >
+          <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Toolbar variant="dense">
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <Tabs
+                  value={rightPanelTab}
+                  onChange={(e: React.SyntheticEvent, v: 'chat' | 'inspect') => setRightPanelTab(v)}
+                  aria-label="mobile panel tabs"
+                  sx={{
+                    minHeight: 0,
+                    flex: 1,
+                    '& .MuiTab-root': {
+                      minHeight: 0,
+                      py: 0.75,
+                      px: 1.5,
+                      fontSize: '0.8rem',
+                      textTransform: 'none',
+                      fontWeight: 'bold',
+                    }
+                  }}
+                >
+                  <Tab label="AI Chat" value="chat" data-testid="mobile-tab-chat" />
+                  <Tab label="Documents" value="inspect" data-testid="mobile-tab-inspect" />
+                </Tabs>
+                <IconButton onClick={() => setMobileDocOpen(false)} color="inherit" size="small" aria-label="close mobile dialog">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Toolbar>
+          </AppBar>
+
+          <Box sx={{ display: rightPanelTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
+            {/* Chat Sub-Header */}
+            <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+              <SmartToyIcon color="primary" sx={{ fontSize: 18 }} />
+              <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1 }}>Chat</Typography>
+              <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
+                <Select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  sx={{ fontSize: '0.75rem', py: 0 }}
+                  aria-label="select gemini model"
+                >
+                  {geminiModels.map((m) => (
+                    <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>{m.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Chat Messages */}
+            <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
+              {messages.length === 0 && (
+                <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
+                  <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
+                    You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
+                  </Typography>
+                </Box>
+              )}
+              {messages.map((msg, idx) => (
+                <Box key={idx} sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                  <Paper variant="outlined" sx={{
+                    p: 1.25,
+                    borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
+                    color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                    borderColor: msg.role === 'user' ? 'primary.main' : 'divider',
+                    boxShadow: 'none',
+                  }}>
+                    {msg.role === 'user' ? (
+                      <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
+                        {msg.content}
+                      </Typography>
+                    ) : (
+                      <AssistantMessage
+                        content={msg.content}
+                        msgIdx={idx}
+                        acceptedMessages={acceptedMessages}
+                        rejectedMessages={rejectedMessages}
+                        onAccept={handleAcceptProposal}
+                        onReject={handleRejectProposal}
+                        onUndo={handleUndoProposal}
+                        currentData={extractedData}
+                      />
+                    )}
+                  </Paper>
+                  <Typography variant="caption" color="textSecondary" sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', px: 0.5, fontSize: '0.7rem' }}>
+                    {msg.role === 'user' ? 'You' : 'AI Assistant'}
+                  </Typography>
+                </Box>
+              ))}
+              {chatLoading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: 'flex-start' }}>
+                  <CircularProgress size={12} />
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>AI is generating response...</Typography>
+                </Box>
+              )}
+              <div ref={messagesEndRef} />
+            </Box>
+
+            <Divider />
+
+            {/* Chat Input */}
+            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  placeholder="Ask your tax question..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendMessage(false);
+                  }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => handleSendMessage(false)} color="primary" disabled={chatLoading || (!inputMessage.trim() && attachments.length === 0)} aria-label="send message" size="small">
+                            <SendIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Document Viewer in Mobile */}
+          <Box sx={{
+            display: rightPanelTab === 'inspect' ? 'block' : 'none',
+            flexGrow: 1,
+            p: 2.5,
+            overflowY: 'auto',
+            bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.1)' : '#f8fafc',
+          }}>
+            <DocumentViewer
+              mode={mode}
+              rawText={rawText}
+              aisRawText={aisRawText}
+              tisRawText={tisRawText}
+              form26asRawText={form26asRawText}
+              searchQuery={highlightText}
+              onSearchChange={setHighlightText}
+              activeTab={docTab}
+              onTabChange={setDocTab}
+            />
+          </Box>
+        </Dialog>
+
         {/* Floating AI Chat Button */}
         {!chatOpen && (
-          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => setChatOpen(true)}>
+          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => openRightPanel('chat')}>
             <ChatIcon />
           </Fab>
         )}

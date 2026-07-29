@@ -9,7 +9,7 @@
 | Phase 1: Computation Worksheet Foundation | ✅ Done | `2026-07-29` — Replaced flat editable grid with read-only ComputationWorksheet (TaxpayerIdentityCard, IncomeDetails, TaxComputation). All 258 tests pass. |
 | Phase 2: Verification / Reconciliation Section | ✅ Done | `2026-07-29` — Added ReconciliationTable component with field x source matrix, status chips (Match/Partial/Mismatch), expandable diff detail for mismatches. Removed generic Alert discrepancy boxes from page.tsx. |
 | Phase 3: Source Badges & Document Viewer | ✅ Done | `2026-07-29` — Added SourceBadge (Form16/26AS/AIS/TIS/Derived/Manual chips) to all computation LineRow values. Created DocumentViewer with per-document tabs, search/highlight, and cross-highlighting from left-panel clicks. Replaced DebugInfoSection. All 261 tests pass. |
-| Phase 4: Slab Visuals & Responsive Polish | 📋 Planned | `2026-07-29` — Plan drafted |
+| Phase 4: Slab Visuals & Responsive Polish | ✅ Done | `2026-07-29` — Built TaxSlabVisual stacked bar component; replaced accordion breakdown in active regime card; mobile pass with doc Dialog, collapsible sections, sticky net result, responsive toolbar. All 269 tests pass. |
 
 ---
 
@@ -213,6 +213,24 @@ When completing a phase from this plan:
 3. Commit the changes to git with a descriptive message referencing the phase.
 
 ## Session Notes
+
+### Phase 4 — 2026-07-29
+**Key Changes:**
+- Created `src/app/components/TaxSlabVisual.tsx` — horizontal stacked bar with colored segments per slab (grey→green gradient for new regime, grey→blue for old regime), income marker arrow, compact per-slab tax listing below the bar.
+- Created `src/app/components/TaxSlabVisual.test.tsx` — tests for new/old regime rendering, tax amounts, total income marker, empty/zero states, zero-amount slab filtering, and rate labels.
+- Modified `src/app/components/TaxRegimeComparisonCard.tsx` — replaced the `TaxComputationBreakdown` accordion with `TaxSlabVisual` for the selected (active) regime; non-active regime keeps the existing accordion. Both regimes still render side-by-side.
+- Modified `src/app/components/ComputationWorksheet.tsx` — added optional `collapsible` prop; when true, each section (Identity, Income, Tax Computation) wraps in an expandable Accordion with icons and section titles.
+- Modified `src/app/page.tsx` — major mobile pass:
+  - Imported `useMediaQuery` and `Accordion`/`DescriptionIcon`/`ExpandMoreIcon`
+  - Added `mobileDocOpen` state and `isMobile` media query
+  - Right panel now `display: none` on mobile (`xs`); side panel preserved on desktop
+  - Left panel always visible on mobile (no hiding when chat opens)
+  - Added `openRightPanel()` helper that opens side panel on desktop or Dialog on mobile
+  - Refactored all document badge click handlers (compact status bar, upload section, inspect button, FAB) to use `openRightPanel()`
+  - Added full-screen `Dialog` with tabs (AI Chat / Documents) replicating right panel content for mobile
+  - Passed `collapsible={isMobile}` to ComputationWorksheet
+  - Made Taxpayer Summary Card sticky on mobile (`position: sticky; top: 0`)
+- All 269 tests pass.
 
 ### Phase 3 — 2026-07-29
 **Key Changes:**

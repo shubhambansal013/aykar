@@ -118,6 +118,10 @@ export default function Home() {
   const [tisRawText, setTisRawText] = useState<string>('');
   const [form26asRawText, setForm26asRawText] = useState<string>('');
 
+  // Filing and determination dates for interest computation (derived from Form16 verification dates)
+  const [filingDate, setFilingDate] = useState<string>('');
+  const [determinationDate, setDeterminationDate] = useState<string>('');
+
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
   const [showUploadArea, setShowUploadArea] = useState(false);
@@ -492,6 +496,30 @@ export default function Home() {
     const mergedRawText = currentForm16s.map(item => item.rawText).join('\n\n');
     setRawText(mergedRawText);
 
+    // Extract latest verification date from all Form16 certificates as filing date
+    let latestDate: Date | null = null;
+    let assYear = '';
+    for (const item of currentForm16s) {
+      const certs = item.data.certificates || [];
+      for (const cert of certs) {
+        if (cert.employmentPeriod?.assessmentYear) {
+          assYear = cert.employmentPeriod.assessmentYear;
+        }
+        if (cert.verification?.date) {
+          const parsed = new Date(cert.verification.date);
+          if (!isNaN(parsed.getTime()) && (!latestDate || parsed > latestDate)) {
+            latestDate = parsed;
+          }
+        }
+      }
+    }
+    const fDate = latestDate ? latestDate.toISOString().split('T')[0] : '';
+    setFilingDate(fDate);
+    // Default determination date: Dec 31 of the assessment year
+    const ayStart = parseInt(assYear.split('-')[0], 10) || 2026;
+    const dDate = `${ayStart}-12-31`;
+    setDeterminationDate(dDate);
+
     const domainForm16s = currentForm16s.map(item => createForm16Proxy(item.data));
     const mergedData = mergeForm16Data(domainForm16s);
 
@@ -502,7 +530,7 @@ export default function Home() {
       current26as ? createForm26asProxy(current26as) : undefined
     );
 
-    const comparison = compareTaxRegimes(reconciled);
+    const comparison = compareTaxRegimes(reconciled, fDate || undefined, dDate);
     const activeRegime = comparison.optimalRegime;
     setSelectedRegime(activeRegime);
 
@@ -1246,7 +1274,7 @@ export default function Home() {
                           };
                           const totalTaxesPaid = (credits.advanceTax || 0) + (credits.tdsSalary || 0) + (credits.tdsOther || 0) + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
 
-                          const interest = computeAllInterest(payable, taxable, extractedDataDomain);
+                          const interest = computeAllInterest(payable, taxable, extractedDataDomain, filingDate || undefined, determinationDate || undefined);
                           const totalDue = payable + interest.totalInterestPayable;
                           const isRefund = totalTaxesPaid > totalDue;
                           const diffAmount = Math.abs(totalTaxesPaid - totalDue);

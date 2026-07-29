@@ -33,7 +33,6 @@ import {
   IconButton,
   TextField,
   Alert,
-  AlertTitle,
   CircularProgress,
   Paper,
   Tooltip,
@@ -51,13 +50,15 @@ import {
   DialogContent,
   Tabs,
   Tab,
+  useMediaQuery,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DownloadIcon from '@mui/icons-material/Download';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ChatIcon from '@mui/icons-material/Chat';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -66,13 +67,14 @@ import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CodeIcon from '@mui/icons-material/Code';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { CueTextField, getSectionVerifiedCount } from '@/app/components/FieldCues';
 import { AssistantMessage } from '@/app/components/AssistantMessage';
-import SectionHeaderBadge from '@/app/components/SectionHeaderBadge';
-import SectionAuditTrail from '@/app/components/SectionAuditTrail';
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
-import DebugInfoSection from '@/app/components/DebugInfoSection';
+import ComputationWorksheet from '@/app/components/ComputationWorksheet';
+import ReconciliationTable from '@/app/components/ReconciliationTable';
+import DocumentViewer from '@/app/components/DocumentViewer';
 
 interface Attachment {
   name: string;
@@ -141,8 +143,14 @@ export default function Home() {
 
   // Chat / Split-Screen Resizing & Tab States
   const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'inspect'>('chat');
-  const [debugTab, setDebugTab] = useState<number>(0);
+  const [docTab, setDocTab] = useState<number>(0);
   const [chatWidth, setChatWidth] = useState(600);
+  const [mobileDocOpen, setMobileDocOpen] = useState(false);
+
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
+  // Cross-highlighting: when user clicks a computation value, search for it in document viewer
+  const [highlightText, setHighlightText] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -201,24 +209,6 @@ export default function Home() {
     };
   }, [isDragging]);
 
-  // Combined Raw Text Memo
-  const combinedRawText = useMemo(() => {
-    let result = '';
-    if (rawText) {
-      result += `--- FORM-16 RAW EXTRACTED TEXT ---\n${rawText}\n\n`;
-    }
-    if (aisRawText) {
-      result += `--- AIS RAW EXTRACTED TEXT ---\n${aisRawText}\n\n`;
-    }
-    if (tisRawText) {
-      result += `--- TIS RAW EXTRACTED TEXT ---\n${tisRawText}\n\n`;
-    }
-    if (form26asRawText) {
-      result += `--- FORM 26AS RAW EXTRACTED TEXT ---\n${form26asRawText}\n\n`;
-    }
-    return result || 'No raw text extracted yet.';
-  }, [rawText, aisRawText, tisRawText, form26asRawText]);
-
   // Gemini Models Memo
   const geminiModels = useMemo(() => {
     const geminiProvider = providersConfig.find(p => p.provider === 'gemini');
@@ -233,24 +223,6 @@ export default function Home() {
   const hasUploadedDocs = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
   const isUploadCollapsed = hasUploadedDocs && !showUploadArea;
   const readyDocsCount = (form16List.length > 0 ? 1 : 0) + (aisFile ? 1 : 0) + (tisFile ? 1 : 0) + (form26asFile ? 1 : 0);
-
-  const salaryDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => d.toLowerCase().includes('salary') || d.toLowerCase().includes('income discrepancy'));
-  }, [extractedDataDomain]);
-
-  const tdsDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => d.toLowerCase().includes('tds') || d.toLowerCase().includes('tan'));
-  }, [extractedDataDomain]);
-
-  const otherDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => !d.toLowerCase().includes('salary') && !d.toLowerCase().includes('income discrepancy') && !d.toLowerCase().includes('tds') && !d.toLowerCase().includes('tan'));
-  }, [extractedDataDomain]);
 
   // MUI Theme Memo
   const theme = useMemo(
@@ -788,6 +760,26 @@ export default function Home() {
     setIsDragging(true);
   };
 
+  const handleValueClick = (label: string) => {
+    setHighlightText(label);
+    setRightPanelTab('inspect');
+    if (isMobile) {
+      setMobileDocOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
+
+  const openRightPanel = (tab: 'chat' | 'inspect', docIndex?: number) => {
+    setRightPanelTab(tab);
+    if (docIndex !== undefined) setDocTab(docIndex);
+    if (isMobile) {
+      setMobileDocOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -799,8 +791,33 @@ export default function Home() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
               ITR Assist
             </Typography>
-            <Tooltip title="Ask AI / Chat">
-              <IconButton onClick={() => setChatOpen((prev) => !prev)} color="inherit" aria-label="open ai chat">
+            {isMobile && (
+              <Tooltip title="View Documents & Chat">
+                <IconButton
+                  onClick={() => {
+                    setMobileDocOpen(true);
+                    setRightPanelTab('inspect');
+                  }}
+                  color="inherit"
+                  aria-label="view documents"
+                >
+                  <DescriptionIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title={isMobile ? 'Ask AI / Chat' : 'Ask AI / Chat'}>
+              <IconButton
+                onClick={() => {
+                  if (isMobile) {
+                    setMobileDocOpen(true);
+                    setRightPanelTab('chat');
+                  } else {
+                    setChatOpen((prev) => !prev);
+                  }
+                }}
+                color="inherit"
+                aria-label="open ai chat"
+              >
                 <ChatIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -821,7 +838,7 @@ export default function Home() {
             minWidth: 0,
             overflowY: 'auto',
             height: '100%',
-            display: { xs: chatOpen ? 'none' : 'block', md: 'block' }
+            display: { xs: 'block', md: 'block' }
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
               {/* Compact Upload Status Bar */}
@@ -836,25 +853,21 @@ export default function Home() {
                       {form16List.length > 0 && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(1);
-                          }}
-                          sx={{
-                            cursor: 'pointer',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            bgcolor: 'success.light',
-                            color: 'success.dark',
-                            borderColor: 'success.light',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          data-testid="compact-form16-badge-inspect"
+                            onClick={() => openRightPanel('inspect', 0)}
+                            sx={{
+                              cursor: 'pointer',
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              bgcolor: 'success.light',
+                              color: 'success.dark',
+                              borderColor: 'success.light',
+                              '&:hover': { opacity: 0.8 }
+                            }}
+                            data-testid="compact-form16-badge-inspect"
                         >
                           <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                             Form-16 ({form16List.length}) 🔍
@@ -864,11 +877,7 @@ export default function Home() {
                       {aisFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(2);
-                          }}
+                          onClick={() => openRightPanel('inspect', 1)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -892,11 +901,7 @@ export default function Home() {
                       {tisFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(3);
-                          }}
+                          onClick={() => openRightPanel('inspect', 2)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -920,11 +925,7 @@ export default function Home() {
                       {form26asFile && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(4);
-                          }}
+                          onClick={() => openRightPanel('inspect', 3)}
                           sx={{
                             cursor: 'pointer',
                             px: 1,
@@ -1009,13 +1010,9 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(1);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-form16-btn"
+                                  onClick={() => openRightPanel('inspect', 0)}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-form16-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1041,13 +1038,9 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(2);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-ais-btn"
+                                  onClick={() => openRightPanel('inspect', 1)}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-ais-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1073,13 +1066,9 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(3);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-tis-btn"
+                                  onClick={() => openRightPanel('inspect', 2)}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-tis-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1105,13 +1094,9 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(4);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-form26as-btn"
+                                  onClick={() => openRightPanel('inspect', 3)}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-form26as-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1125,19 +1110,8 @@ export default function Home() {
                 </Card>
               </Box>
 
-              {/* Miscellaneous/Other Reconciliation Alerts */}
-              {extractedData && otherDiscrepancies.length > 0 && (
-                <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
-                  <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
-                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                    {otherDiscrepancies.map((disc, i) => (
-                      <li key={i}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
-                      </li>
-                    ))}
-                  </ul>
-                </Alert>
-              )}
+              {/* Reconciliation Table (Section 4) */}
+              <ReconciliationTable data={extractedDataDomain} />
 
               {/* Supplementary Income */}
               {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
@@ -1175,7 +1149,7 @@ export default function Home() {
 
               {/* Taxpayer Summary Card */}
               {extractedData && extractedDataDomain && (
-                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
+                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2, position: { xs: 'sticky', md: 'static' }, top: 0, zIndex: { xs: 10, md: 'auto' } }}>
                   <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                       <Box>
@@ -1372,407 +1346,15 @@ export default function Home() {
                     </Alert>
                   )}
 
-                  {/* Review / Edit Form */}
-                  <Card variant="outlined" sx={{ mb: 2.5 }}>
-                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
-                            2. Review & Edit Extracted Information
-                          </Typography>
-                          <Paper
-                            variant="outlined"
-                            sx={{
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 1.5,
-                              bgcolor: 'primary.light',
-                              color: 'primary.dark',
-                              borderColor: 'primary.light',
-                              display: 'inline-flex',
-                              alignItems: 'center'
-                            }}
-                            data-testid="selected-itr-form-badge"
-                          >
-                            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                              Form: {extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
-                            </Typography>
-                          </Paper>
-                        </Box>
-                        <Button
-                          variant="contained"
-                          color="secondary"
-                          startIcon={<SmartToyIcon fontSize="small" />}
-                          onClick={() => handleSendMessage(true)}
-                          size="small"
-                        >
-                          AI Review
-                        </Button>
-                      </Box>
-
-                      <Grid container spacing={3}>
-                        {/* 1. General & Filer Information */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule Part A: General & Filer Information
-                            <SectionHeaderBadge count={getSectionVerifiedCount('general', extractedData)} mode={mode} />
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Assessment Year" path="assessmentYear" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('assessmentYear', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Period From (YYYY-MM-DD)" path="period.from" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('period.from', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Period To (YYYY-MM-DD)" path="period.to" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('period.to', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer Name" path="employer.name" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.name', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer PAN" path="employer.pan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.pan', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employer TAN" path="employer.tan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.tan', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12 }}>
-                              <CueTextField label="Employer Address" path="employer.address" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employer.address', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee First Name" path="employee.name.firstName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.firstName', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee Middle Name" path="employee.name.middleName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.middleName', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee Last Name" path="employee.name.lastName" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.name.lastName', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Employee PAN" path="employee.pan" isMonospace uppercase data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.pan', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 8 }}>
-                              <CueTextField label="Employee Address" path="employee.address" data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('employee.address', v)} />
-                            </Grid>
-                          </Grid>
-                        </Grid>
-
-                        {/* Schedule S: Salary Details & Multi-Employer breakdown */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule S: Salary Income & Multi-Employer Details (₹)
-                            <SectionHeaderBadge count={getSectionVerifiedCount('salary', extractedData)} mode={mode} />
-                          </Typography>
-                          {salaryDiscrepancies.length > 0 && (
-                            <Alert severity="warning" variant="outlined" sx={{ mb: 2, borderRadius: 1.5, py: 0.5 }}>
-                              <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Section Discrepancy Alert:</AlertTitle>
-                              <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                                {salaryDiscrepancies.map((disc, i) => (
-                                  <li key={i}>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
-                                  </li>
-                                ))}
-                              </ul>
-                            </Alert>
-                          )}
-
-                          {/* Multi-Employer detailed breakdown table if multiple files exist */}
-                          {form16List.length > 1 && (
-                            <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: 'text.primary', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                🏢 Multi-Employer Consolidation Worksheet
-                              </Typography>
-                              <Box sx={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
-                                  <thead>
-                                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
-                                      <th style={{ padding: '6px 4px' }}>Employer Name</th>
-                                      <th style={{ padding: '6px 4px' }}>TAN</th>
-                                      <th style={{ padding: '6px 4px' }}>Salary 17(1)</th>
-                                      <th style={{ padding: '6px 4px' }}>Exempt u/s 10</th>
-                                      <th style={{ padding: '6px 4px' }}>Deductions u/s 16</th>
-                                      <th style={{ padding: '6px 4px' }}>Net Income</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {form16List.map((item, idx) => {
-                                      const p = createForm16Proxy(item.data);
-                                      const sal = p.salary || {};
-                                      return (
-                                        <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                                          <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>{p.employer?.name || 'N/A'}</td>
-                                          <td style={{ padding: '6px 4px', fontFamily: 'monospace' }}>{p.employer?.tan || 'N/A'}</td>
-                                          <td style={{ padding: '6px 4px' }}>₹{(sal.salaryAsPer17_1 || 0).toLocaleString('en-IN')}</td>
-                                          <td style={{ padding: '6px 4px' }}>₹{(sal.totalExemptAllowances || 0).toLocaleString('en-IN')}</td>
-                                          <td style={{ padding: '6px 4px' }}>₹{(sal.totalDeductionsUs16 || 0).toLocaleString('en-IN')}</td>
-                                          <td style={{ padding: '6px 4px', fontWeight: 'bold' }}>₹{(sal.incomeChargeableUnderHeadSalaries || 0).toLocaleString('en-IN')}</td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </Box>
-                            </Paper>
-                          )}
-
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Salary u/s 17(1)" type="number" path="salary.salaryAsPer17_1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.salaryAsPer17_1', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Perquisites u/s 17(2)" type="number" path="salary.perquisites17_2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.perquisites17_2', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Profits in lieu u/s 17(3)" type="number" path="salary.profitsInLieu17_3" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.profitsInLieu17_3', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Gross Salary" type="number" path="salary.grossSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.grossSalary', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Total Exempt Allowances u/s 10" type="number" path="salary.totalExemptAllowances" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.totalExemptAllowances', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Net Salary" type="number" path="salary.netSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.netSalary', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Standard Deduction (u/s 16ia)" type="number" path="salary.standardDeduction16ia" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.standardDeduction16ia', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Entertainment Allowance (16ii)" type="number" path="salary.entertainmentAllowance16ii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.entertainmentAllowance16ii', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Professional Tax (16iii)" type="number" path="salary.professionalTax16iii" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.professionalTax16iii', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Total Deductions u/s 16" type="number" path="salary.totalDeductionsUs16" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.totalDeductionsUs16', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Income Chargeable under head Salaries" type="number" path="salary.incomeChargeableUnderHeadSalaries" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('salary.incomeChargeableUnderHeadSalaries', v)} />
-                            </Grid>
-                          </Grid>
-                          <SectionAuditTrail
-                            section="salary"
-                            extractedData={extractedData}
-                            mode={mode}
-                            selectedRegime={selectedRegime}
-                            isExpanded={!!expandedTrails['salary']}
-                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, salary: !prev['salary'] }))}
-                          />
-                        </Grid>
-
-                        {/* Schedule HP: House Property Income */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule HP: House Property Income Details (₹)
-                            <SectionHeaderBadge count={getSectionVerifiedCount('other', extractedData)} mode={mode} />
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12 }}>
-                              <CueTextField label="House Property Income" type="number" path="otherIncome.houseProperty" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.houseProperty', v)} />
-                            </Grid>
-                          </Grid>
-                          <SectionAuditTrail
-                            section="other"
-                            extractedData={extractedData}
-                            mode={mode}
-                            selectedRegime={selectedRegime}
-                            isExpanded={!!expandedTrails['other']}
-                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, other: !prev['other'] }))}
-                          />
-                        </Grid>
-
-                        {/* Schedule CG: Capital Gains */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule CG: Capital Gains Details (₹)
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Short Term Capital Gains (STCG)" type="number" path="shortTermCapitalGains" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('shortTermCapitalGains', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Long Term Capital Gains u/s 112A (LTCG)" type="number" path="longTermCapitalGains112A" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('longTermCapitalGains112A', v)} />
-                            </Grid>
-                          </Grid>
-                        </Grid>
-
-                        {/* Schedule OS: Income from Other Sources */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule OS: Income from Other Sources (₹)
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12 }}>
-                              <CueTextField label="Other Sources Income" type="number" path="otherIncome.totalOtherSources" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('otherIncome.totalOtherSources', v)} />
-                            </Grid>
-                          </Grid>
-                        </Grid>
-
-                        {/* Schedule VIA: Chapter VI-A Deductions */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule VIA: Chapter VI-A Deductions (₹)
-                            <SectionHeaderBadge count={getSectionVerifiedCount('deductions', extractedData)} mode={mode} />
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80C" type="number" path="deductions80C" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80C', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCC" type="number" path="deductions80CCC" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCC', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(1)" type="number" path="deductions80CCD1" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD1', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(1B)" type="number" path="deductions80CCD1B" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD1B', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80CCD(2)" type="number" path="deductions80CCD2" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80CCD2', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80D" type="number" path="deductions80D" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80D', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80E" type="number" path="deductions80E" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80E', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80G" type="number" path="deductions80G" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80G', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Section 80TTA" type="number" path="deductions80TTA" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('deductions80TTA', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12 }}>
-                              <CueTextField label="Total Chapter VI-A Deductions" type="number" path="totalChapterVIADeductions" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('totalChapterVIADeductions', v)} />
-                            </Grid>
-                          </Grid>
-                          <SectionAuditTrail
-                            section="deductions"
-                            extractedData={extractedData}
-                            mode={mode}
-                            selectedRegime={selectedRegime}
-                            isExpanded={!!expandedTrails['deductions']}
-                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, deductions: !prev['deductions'] }))}
-                          />
-                        </Grid>
-
-                        {/* Schedule TDS: Tax Paid & Credits */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule TDS: Taxes Paid & Prepaid Credits (₹)
-                            <SectionHeaderBadge count={getSectionVerifiedCount('taxCredits', extractedData)} mode={mode} />
-                          </Typography>
-                          {tdsDiscrepancies.length > 0 && (
-                            <Alert severity="warning" variant="outlined" sx={{ mb: 2, borderRadius: 1.5, py: 0.5 }}>
-                              <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Section Discrepancy Alert:</AlertTitle>
-                              <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                                {tdsDiscrepancies.map((disc, i) => (
-                                  <li key={i}>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
-                                  </li>
-                                ))}
-                              </ul>
-                            </Alert>
-                          )}
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TDS on Salary (u/s 192)" type="number" path="taxCredits.tdsSalary" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tdsSalary', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TDS on Other Income" type="number" path="taxCredits.tdsOther" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tdsOther', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="TCS (Tax Collected)" type="number" path="taxCredits.tcs" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.tcs', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Advance Tax Paid" type="number" path="taxCredits.advanceTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.advanceTax', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                              <CueTextField label="Self-Assessment Tax Paid" type="number" path="taxCredits.selfAssessmentTax" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxCredits.selfAssessmentTax', v)} />
-                            </Grid>
-                          </Grid>
-                        </Grid>
-
-                        {/* Schedule Part B: Tax Computation Summary */}
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', borderBottom: 2, borderColor: 'primary.main', pb: 0.5, mb: 1.5, color: 'primary.main', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            Schedule Part B: Tax Computation Summary (₹)
-                            <SectionHeaderBadge count={getSectionVerifiedCount('summary', extractedData)} mode={mode} />
-                          </Typography>
-                          <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Gross Total Income" type="number" path="grossTotalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('grossTotalIncome', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Total Taxable Income" type="number" path="totalIncome" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('totalIncome', v)} />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 4 }}>
-                              <CueTextField label="Tax Payable" type="number" path="taxPayable" startAdornment={<InputAdornment position="start">₹</InputAdornment>} data={extractedData} originalData={originalParsedData} appliedAiSuggestions={appliedAiSuggestions} onChange={(v) => updateNestedValue('taxPayable', v)} />
-                            </Grid>
-                          </Grid>
-                          <SectionAuditTrail
-                            section="summary"
-                            extractedData={extractedData}
-                            mode={mode}
-                            selectedRegime={selectedRegime}
-                            isExpanded={!!expandedTrails['summary']}
-                            onToggle={() => setExpandedTrails((prev) => ({ ...prev, summary: !prev['summary'] }))}
-                          />
-                        </Grid>
-                      </Grid>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
-                        <Button
-                          variant="outlined"
-                          color="info"
-                          startIcon={<CodeIcon fontSize="small" />}
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(0);
-                          }}
-                          size="small"
-                          data-testid="inspect-form-data-btn-left"
-                        >
-                          Inspect Form Data
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="secondary"
-                          startIcon={<RefreshIcon fontSize="small" />}
-                          onClick={() => {
-                            if (extractedDataDomain) {
-                              setErrors(validateForm16Data(extractedDataDomain));
-                            }
-                          }}
-                          size="small"
-                        >
-                          Re-validate Data
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          startIcon={<DownloadIcon fontSize="small" />}
-                          onClick={() => {
-                            if (extractedDataDomain) {
-                              const isItr2 = shouldUseITR2(extractedDataDomain, form16List.length);
-                              const itrJson = mapToITR(extractedDataDomain, selectedRegime, form16List);
-                              const blob = new Blob([JSON.stringify(itrJson, null, 2)], { type: 'application/json' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `${isItr2 ? 'ITR2' : 'ITR1'}_${extractedDataDomain.employee.pan || 'data'}_${selectedRegime}.json`;
-                              a.click();
-                            }
-                          }}
-                          size="small"
-                          data-testid="download-itr-button"
-                        >
-                          Download ITR JSON
-                        </Button>
-                      </Box>
-                    </CardContent>
-                  </Card>
+                  <ComputationWorksheet
+                    data={extractedDataDomain}
+                    form16List={form16List}
+                    selectedRegime={selectedRegime}
+                    itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
+                    onAiReview={() => handleSendMessage(true)}
+                    onValueClick={handleValueClick}
+                    collapsible={isMobile}
+                  />
 
                 </>
               )}
@@ -1799,10 +1381,10 @@ export default function Home() {
 
           {/* Right Panel: Split-screen Information Panel */}
           <Box sx={{
-            width: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
-            minWidth: chatOpen ? { xs: '100%', md: `${chatWidth}px` } : '0px',
+            width: chatOpen ? { md: `${chatWidth}px` } : { md: '0px' },
+            minWidth: chatOpen ? { md: `${chatWidth}px` } : { md: '0px' },
             overflow: 'hidden',
-            display: 'flex',
+            display: { xs: 'none', md: 'flex' },
             flexDirection: 'column',
             borderLeft: chatOpen ? '1px solid' : 'none',
             borderColor: 'divider',
@@ -1976,11 +1558,7 @@ export default function Home() {
                         color="primary"
                         size="small"
                         startIcon={<CodeIcon sx={{ fontSize: 12 }} />}
-                        onClick={() => {
-                          setChatOpen(true);
-                          setRightPanelTab('inspect');
-                          setDebugTab(0);
-                        }}
+                          onClick={() => openRightPanel('inspect', 0)}
                         data-testid="parsed-itr-badge"
                         sx={{
                           textTransform: 'none',
@@ -2114,24 +1692,183 @@ export default function Home() {
               overflowY: 'auto',
               bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.1)' : '#f8fafc',
             }}>
-              <DebugInfoSection
+              <DocumentViewer
                 mode={mode}
-                combinedRawText={combinedRawText}
-                extractedData={extractedData}
-                form16List={form16List}
-                aisData={aisData}
-                tisData={tisData}
-                form26asData={form26asData}
-                activeTab={debugTab}
-                onTabChange={setDebugTab}
+                rawText={rawText}
+                aisRawText={aisRawText}
+                tisRawText={tisRawText}
+                form26asRawText={form26asRawText}
+                searchQuery={highlightText}
+                onSearchChange={setHighlightText}
+                activeTab={docTab}
+                onTabChange={setDocTab}
               />
             </Box>
           </Box>
         </Box>
 
+        {/* Mobile Dialog for Document Viewer & Chat */}
+        <Dialog
+          fullScreen
+          open={isMobile && mobileDocOpen}
+          onClose={() => setMobileDocOpen(false)}
+          data-testid="mobile-doc-dialog"
+        >
+          <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Toolbar variant="dense">
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <Tabs
+                  value={rightPanelTab}
+                  onChange={(e: React.SyntheticEvent, v: 'chat' | 'inspect') => setRightPanelTab(v)}
+                  aria-label="mobile panel tabs"
+                  sx={{
+                    minHeight: 0,
+                    flex: 1,
+                    '& .MuiTab-root': {
+                      minHeight: 0,
+                      py: 0.75,
+                      px: 1.5,
+                      fontSize: '0.8rem',
+                      textTransform: 'none',
+                      fontWeight: 'bold',
+                    }
+                  }}
+                >
+                  <Tab label="AI Chat" value="chat" data-testid="mobile-tab-chat" />
+                  <Tab label="Documents" value="inspect" data-testid="mobile-tab-inspect" />
+                </Tabs>
+                <IconButton onClick={() => setMobileDocOpen(false)} color="inherit" size="small" aria-label="close mobile dialog">
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Toolbar>
+          </AppBar>
+
+          <Box sx={{ display: rightPanelTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
+            {/* Chat Sub-Header */}
+            <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+              <SmartToyIcon color="primary" sx={{ fontSize: 18 }} />
+              <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1 }}>Chat</Typography>
+              <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
+                <Select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  sx={{ fontSize: '0.75rem', py: 0 }}
+                  aria-label="select gemini model"
+                >
+                  {geminiModels.map((m) => (
+                    <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>{m.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Chat Messages */}
+            <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
+              {messages.length === 0 && (
+                <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
+                  <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
+                    You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
+                  </Typography>
+                </Box>
+              )}
+              {messages.map((msg, idx) => (
+                <Box key={idx} sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                  <Paper variant="outlined" sx={{
+                    p: 1.25,
+                    borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
+                    color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                    borderColor: msg.role === 'user' ? 'primary.main' : 'divider',
+                    boxShadow: 'none',
+                  }}>
+                    {msg.role === 'user' ? (
+                      <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
+                        {msg.content}
+                      </Typography>
+                    ) : (
+                      <AssistantMessage
+                        content={msg.content}
+                        msgIdx={idx}
+                        acceptedMessages={acceptedMessages}
+                        rejectedMessages={rejectedMessages}
+                        onAccept={handleAcceptProposal}
+                        onReject={handleRejectProposal}
+                        onUndo={handleUndoProposal}
+                        currentData={extractedData}
+                      />
+                    )}
+                  </Paper>
+                  <Typography variant="caption" color="textSecondary" sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', px: 0.5, fontSize: '0.7rem' }}>
+                    {msg.role === 'user' ? 'You' : 'AI Assistant'}
+                  </Typography>
+                </Box>
+              ))}
+              {chatLoading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: 'flex-start' }}>
+                  <CircularProgress size={12} />
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>AI is generating response...</Typography>
+                </Box>
+              )}
+              <div ref={messagesEndRef} />
+            </Box>
+
+            <Divider />
+
+            {/* Chat Input */}
+            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  placeholder="Ask your tax question..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendMessage(false);
+                  }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => handleSendMessage(false)} color="primary" disabled={chatLoading || (!inputMessage.trim() && attachments.length === 0)} aria-label="send message" size="small">
+                            <SendIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Document Viewer in Mobile */}
+          <Box sx={{
+            display: rightPanelTab === 'inspect' ? 'block' : 'none',
+            flexGrow: 1,
+            p: 2.5,
+            overflowY: 'auto',
+            bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.1)' : '#f8fafc',
+          }}>
+            <DocumentViewer
+              mode={mode}
+              rawText={rawText}
+              aisRawText={aisRawText}
+              tisRawText={tisRawText}
+              form26asRawText={form26asRawText}
+              searchQuery={highlightText}
+              onSearchChange={setHighlightText}
+              activeTab={docTab}
+              onTabChange={setDocTab}
+            />
+          </Box>
+        </Dialog>
+
         {/* Floating AI Chat Button */}
         {!chatOpen && (
-          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => setChatOpen(true)}>
+          <Fab color="primary" aria-label="open ai chat window" sx={{ position: 'fixed', bottom: 24, right: 24, boxShadow: 3 }} onClick={() => openRightPanel('chat')}>
             <ChatIcon />
           </Fab>
         )}

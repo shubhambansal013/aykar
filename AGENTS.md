@@ -12,6 +12,7 @@ Before modifying any file, please read and familiarize yourself with:
 4. **[Form-16 Centralized Extraction Configuration](docs/extraction_config.md)** — Details how regexes, boundary definitions, and column indices are decoupled into `extractionConfig.ts`.
 5. **[Gemini API Key Setup Guide](docs/gemini_setup.md)** — Contains explicit instructions for configuring local variables and Cloudflare Worker runtime secrets.
 6. **[Parser Improvement Plan](docs/parser_improvement_plan.md)** — Multi-phase plan for fixing TDS/salary extraction, data model gaps, and reconciliation bugs. Consult before working on parser issues.
+7. **[UI Overhaul Plan](docs/ui_overhaul_plan.md)** — Multi-phase plan for moving from a flat field grid to a CA-style computation worksheet. Consult before working on UI/layout changes.
 
 ---
 

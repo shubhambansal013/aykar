@@ -7,7 +7,7 @@
 | Phase | Status | Session |
 |-------|--------|---------|
 | Phase 1: Computation Worksheet Foundation | ✅ Done | `2026-07-29` — Replaced flat editable grid with read-only ComputationWorksheet (TaxpayerIdentityCard, IncomeDetails, TaxComputation). All 258 tests pass. |
-| Phase 2: Verification / Reconciliation Section | 📋 Planned | `2026-07-29` — Plan drafted |
+| Phase 2: Verification / Reconciliation Section | ✅ Done | `2026-07-29` — Added ReconciliationTable component with field x source matrix, status chips (Match/Partial/Mismatch), expandable diff detail for mismatches. Removed generic Alert discrepancy boxes from page.tsx. |
 | Phase 3: Source Badges & Document Viewer | 📋 Planned | `2026-07-29` — Plan drafted |
 | Phase 4: Slab Visuals & Responsive Polish | 📋 Planned | `2026-07-29` — Plan drafted |
 
@@ -211,3 +211,11 @@ When completing a phase from this plan:
 1. Update the status table at the top of this document — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
 2. Add a new entry under Session Notes documenting the key files changed and why.
 3. Commit the changes to git with a descriptive message referencing the phase.
+
+## Session Notes
+
+### Phase 2 — 2026-07-29
+**Key Changes:**
+- Created `src/app/components/ReconciliationTable.tsx` — cross-source comparison matrix with Form-16, 26AS, AIS, TIS columns for Gross Salary, TDS u/s 192, Interest (Savings/Deposit), Dividend, STCG, LTCG. Includes status chips (✓ Match, ⚠ Partial, ✗ Mismatch), gold highlight for mismatches, and expandable diff detail.
+- Modified `src/app/page.tsx` — added ReconciliationTable below ComputationWorksheet, removed the three generic Alert discrepancy boxes (salary, TDS, other) and their memo computations. Added ReconciliationTable import.
+- All 258 existing tests pass.

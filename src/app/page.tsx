@@ -33,7 +33,6 @@ import {
   IconButton,
   TextField,
   Alert,
-  AlertTitle,
   CircularProgress,
   Paper,
   Tooltip,
@@ -68,6 +67,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import { AssistantMessage } from '@/app/components/AssistantMessage';
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
 import ComputationWorksheet from '@/app/components/ComputationWorksheet';
+import ReconciliationTable from '@/app/components/ReconciliationTable';
 import DebugInfoSection from '@/app/components/DebugInfoSection';
 
 interface Attachment {
@@ -229,24 +229,6 @@ export default function Home() {
   const hasUploadedDocs = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
   const isUploadCollapsed = hasUploadedDocs && !showUploadArea;
   const readyDocsCount = (form16List.length > 0 ? 1 : 0) + (aisFile ? 1 : 0) + (tisFile ? 1 : 0) + (form26asFile ? 1 : 0);
-
-  const salaryDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => d.toLowerCase().includes('salary') || d.toLowerCase().includes('income discrepancy'));
-  }, [extractedDataDomain]);
-
-  const tdsDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => d.toLowerCase().includes('tds') || d.toLowerCase().includes('tan'));
-  }, [extractedDataDomain]);
-
-  const otherDiscrepancies = useMemo(() => {
-    if (!extractedDataDomain) return [];
-    const disc = extractedDataDomain.discrepancies || [];
-    return disc.filter(d => !d.toLowerCase().includes('salary') && !d.toLowerCase().includes('income discrepancy') && !d.toLowerCase().includes('tds') && !d.toLowerCase().includes('tan'));
-  }, [extractedDataDomain]);
 
   // MUI Theme Memo
   const theme = useMemo(
@@ -1121,19 +1103,8 @@ export default function Home() {
                 </Card>
               </Box>
 
-              {/* Miscellaneous/Other Reconciliation Alerts */}
-              {extractedData && otherDiscrepancies.length > 0 && (
-                <Alert severity="warning" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 1 }}>
-                  <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Reconciliation Discrepancy & Matcher Alerts:</AlertTitle>
-                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '1.15rem' }}>
-                    {otherDiscrepancies.map((disc, i) => (
-                      <li key={i}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{disc}</Typography>
-                      </li>
-                    ))}
-                  </ul>
-                </Alert>
-              )}
+              {/* Reconciliation Table (Section 4) */}
+              <ReconciliationTable data={extractedDataDomain} />
 
               {/* Supplementary Income */}
               {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (

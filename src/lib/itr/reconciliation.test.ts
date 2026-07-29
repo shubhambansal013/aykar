@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Form16Data, AISData, TISData, Form26ASData } from '../types';
+import { Form16Data, AISData, TISData, Form26ASData } from '../proto/compatibilityProxy';
 import { reconcileAllDocuments } from './reconciliation';
 
 describe('Reconciliation Module', () => {
@@ -36,8 +36,8 @@ describe('Reconciliation Module', () => {
     totalChapterVIADeductions: 150000,
     totalIncome: 1050000,
     taxPayable: 150000,
-    totalTdsDeducted: 145000,
-    totalTdsDeposited: 145000,
+    totalTdsDeducted: 140000,
+    totalTdsDeposited: 140000,
     netTaxPayable: 5000,
   };
 
@@ -142,7 +142,7 @@ describe('Reconciliation Module', () => {
     expect(deposit?.amount).toBe(40000);
 
     // Extra TDS from AIS is merged (2500 + form-16 150000)
-    expect(reconciled.taxCredits?.tdsSalary).toBe(152500);
+    expect(reconciled.taxCredits?.tdsSalary).toBe(142500);
     expect(reconciled.taxCredits?.tdsOther).toBe(1500);
 
     // Income Discrepancy warning should be generated
@@ -193,5 +193,29 @@ describe('Reconciliation Module', () => {
     expect(reconciled.totalIncome).toBe(125000);
     expect(reconciled.detectedIncomeSources?.some(x => x.category === 'shortTermCapitalGains')).toBe(true);
     expect(reconciled.detectedIncomeSources?.some(x => x.category === 'longTermCapitalGains112A')).toBe(true);
+  });
+
+  it('should use AIS TDS u/s 192 as fallback when Form-16 and 26AS have no TDS data', () => {
+    const form16NoTds: Form16Data = {
+      ...mockForm16,
+      totalTdsDeducted: 0,
+      totalTdsDeposited: 0,
+    };
+
+    const aisWithTds: AISData = {
+      interestSavings: 0,
+      interestDeposit: 0,
+      dividendIncome: 0,
+      tdsDetails: [
+        { tan: 'HYDQ00152F', deductorName: 'OPTUM GLOBAL', section: '192', amount: 75000 },
+        { tan: 'OTHERTAN1', deductorName: 'OTHER CO', section: '192', amount: 25000 },
+      ],
+    };
+
+    const reconciled = reconcileAllDocuments(form16NoTds, aisWithTds, undefined, undefined);
+
+    // Should pick up AIS TDS u/s 192 matching employer TAN (HYDQ00152F = 75000)
+    // plus supplement other AIS section 192 entries not already counted (OTHERTAN1 = 25000)
+    expect(reconciled.taxCredits?.tdsSalary).toBe(100000);
   });
 });

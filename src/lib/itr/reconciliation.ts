@@ -156,7 +156,7 @@ export function reconcileAllDocuments(
         (item) => item.tan && item.tan.toUpperCase() === employerTan.toUpperCase()
       );
 
-      const form16Tds = form16.taxPayable || 0;
+      const form16Tds = form16.totalTdsDeducted || 0;
 
       if (matchingTds26as) {
         if (Math.abs(matchingTds26as.amount - form16Tds) > 1) {
@@ -171,7 +171,24 @@ export function reconcileAllDocuments(
       }
     }
   } else {
-    credits.tdsSalary = form16.taxPayable || 0;
+    credits.tdsSalary = form16.totalTdsDeducted || 0;
+
+    // AIS-only fallback: if Form 16 has no TDS but AIS has TDS u/s 192 entries matching employer TAN, use those
+    if (credits.tdsSalary === 0 && ais && ais.tdsDetails) {
+      const employerTan = form16.employer?.tan;
+      if (employerTan) {
+        credits.tdsSalary = ais.tdsDetails
+          .filter((item) => item.section === '192' && item.tan.toUpperCase() === employerTan.toUpperCase())
+          .reduce((sum, item) => sum + item.amount, 0);
+      }
+    }
+  }
+
+  // Track TANs already counted in the salary fallback to avoid double-counting in the AIS supplement
+  const countedSalaryTans = new Set<string>();
+  if (credits.tdsSalary > 0 && !form26as) {
+    const employerTan = form16.employer?.tan;
+    if (employerTan) countedSalaryTans.add(employerTan.toUpperCase());
   }
 
   // Also include AIS TDS if any new ones are found (by matching TAN and section)
@@ -179,7 +196,7 @@ export function reconcileAllDocuments(
     for (const item of ais.tdsDetails) {
       if (item.section === '192') {
         const existsIn26as = form26as?.tdsSalary?.some((x) => x.tan && x.tan.toUpperCase() === item.tan.toUpperCase());
-        if (!existsIn26as) {
+        if (!existsIn26as && !countedSalaryTans.has(item.tan.toUpperCase())) {
           credits.tdsSalary += item.amount;
         }
       } else {

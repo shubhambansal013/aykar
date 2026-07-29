@@ -8,7 +8,7 @@
 |-------|--------|---------|
 | Phase 0: Eliminate hardcoded parser data | ✅ Done | `2026-07-29` — commit `4234635` |
 | Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `dadc139` |
-| Phase 2: Fix reconciliation logic | ⬜ Pending | |
+| Phase 2: Fix reconciliation logic | ✅ Done | `2026-07-29` — fallback: totalTdsDeducted→tdsSalary; cross-verify vs actual TDS; AIS-only fallback; reconciliation tests updated |
 | Phase 3: Wire Part A into simple parser | ⬜ Pending | |
 | Phase 4: Multi-employer / cross-source TDS | ⬜ Pending | |
 

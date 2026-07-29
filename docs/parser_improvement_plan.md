@@ -16,6 +16,15 @@
 
 ## Session Notes
 
+### 2026-07-29 — Phase 2: Reconciliation fixes
+- `reconciliation.ts`: fallback now uses `form16.totalTdsDeducted` instead of `form16.taxPayable`
+- `reconciliation.ts`: cross-verification compares 26AS TDS against actual TDS (`totalTdsDeducted`), not `taxPayable`
+- `reconciliation.ts`: AIS-only fallback — when 26AS absent and Form 16 has no TDS, uses AIS TDS u/s 192 entries matching employer TAN
+- `reconciliation.ts`: `countedSalaryTans` set prevents double-counting AIS entries in supplement loop
+- `reconciliation.test.ts`: updated fixtures (totalTdsDeducted: 140000), expectations; added AIS-only fallback test
+- Fixed `sanitizeForm16Data` in `page.tsx` missing new fields
+- Fixed incorrect type imports (`../types` → `../proto/compatibilityProxy`) in taxEngine.test.ts and validator.test.ts
+
 ### 2026-07-29 — Hardcoding removal + audit
 - Removed company/user-specific fallbacks from form16, ais, tis, form26as parsers
 - Moved keyword/classification data to `extractionConfig.ts`

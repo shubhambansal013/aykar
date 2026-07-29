@@ -36,6 +36,9 @@ describe('Reconciliation Module', () => {
     totalChapterVIADeductions: 150000,
     totalIncome: 1050000,
     taxPayable: 150000,
+    totalTdsDeducted: 145000,
+    totalTdsDeposited: 145000,
+    netTaxPayable: 5000,
   };
 
   it('should correctly reconcile incomes from AIS/TIS and TDS/TCS from Form 26AS', () => {

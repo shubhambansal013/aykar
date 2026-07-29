@@ -38,6 +38,9 @@ describe('taxEngine', () => {
     totalChapterVIADeductions: 205000,
     totalIncome: 802500,
     taxPayable: 0,
+    totalTdsDeducted: 0,
+    totalTdsDeposited: 0,
+    netTaxPayable: 0,
   };
 
   it('correctly calculates Old Tax Regime details', () => {

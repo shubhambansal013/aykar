@@ -141,8 +141,6 @@ netTaxPayable: number;       // balance payable after TDS credits
 - [ ] Ensure AIS-only path (no 26AS, no Form 16) still produces `tdsSalary` from AIS TDS u/s 192
 - [ ] **Test**: multi-employer scenario with combined TDS
 
----
-
 ## Architecture Notes
 
 ### Data flow

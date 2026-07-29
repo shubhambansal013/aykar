@@ -6,7 +6,7 @@
 
 | Phase | Status | Session |
 |-------|--------|---------|
-| Phase 1: Computation Worksheet Foundation | 📋 Planned | `2026-07-29` — Plan drafted |
+| Phase 1: Computation Worksheet Foundation | ✅ Done | `2026-07-29` — Replaced flat editable grid with read-only ComputationWorksheet (TaxpayerIdentityCard, IncomeDetails, TaxComputation). All 258 tests pass. |
 | Phase 2: Verification / Reconciliation Section | 📋 Planned | `2026-07-29` — Plan drafted |
 | Phase 3: Source Badges & Document Viewer | 📋 Planned | `2026-07-29` — Plan drafted |
 | Phase 4: Slab Visuals & Responsive Polish | 📋 Planned | `2026-07-29` — Plan drafted |

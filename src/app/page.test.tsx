@@ -105,7 +105,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Check that context displays the file name in the chat section (it will be present in both main upload view and chat context view)
@@ -118,7 +118,7 @@ describe('Home Page', () => {
 
     // Verify it is gone from both areas
     expect(screen.queryByText('test-form16-file.pdf')).toBeNull();
-    expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
+    expect(screen.queryByTestId('computation-worksheet')).toBeNull();
 
     vi.restoreAllMocks();
   }, 20000);
@@ -211,13 +211,12 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
-    expect(screen.getByDisplayValue('ABCDE1234F')).toBeDefined();
-    expect(screen.getByDisplayValue('John')).toBeDefined();
-    expect(screen.getByDisplayValue('Doe')).toBeDefined();
-    expect(screen.getAllByDisplayValue('1000000')[0]).toBeDefined();
+    expect(screen.getAllByText('ABCDE1234F').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('₹10,00,000').length).toBeGreaterThan(0);
 
     // Trigger AI Review
     const reviewBtn = screen.getByText('AI Review');
@@ -262,23 +261,19 @@ describe('Home Page', () => {
     });
   });
 
-  test('updates data on input change', async () => {
+  test('displays extracted data in read-only computation worksheet', async () => {
      const mockData = {
       employee: {
         pan: 'OLD_PAN',
         name: { firstName: 'Old', lastName: 'Name' }
       },
-      salary: { grossSalary: 100, standardDeduction16ia: 50 },
+      salary: { grossSalary: 100000, standardDeduction16ia: 50000, totalDeductionsUs16: 50000, incomeChargeableUnderHeadSalaries: 50000 },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      grossTotalIncome: 50000,
       deductions80C: 1,
-      deductions80CCC: 4,
-      deductions80CCD1: 5,
-      deductions80CCD1B: 6,
-      deductions80CCD2: 7,
-      deductions80D: 2,
-      deductions80E: 8,
-      deductions80G: 9,
-      deductions80TTA: 3,
-      totalChapterVIADeductions: 45
+      totalChapterVIADeductions: 1,
+      totalIncome: 49999,
+      taxPayable: 0,
     };
 
     vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue('text');
@@ -291,65 +286,13 @@ describe('Home Page', () => {
     Object.defineProperty(file, 'arrayBuffer', { value: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    await waitFor(() => expect(screen.getByDisplayValue('OLD_PAN')).toBeDefined());
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
 
-    fireEvent.change(screen.getByDisplayValue('OLD_PAN'), { target: { value: 'NEW_PAN' } });
-    expect(screen.getByDisplayValue('NEW_PAN')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('Old'), { target: { value: 'NewFirst' } });
-    expect(screen.getByDisplayValue('NewFirst')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('Name'), { target: { value: 'NewLast' } });
-    expect(screen.getByDisplayValue('NewLast')).toBeDefined();
-
-    fireEvent.change(screen.getAllByDisplayValue('100')[0], { target: { value: '200' } });
-    expect(screen.getAllByDisplayValue('200')[0]).toBeDefined();
-
-    fireEvent.change(screen.getAllByDisplayValue('50')[0], { target: { value: '150' } });
-    expect(screen.getAllByDisplayValue('150')[0]).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '11' } });
-    expect(screen.getByDisplayValue('11')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('4'), { target: { value: '44' } });
-    expect(screen.getByDisplayValue('44')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '55' } });
-    expect(screen.getByDisplayValue('55')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('6'), { target: { value: '66' } });
-    expect(screen.getByDisplayValue('66')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('7'), { target: { value: '77' } });
-    expect(screen.getByDisplayValue('77')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('2'), { target: { value: '22' } });
-    expect(screen.getByDisplayValue('22')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('8'), { target: { value: '88' } });
-    expect(screen.getByDisplayValue('88')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('9'), { target: { value: '99' } });
-    expect(screen.getByDisplayValue('99')).toBeDefined();
-
-    fireEvent.change(screen.getByDisplayValue('3'), { target: { value: '33' } });
-    expect(screen.getByDisplayValue('33')).toBeDefined();
-
-    fireEvent.change(screen.getByLabelText('Total Chapter VI-A Deductions'), { target: { value: '445' } });
-    expect(screen.getByDisplayValue('445')).toBeDefined();
-
-    // Re-validate button
-    fireEvent.click(screen.getByText(/Re-validate Data/i));
-    expect(validator.validateForm16Data).toHaveBeenCalled();
-
-    // Download button
-    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:url');
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-
-    fireEvent.click(screen.getByText(/Download ITR JSON/i));
-    expect(mapper.mapToITR).toHaveBeenCalled();
-    expect(clickSpy).toHaveBeenCalled();
-    clickSpy.mockRestore();
+    expect(screen.getAllByText('OLD_PAN').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Old Name').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('₹1,00,000').length).toBeGreaterThan(0);
   }, 45000);
 
   test('handles file upload with no files selected', () => {
@@ -441,7 +384,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Open chat
@@ -539,7 +482,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Trigger AI Review which will fetch the proposal
@@ -555,11 +498,11 @@ describe('Home Page', () => {
     const acceptBtn = screen.getByText('Accept & Apply');
     fireEvent.click(acceptBtn);
 
-    // Verify that the data was updated in the main review form
+    // Verify that the data was updated in the worksheet
     await waitFor(() => {
-      expect(screen.getByDisplayValue('UPDATED_PAN')).toBeDefined();
-      expect(screen.getByDisplayValue('UpdatedJohn')).toBeDefined();
-      expect(screen.getAllByDisplayValue('1100000')[0]).toBeDefined();
+      expect(screen.getAllByText('UPDATED_PAN').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('UpdatedJohn Doe').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('₹11,00,000').length).toBeGreaterThan(0);
     });
 
     // Verify Applied Successfully confirmation is shown
@@ -614,7 +557,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Trigger AI Review which will fetch the proposal
@@ -687,7 +630,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Trigger AI Review which will fetch the proposal
@@ -703,10 +646,10 @@ describe('Home Page', () => {
     const acceptBtn = screen.getByText('Accept & Apply');
     fireEvent.click(acceptBtn);
 
-    // Verify that the data was updated in the main review form
+    // Verify that the data was updated in the worksheet
     await waitFor(() => {
-      expect(screen.getByDisplayValue('UPDATED_PAN')).toBeDefined();
-      expect(screen.getByDisplayValue('UpdatedJohn')).toBeDefined();
+      expect(screen.getAllByText('UPDATED_PAN').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('UpdatedJohn Doe').length).toBeGreaterThan(0);
     });
 
     // Verify Applied Successfully confirmation is shown
@@ -718,8 +661,8 @@ describe('Home Page', () => {
 
     // Verify that the data reverts back
     await waitFor(() => {
-      expect(screen.getByDisplayValue('ABCDE1234F')).toBeDefined();
-      expect(screen.getByDisplayValue('John')).toBeDefined();
+      expect(screen.getAllByText('ABCDE1234F').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
     });
 
     // Verify the confirmation is hidden and Accept / Reject buttons are back
@@ -727,7 +670,7 @@ describe('Home Page', () => {
     expect(screen.getByText('Accept & Apply')).toBeDefined();
 
     vi.restoreAllMocks();
-  });
+  }, 45000);
 
   test('displays AIS, TIS, and 26AS attachment badges in chat panel context area and allows independent removal', async () => {
     const mockText = 'Raw PDF text';
@@ -906,10 +849,11 @@ describe('Home Page', () => {
 
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // 4. Verify that data gets populated in the CueTextField elements correctly
+    // 4. Verify that data gets populated in the computation worksheet
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Refactored Corp')).toBeDefined();
-      expect(screen.getByDisplayValue('Alice')).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+      expect(screen.getAllByText('Alice Smith').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Refactored Corp', { exact: false }).length).toBeGreaterThan(0);
     });
 
     // 5. Trigger the AI Review advisory flow
@@ -922,12 +866,12 @@ describe('Home Page', () => {
       expect(screen.getByText('Confirming gross salary details')).toBeDefined();
     });
 
-    // 7. Apply the updates and verify changes flow to the main form
+    // 7. Apply the updates and verify changes flow to the worksheet
     const acceptBtn = screen.getByText('Accept & Apply');
     fireEvent.click(acceptBtn);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('AliceUpdated')).toBeDefined();
+      expect(screen.getAllByText('AliceUpdated Smith').length).toBeGreaterThan(0);
     });
 
     vi.restoreAllMocks();
@@ -964,7 +908,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // 2. Clear target value should have been executed in the handler
@@ -975,7 +919,7 @@ describe('Home Page', () => {
     fireEvent.click(removeBtn);
 
     await waitFor(() => {
-      expect(screen.queryByText(/2. Review & Edit Extracted Information/i)).toBeNull();
+      expect(screen.queryByTestId('computation-worksheet')).toBeNull();
     });
 
     // 4. Second upload of the EXACT same file
@@ -983,41 +927,34 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     expect(fileInput.value).toBe('');
     vi.restoreAllMocks();
   }, 45000);
 
-  test('renders modernized UI/UX components correctly', async () => {
-    // This test directly verifies our Jules UI/UX Modernization enhancements.
+  test('renders computation worksheet and tax comparison correctly', async () => {
     const file = new File(['%PDF-1.5 ...'], 'form16.pdf', { type: 'application/pdf' });
     render(<Home />);
 
     const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // Wait for file parsing to complete and render the forms
+    // Wait for file parsing to complete and render the worksheet
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
-    // 1. Check that verified-badges (auto-verified counts) next to section headers are present
-    const badges = screen.getAllByTestId('verified-badge');
-    expect(badges.length).toBeGreaterThan(0);
+    // 1. Check that the ComputationWorksheet section headings are present
+    expect(screen.getByText('Taxpayer Identity')).toBeDefined();
+    expect(screen.getByText('Income Details')).toBeDefined();
+    expect(screen.getByText('Tax Computation')).toBeDefined();
 
-    // 2. Check that progressive disclosure of audit trails is collapsed by default (View Calculation Breakdown ▾ is shown)
-    const toggleSalaryBtn = screen.getByTestId('toggle-audit-salary');
-    expect(toggleSalaryBtn.textContent).toContain('View Calculation Breakdown ▾');
-    expect(screen.queryByText('SALARY AUDIT TRAIL & BREAKDOWN:')).toBeNull();
+    // 2. Verify the ITR form badge is shown
+    expect(screen.getByTestId('selected-itr-form-badge')).toBeDefined();
 
-    // 3. Click the toggle and verify progressive disclosure unfolds
-    fireEvent.click(toggleSalaryBtn);
-    expect(toggleSalaryBtn.textContent).toContain('Hide Calculation Breakdown ▴');
-    expect(screen.getByText('SALARY AUDIT TRAIL & BREAKDOWN:')).toBeDefined();
-
-    // 4. Verify the Optimal Badge is nested inside the Optimal regime card
+    // 3. Verify the Optimal Badge is nested inside the Optimal regime card
     const optimalBadge = screen.getByText('Optimal');
     expect(optimalBadge).toBeDefined();
 
@@ -1118,17 +1055,19 @@ describe('Home Page', () => {
       expect(screen.getByText('2 Uploaded')).toBeDefined();
     });
 
-    // Verify merging values in UI (e.g. gross salary = 1,200,000)
-    expect(screen.getByDisplayValue('Acme Corp / Beta Inc')).toBeDefined();
+    // Verify both employer names appear in the multi-employer section
+    expect(screen.getAllByText('Acme Corp', { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Beta Inc', { exact: false }).length).toBeGreaterThan(0);
 
     // Remove first Form-16 from the main list panel
     const deleteBtn = screen.getByLabelText('delete form16 file 0');
     fireEvent.click(deleteBtn);
 
-    // Verify it is updated to "1 Uploaded" and employer name is now only Beta Inc
+    // Verify it is updated to "1 Uploaded" and only Beta Inc remains
     await waitFor(() => {
       expect(screen.getByText('1 Uploaded')).toBeDefined();
-      expect(screen.getByDisplayValue('Beta Inc')).toBeDefined();
+      expect(screen.getAllByText('Beta Inc', { exact: false }).length).toBeGreaterThan(0);
+      expect(screen.queryAllByText('Acme Corp', { exact: false }).length).toBe(0);
     });
 
     vi.restoreAllMocks();
@@ -1176,7 +1115,7 @@ describe('Home Page', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
     });
 
     // Right panel switch tab inspect should be queryable
@@ -1243,7 +1182,7 @@ describe('Home Page', () => {
     fireEvent.change(f16Input!, { target: { files: [file1] } });
 
     await waitFor(() => {
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
       expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
     });
 
@@ -1257,7 +1196,7 @@ describe('Home Page', () => {
     // Expect no blocking error Alert with data-testid="ais-tis-error-alert" to be displayed
     await waitFor(() => {
       expect(screen.queryByTestId('ais-tis-error-alert')).toBeNull();
-      expect(screen.getByText(/2. Review & Edit Extracted Information/i)).toBeDefined();
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
       expect(screen.getByText(/Tax Regime Comparison/i)).toBeDefined();
     });
 

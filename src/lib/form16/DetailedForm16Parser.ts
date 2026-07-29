@@ -10,6 +10,7 @@ import {
   Form12BA,
   Verification
 } from '../../generated/sources/form16';
+import { extractionConfig } from './extractionConfig';
 
 /**
  * DetailedForm16Parser is a high-fidelity parser designed to extract deep structural details from Form-16 text.
@@ -141,7 +142,9 @@ export class DetailedForm16Parser {
     if (blockIdx >= 0) {
       for (let i = blockIdx + 1; i < Math.min(lines.length, blockIdx + 15); i++) {
         const candidate = lines[i].trim();
-        if (/^[A-Z][A-Z.\s]{2,40}$/.test(candidate) && !/LIMITED|PRIVATE|BANK|TOWER|FLOOR|ROAD/i.test(candidate)) {
+        const notCorporate = (s: string) => !extractionConfig.basicInfo.corporateKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(s))
+          && !extractionConfig.basicInfo.addressKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(s));
+        if (/^[A-Z][A-Z.\s]{2,40}$/.test(candidate) && notCorporate(candidate)) {
           name = candidate;
           break;
         }
@@ -255,20 +258,6 @@ export class DetailedForm16Parser {
     }
 
     citTdsAddress = this.parseCitTdsAddress(lines);
-
-    // Hardcoded Fallbacks for layout shift
-    if (text.includes('PARAMETRIC TECHNOLOGY')) {
-      employerName = 'PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED';
-      employerAddress = '16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD, BANGALORE - 560025 Karnataka';
-      employerEmail = 'SHCHOUDHARY@PTC.COM';
-      employerPhone = '+(91)80-8197124546';
-      citTdsAddress = 'The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032';
-    } else if (text.includes('THOMSON REUTERS')) {
-      employerName = 'THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED';
-      employerAddress = 'Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra';
-      employerEmail = 'Payrollhelpdesk.India@thomsonreuters.com';
-      citTdsAddress = 'The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road, Mumbai - 400002';
-    }
 
     return {
       tan: employerTan,

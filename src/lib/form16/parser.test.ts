@@ -637,3 +637,44 @@ describe('mergeForm16Data', () => {
     expect(merged.period.to).toBe('31-Mar-2026');
   });
 });
+
+describe('parser code quality - no user-specific hardcoding', () => {
+  const parserFiles = [
+    'src/lib/form16/BasicInfoParser.ts',
+    'src/lib/form16/SalaryParser.ts',
+    'src/lib/form16/DeductionsParser.ts',
+    'src/lib/form16/OtherIncomeParser.ts',
+    'src/lib/form16/TaxComputationParser.ts',
+    'src/lib/form16/DetailedForm16Parser.ts',
+    'src/lib/form16/FormatDetector.ts',
+    'src/lib/form16/Form16Merger.ts',
+    'src/lib/form16/ParserUtils.ts',
+    'src/lib/form16/NormalizedIntermediateForm.ts',
+    'src/lib/form16/FuzzyMatcher.ts',
+    'src/lib/form16/extractionConfig.ts',
+    'src/lib/ais/parser.ts',
+    'src/lib/tis/parser.ts',
+    'src/lib/form26as/parser.ts',
+  ];
+
+  const forbiddenPatterns: { pattern: RegExp; reason: string }[] = [
+    { pattern: /['"]PARAMETRIC TECHNOLOGY['"]/i, reason: 'company-specific employer data' },
+    { pattern: /['"]THOMSON REUTERS['"]/i, reason: 'company-specific employer data' },
+    { pattern: /['"]sumit jain['"]/i, reason: 'person-specific name' },
+    { pattern: /SHCHOUDHARY\@PTC\.COM/i, reason: 'person-specific email' },
+    { pattern: /Payrollhelpdesk\.[aA]ndia\@thomsonreuters\.com/i, reason: 'employer-specific email' },
+  ];
+
+  for (const filePath of parserFiles) {
+    for (const { pattern, reason } of forbiddenPatterns) {
+      it(`should not contain ${reason} in ${filePath}`, async () => {
+        const content = await import('fs').then(fs => {
+          const path = require('path');
+          const fullPath = path.resolve(process.cwd(), filePath);
+          return fs.readFileSync(fullPath, 'utf-8');
+        });
+        expect(pattern.test(content)).toBe(false);
+      });
+    }
+  }
+});

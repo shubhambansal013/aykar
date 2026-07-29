@@ -1,4 +1,5 @@
 import { TISData, createEmptyTis, createTisProxy } from '../proto/compatibilityProxy';
+import { extractionConfig } from '../form16/extractionConfig';
 
 /**
  * Extracts numeric amounts from a line of PDF-extracted text.
@@ -201,10 +202,7 @@ function parseDetails(lines: string[], categories: Array<{ categoryName: string 
   return details;
 }
 
-const SALARY_PATTERNS = [/Salary/i];
-const SAVINGS_PATTERNS = [/Interest\s+from\s+savings\s+bank/i, /Savings\s+bank\s+interest/i];
-const DEPOSIT_PATTERNS = [/Interest\s+on\s+deposits?/i, /Deposit\s+interest/i, /Interest\s+from\s+deposits?/i];
-const DIVIDEND_PATTERNS = [/Dividend\s+Income/i, /\bDividend\b/i];
+const tisConfig = extractionConfig.tis;
 
 export function parseTISText(text: string): any {
   const lines = text.split('\n');
@@ -215,12 +213,10 @@ export function parseTISText(text: string): any {
 
   const findCategory = (nameRe: RegExp) => categories.find(c => nameRe.test(c.categoryName));
 
-  // Structured table parse first (most reliable for the standard numbered TIS format);
-  // fall back to flexible label scanning for any other layout.
-  const salaryDerived = findCategory(/^salary$/i)?.processedBySystem || findValueForPatterns(lines, SALARY_PATTERNS);
-  const interestSavings = findCategory(/savings\s+bank/i)?.processedBySystem || findValueForPatterns(lines, SAVINGS_PATTERNS);
-  const interestDeposit = findCategory(/deposit/i)?.processedBySystem || findValueForPatterns(lines, DEPOSIT_PATTERNS);
-  const dividendIncome = findCategory(/dividend/i)?.processedBySystem || findValueForPatterns(lines, DIVIDEND_PATTERNS);
+  const salaryDerived = findCategory(/^salary$/i)?.processedBySystem || findValueForPatterns(lines, tisConfig.salaryPatterns);
+  const interestSavings = findCategory(/savings\s+bank/i)?.processedBySystem || findValueForPatterns(lines, tisConfig.savingsPatterns);
+  const interestDeposit = findCategory(/deposit/i)?.processedBySystem || findValueForPatterns(lines, tisConfig.depositPatterns);
+  const dividendIncome = findCategory(/dividend/i)?.processedBySystem || findValueForPatterns(lines, tisConfig.dividendPatterns);
 
   const tis = createEmptyTis();
   const proxy = createTisProxy(tis);

@@ -1,4 +1,5 @@
 import { FuzzyMatcher } from './FuzzyMatcher';
+import { extractionConfig } from './extractionConfig';
 
 export type Form16TemplateType = 'DETAILED_FORM_16' | 'STANDARD_FORM_16' | 'UNKNOWN';
 
@@ -9,31 +10,11 @@ export interface DocumentFingerprint {
 }
 
 export class FormatDetector {
-  /**
-   * Fingerprints the given document text to identify its template class and confidence level.
-   */
   public static detect(text: string): DocumentFingerprint {
     const labelsFound: string[] = [];
-
-    // Characteristics of Detailed Form-16 (Part A & Part B summaries)
-    const detailedKeywords = [
-      'FORM NO. 12BA',
-      'DETAILS OF TAX DEDUCTED AND DEPOSITED',
-      'CIT (TDS)',
-      'Certificate No',
-      'Quarter(s)',
-      'Challan Identification Number',
-      'PARAMETRIC TECHNOLOGY',
-      'THOMSON REUTERS'
-    ];
-
-    // Characteristics of Standard Form-16
-    const standardKeywords = [
-      'Gross Salary',
-      'Deductions under section 16',
-      'Tax payable',
-      'Income chargeable under the head "Salaries"'
-    ];
+    const config = extractionConfig.formatDetection;
+    const detailedKeywords = config.detailedKeywords;
+    const standardKeywords = config.standardKeywords;
 
     let detailedScore = 0;
     detailedKeywords.forEach(kw => {

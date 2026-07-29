@@ -27,6 +27,17 @@ export interface BlockBoundaries {
   end: RegExp;
 }
 
+export type DeductionField =
+  | 'deduction80C'
+  | 'deduction80CCC'
+  | 'deduction80CCD1'
+  | 'deduction80CCD1B'
+  | 'deduction80CCD2'
+  | 'deduction80D'
+  | 'deduction80E'
+  | 'deduction80G'
+  | 'deduction80TTA';
+
 export interface ExtractionConfig {
   basicInfo: {
     employeePan: FieldExtractionRule;
@@ -38,6 +49,11 @@ export interface ExtractionConfig {
     employeeDeclarations: RegExp[];
     periodSearchKeywords: string[];
     periodFallback: RegExp;
+    corporateKeywords: string[];
+    addressKeywords: string[];
+    stateNames: string[];
+    corporateSuffixes: RegExp[];
+    monthNames: Record<string, number>;
   };
   salary: {
     grossSalaryBlock: BlockBoundaries;
@@ -51,6 +67,7 @@ export interface ExtractionConfig {
     standardDeduction16ia: FieldExtractionRule;
     entertainmentAllowance16ii: FieldExtractionRule;
     professionalTax16iii: FieldExtractionRule;
+    standardDeductionCap: number;
   };
   otherIncome: {
     houseProperty: FieldExtractionRule;
@@ -68,11 +85,34 @@ export interface ExtractionConfig {
     deduction80G: FieldExtractionRule;
     deduction80TTA: FieldExtractionRule;
     totalChapterVIADeductions: FieldExtractionRule;
+    letterToField: Record<string, DeductionField>;
   };
   taxComputation: {
     grossTotalIncome: FieldExtractionRule;
     totalIncome: FieldExtractionRule;
     taxPayable: FieldExtractionRule;
+  };
+  formatDetection: {
+    detailedKeywords: string[];
+    standardKeywords: string[];
+  };
+  ais: {
+    sectionStops: RegExp[];
+    savingsPatterns: RegExp[];
+    depositPatterns: RegExp[];
+    dividendPatterns: RegExp[];
+    deductorStopWords: RegExp[];
+    cleanLinePatterns: RegExp[];
+  };
+  tis: {
+    salaryPatterns: RegExp[];
+    savingsPatterns: RegExp[];
+    depositPatterns: RegExp[];
+    dividendPatterns: RegExp[];
+  };
+  form26as: {
+    deductorStopWords: RegExp[];
+    cleanLinePatterns: RegExp[];
   };
 }
 
@@ -121,14 +161,52 @@ export const extractionConfig: ExtractionConfig = {
       end: /\s*(?:PAN of the|TAN of the|Assessment Year|Period with|$)/i
     },
     employeeDeclarations: [
-      /Name and address of the employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|PAN|$))/i, // Form 12BB
-      /Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|CESPB|[A-Z]{5}[0-9]{4}[A-Z]|$))/i, // Form 12BA
-      /Name\s+of\s+the?\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Designation|Address|PAN|TAN|$))/i, // Name of employee label
-      /I,\s*([A-Z\s]+?),\s*employee\s+of/i, // Form 12BA declaration
-      /I,\s*([A-Z\s]+?),\s*(?:son|daughter)\s*of/gi // Verification/Declaration line
+      /Name and address of the employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|PAN|$))/i,
+      /Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|CESPB|[A-Z]{5}[0-9]{4}[A-Z]|$))/i,
+      /Name\s+of\s+the?\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Designation|Address|PAN|TAN|$))/i,
+      /I,\s*([A-Z\s]+?),\s*employee\s+of/i,
+      /I,\s*([A-Z\s]+?),\s*(?:son|daughter)\s*of/gi
     ],
     periodSearchKeywords: ['period with'],
-    periodFallback: /Period with the employer:\s*From\s+([^\s]+)\s+To\s+([^\s]+)/i
+    periodFallback: /Period with the employer:\s*From\s+([^\s]+)\s+To\s+([^\s]+)/i,
+    corporateKeywords: [
+      'LIMITED', 'LTD', 'PRIVATE', 'PVT', 'SERVICES', 'CO', 'CORP',
+      'CORPORATION', 'BANK', 'TRUST', 'INDIA', 'INCORPORATED', 'INC',
+      'ASSOCIATES', 'OPERATIONS', 'GLOBAL', 'SOLUTIONS', 'TECHNOLOGY',
+      'INTERNATIONAL', 'PTE'
+    ],
+    addressKeywords: [
+      'FLOOR', 'TOWERS', 'ROAD', 'BUILDING', 'HOUSE', 'PLOT', 'SECTOR',
+      'STREET', 'LANE', 'AVENUE', 'BLOCK', 'FLAT', 'ROOM', 'APARTMENT',
+      'WARD', 'NAGAR', 'COLONY', 'SOCIETY', 'VIHAR', 'ENCLAVE', 'GALI',
+      'CITY', 'DISTRICT', 'STATE', 'PINCODE', 'COMMISSIONER', 'HOSPITAL',
+      'Sector', 'Phase', 'Flat', 'House', 'Room', 'Plot', 'Lane', 'Road',
+      'H.No', 'HNo', 'Floor', 'Block', 'Building', 'Bld', 'Apt', 'Apartment',
+      'Near', 'Opposite', 'Opp', 'Behind', 'Ward', 'Street', 'Nagar',
+      'Colony', 'Society', 'Vihar', 'Enclave', 'Gali', 'City', 'Dist',
+      'District', 'State', 'Pin', 'PinCode', 'Haryana', 'Karnataka',
+      'Delhi', 'Mumbai', 'Gurgaon', 'Gurugram', 'Bangalore', 'Bengaluru'
+    ],
+    stateNames: [
+      'Telangana', 'Karnataka', 'Haryana', 'Delhi', 'Maharashtra',
+      'Tamil Nadu', 'Gujarat', 'Uttar Pradesh', 'West Bengal', 'Rajasthan'
+    ],
+    corporateSuffixes: [
+      /\bPRIVATE LIMITED\b/i,
+      /\bPVT\.?\s*LTD\.?\b/i,
+      /\bLIMITED\b/i,
+      /\bLTD\.?\b/i,
+      /\bCO\b/i,
+      /\bCORP\b/i,
+      /\bCORPORATION\b/i,
+      /\bTRUST\b/i,
+      /\bBANK\b/i,
+      /\bSERVICES\b/i,
+    ],
+    monthNames: {
+      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+      jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+    }
   },
   salary: {
     grossSalaryBlock: {
@@ -208,6 +286,7 @@ export const extractionConfig: ExtractionConfig = {
       ],
       numericTokenIndex: -1
     },
+    standardDeductionCap: 75000,
     standardDeduction16ia: {
       lineRegexes: [
         /Standard\s+deduction\s+under\s+section\s+16\(ia\)/i,
@@ -365,6 +444,17 @@ export const extractionConfig: ExtractionConfig = {
         /Aggregate\s+of\s+deductible\s+amount\s+under\s+Chapter\s+VI-A\s*(?:[^\d-]*)(-?\s*\d+(?:,\s*\d+)*\.\d{2})/i
       ],
       numericTokenIndex: -1
+    },
+    letterToField: {
+      'a': 'deduction80C',
+      'b': 'deduction80CCC',
+      'c': 'deduction80CCD1',
+      'e': 'deduction80CCD1B',
+      'f': 'deduction80CCD2',
+      'g': 'deduction80D',
+      'h': 'deduction80E',
+      'k': 'deduction80G',
+      'l': 'deduction80TTA',
     }
   },
   taxComputation: {
@@ -398,5 +488,97 @@ export const extractionConfig: ExtractionConfig = {
       ],
       numericTokenIndex: -1
     }
-  }
+  },
+  formatDetection: {
+    detailedKeywords: [
+      'FORM NO. 12BA',
+      'DETAILS OF TAX DEDUCTED AND DEPOSITED',
+      'CIT (TDS)',
+      'Certificate No',
+      'Quarter(s)',
+      'Challan Identification Number',
+    ],
+    standardKeywords: [
+      'Gross Salary',
+      'Deductions under section 16',
+      'Tax payable',
+      'Income chargeable under the head "Salaries"',
+    ],
+  },
+  ais: {
+    sectionStops: [
+      /^\s*Interest\s+from\s+deposit/i,
+      /^\s*Sale\s+of\s+securities/i,
+      /^\s*Purchase\s+of\s+securities/i,
+      /^\s*Dividend/i,
+      /^\s*Part\s+B\d/i,
+      /^\s*Salary\s*$/i,
+    ],
+    savingsPatterns: [
+      /Interest\s+from\s+savings\s+bank/i,
+      /Savings\s+bank\s+interest/i,
+    ],
+    depositPatterns: [
+      /Interest\s+on\s+deposits?/i,
+      /Deposit\s+interest/i,
+      /Interest\s+from\s+deposits?/i,
+      /Interest\s+on\s+time\s+deposit/i,
+    ],
+    dividendPatterns: [
+      /Dividend\s+Income/i,
+      /\bDividend\b/i,
+    ],
+    deductorStopWords: [
+      /Download\s+ID/i,
+      /Generation\s+Date/i,
+      /^\s*PAN\s+Name\s+Financial\s+Year/i,
+      /^\s*[A-Z]{5}\d{4}[A-Z]\s+[A-Z\s]+\s+\d{4}-\d{2}/i,
+      /SR\.\s+DATE\s+OF\s+SALE/i,
+      /NO\.\s+TRANSFER\s+CLASS/i,
+      /^\s*VALUE\s*$/i,
+    ],
+    cleanLinePatterns: [
+      /\b(19\d[A-Z]*|206[A-Z]*)\b/gi,
+      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g,
+      /-?\s*\d[\d,]*\.\d{2}/g,
+      /\b[FUO]\b/g,
+      /\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi,
+      /\b(PART\s+[A-Z])\b/gi,
+    ],
+  },
+  tis: {
+    salaryPatterns: [/Salary/i],
+    savingsPatterns: [
+      /Interest\s+from\s+savings\s+bank/i,
+      /Savings\s+bank\s+interest/i,
+    ],
+    depositPatterns: [
+      /Interest\s+on\s+deposits?/i,
+      /Deposit\s+interest/i,
+      /Interest\s+from\s+deposits?/i,
+    ],
+    dividendPatterns: [
+      /Dividend\s+Income/i,
+      /\bDividend\b/i,
+    ],
+  },
+  form26as: {
+    deductorStopWords: [
+      /Download\s+ID/i,
+      /Generation\s+Date/i,
+      /^\s*PAN\s+Name\s+Financial\s+Year/i,
+      /^\s*[A-Z]{5}\d{4}[A-Z]\s+[A-Z\s]+\s+\d{4}-\d{2}/i,
+      /SR\.\s+DATE\s+OF\s+SALE/i,
+      /NO\.\s+TRANSFER\s+CLASS/i,
+      /^\s*VALUE\s*$/i,
+    ],
+    cleanLinePatterns: [
+      /\b(19\d[A-Z]*|206[A-Z]*)\b/gi,
+      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g,
+      /-?\s*\d[\d,]*\.\d{2}/g,
+      /\b[FUO]\b/g,
+      /\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi,
+      /\b(PART\s+[A-Z])\b/gi,
+    ],
+  },
 };

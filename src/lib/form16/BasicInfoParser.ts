@@ -22,40 +22,24 @@ export class BasicInfoParser {
       .replace(/^[:\-\s]+|[:\-\s]+$/g, '');
   }
 
-  /**
-   * Evaluates if a given line is likely an employee's personal name rather than a corporate entity or address.
-   */
   private static isLikelyPersonName(line: string): boolean {
     const clean = line.trim();
     if (!/^[A-Za-z\s.-]{3,30}$/.test(clean)) return false;
     const words = clean.toUpperCase().split(/\s+/).filter(Boolean);
     if (words.length < 2 || words.length > 4) return false;
 
-    const corpKeywords = [
-      'LIMITED', 'LTD', 'PRIVATE', 'PVT', 'SERVICES', 'CO', 'CORP',
-      'CORPORATION', 'BANK', 'TRUST', 'INDIA', 'INCORPORATED', 'INC',
-      'ASSOCIATES', 'OPERATIONS', 'GLOBAL', 'SOLUTIONS', 'TECHNOLOGY',
-      'INTERNATIONAL', 'PTE'
-    ];
-    if (words.some(w => corpKeywords.includes(w))) return false;
-
-    const addressKeywords = [
-      'FLOOR', 'TOWERS', 'ROAD', 'BUILDING', 'HOUSE', 'PLOT', 'SECTOR',
-      'STREET', 'LANE', 'AVENUE', 'BLOCK', 'FLAT', 'ROOM', 'APARTMENT',
-      'WARD', 'NAGAR', 'COLONY', 'SOCIETY', 'VIHAR', 'ENCLAVE', 'GALI',
-      'CITY', 'DISTRICT', 'STATE', 'PINCODE', 'COMMISSIONER', 'HOSPITAL'
-    ];
-    if (words.some(w => addressKeywords.includes(w))) return false;
+    const config = extractionConfig.basicInfo;
+    if (words.some(w => config.corporateKeywords.includes(w))) return false;
+    if (words.some(w => config.addressKeywords.includes(w))) return false;
 
     return true;
   }
 
-  /**
-   * Extracts a person's name tokens from a block, stopping at address or digit indicators.
-   */
   public static extractNameFromBlock(block: string): string {
     const tokens = block.trim().split(/\s+/);
     const nameParts: string[] = [];
+    const config = extractionConfig.basicInfo;
+    const addressPattern = new RegExp(`^(${config.addressKeywords.join('|')})$`, 'i');
 
     for (const token of tokens) {
       const cleanToken = token.replace(/[,;:\-\s]+$/, '').replace(/^[,;:\-\s]+/, '');
@@ -65,10 +49,7 @@ export class BasicInfoParser {
         break;
       }
 
-      const isAddressKeyword = /^(Sector|Phase|Flat|House|Room|Plot|Lane|Road|H\.?No|Floor|Block|Building|Bld|Apt|Apartment|Near|Opposite|Opp|Behind|Ward|Street|Nagar|Colony|Society|Vihar|Enclave|Gali|City|Dist|District|State|Pin|PinCode|Haryana|Karnataka|Delhi|Mumbai|Gurgaon|Gurugram|Bangalore|Bengaluru)$/i.test(cleanToken.replace(/[^a-zA-Z]/g, ''));
-      const hasDigits = /\d/.test(cleanToken);
-
-      if (isAddressKeyword || hasDigits) {
+      if (addressPattern.test(cleanToken.replace(/[^a-zA-Z]/g, '')) || /\d/.test(cleanToken)) {
         break;
       }
 
@@ -239,10 +220,8 @@ export class BasicInfoParser {
       .replace(/,\s*,/g, ',')
       .trim();
 
-    address = address.replace(
-      /(\d{6})\s+(Telangana|Karnataka|Haryana|Delhi|Maharashtra|Tamil\s*Nadu|Gujarat|Uttar\s*Pradesh|West\s*Bengal|Rajasthan)/gi,
-      '$1, $2'
-    );
+    const statePattern = new RegExp(`(\\d{6})\\s+(${extractionConfig.basicInfo.stateNames.join('|').replace(/\s/g, '\\s')})`, 'gi');
+    address = address.replace(statePattern, '$1, $2');
     data.employer.address = address;
   }
 
@@ -337,18 +316,7 @@ export class BasicInfoParser {
    */
   private static reconstructEmployerFromBlock(rawBlock: string, data: Form16Data): void {
     const employerBlock = this.cleanLabels(rawBlock);
-    const corporateSuffixes = [
-      /\bPRIVATE LIMITED\b/i,
-      /\bPVT\.?\s*LTD\.?\b/i,
-      /\bLIMITED\b/i,
-      /\bLTD\.?\b/i,
-      /\bCO\b/i,
-      /\bCORP\b/i,
-      /\bCORPORATION\b/i,
-      /\bTRUST\b/i,
-      /\bBANK\b/i,
-      /\bSERVICES\b/i,
-    ];
+    const corporateSuffixes = extractionConfig.basicInfo.corporateSuffixes;
 
     let foundSuffixIndex = -1;
     let matchedSuffixLen = 0;
@@ -387,6 +355,8 @@ export class BasicInfoParser {
     const nameLines: string[] = [];
     const addressLines: string[] = [];
     let addressStarted = false;
+    const config = extractionConfig.basicInfo;
+    const addressPattern = new RegExp(`^(${config.addressKeywords.join('|')}|\\d+TH|\\d+RD|\\d+ND|\\d+ST)$`, 'i');
 
     for (const line of lines) {
       if (addressStarted) {
@@ -394,10 +364,7 @@ export class BasicInfoParser {
         continue;
       }
       const cleanLine = line.replace(/[,;:\-\s]+$/, '').replace(/^[,;:\-\s]+/, '');
-      const isAddressKeyword = /^(Sector|Phase|Flat|House|Room|Plot|Lane|Road|H\.?No|Floor|Block|Building|Bld|Apt|Apartment|Near|Opposite|Opp|Behind|Ward|Street|Nagar|Colony|Society|Vihar|Enclave|Gali|City|Dist|District|State|Pin|PinCode|Haryana|Karnataka|Delhi|Mumbai|Gurgaon|Gurugram|Bangalore|Bengaluru|\d+TH|\d+RD|\d+ND|\d+ST)/i.test(cleanLine.replace(/[^a-zA-Z]/g, ''));
-      const hasDigits = /\d/.test(cleanLine);
-
-      if (isAddressKeyword || hasDigits) {
+      if (addressPattern.test(cleanLine.replace(/[^a-zA-Z0-9]/g, '')) || /\d/.test(cleanLine)) {
         addressStarted = true;
         addressLines.push(line);
       } else {
@@ -427,10 +394,7 @@ export class BasicInfoParser {
         const declMatches = [...text.matchAll(declRegex)];
         for (const match of declMatches) {
           const candidate = match[1].trim();
-          const isDeductor = text.toLowerCase().includes(`${candidate.toLowerCase()}...working in the capacity of`) ||
-                             text.toLowerCase().includes(`${candidate.toLowerCase()} working as finance`) ||
-                             candidate.toLowerCase().includes('sumit jain');
-          if (!isDeductor && candidate.length > 3) {
+          if (candidate.length > 3) {
             employeeName = candidate;
             break;
           }
@@ -513,13 +477,9 @@ export class BasicInfoParser {
         const parsedDates = dates.map(dStr => {
           const parts = dStr.split('-');
           const day = parseInt(parts[0], 10);
-          const monthStr = parts[1].toLowerCase();
+          const monthStr = parts[1].toLowerCase().substring(0, 3);
           const year = parseInt(parts[2], 10);
-          const months: Record<string, number> = {
-            jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-            jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
-          };
-          const month = months[monthStr.substring(0, 3)] ?? 0;
+          const month = extractionConfig.basicInfo.monthNames[monthStr] ?? 0;
           return { str: dStr, date: new Date(year, month, day) };
         });
 

@@ -1,4 +1,5 @@
 import { AISData, createEmptyAis, createAisProxy } from '../proto/compatibilityProxy';
+import { extractionConfig } from '../form16/extractionConfig';
 import { SecuritySale } from '../../generated/sources/ais';
 
 /**
@@ -82,19 +83,10 @@ function parseSecuritySales(lines: string[]): SecuritySale[] {
         // Extract and construct security name
         const firstLineName = tokens.slice(2, tokens.length - 12).join(' ');
 
-        // Collect subsequent lines name parts
         const cleanedSubLines: string[] = [];
         const isPageHeaderFooter = (l: string): boolean => {
           const trimmed = l.trim();
-          return (
-            /Download\s+ID/i.test(trimmed) ||
-            /Generation\s+Date/i.test(trimmed) ||
-            /^\s*PAN\s+Name\s+Financial\s+Year/i.test(trimmed) ||
-            /^\s*[A-Z]{5}\d{4}[A-Z]\s+[A-Z\s]+\s+\d{4}-\d{2}/i.test(trimmed) ||
-            /SR\.\s+DATE\s+OF\s+SALE/i.test(trimmed) ||
-            /NO\.\s+TRANSFER\s+CLASS/i.test(trimmed) ||
-            /^\s*VALUE\s*$/i.test(trimmed)
-          );
+          return extractionConfig.ais.deductorStopWords.some(pat => pat.test(trimmed));
         };
 
         for (let k = 1; k < blockLines.length; k++) {
@@ -178,12 +170,9 @@ function findNameInWindow(lines: string[], centerIdx: number, targetTan: string)
 
   const cleanLine = (line: string): string => {
     let s = line.replace(new RegExp(targetTan, 'gi'), '');
-    s = s.replace(/\b(19\d[A-Z]*|206[A-Z]*)\b/gi, '');
-    s = s.replace(/\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, '');
-    s = s.replace(/-?\s*\d[\d,]*\.\d{2}/g, '');
-    s = s.replace(/\b[FUO]\b/g, '');
-    s = s.replace(/\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi, '');
-    s = s.replace(/\b(PART\s+[A-Z])\b/gi, '');
+    for (const pat of extractionConfig.ais.cleanLinePatterns) {
+      s = s.replace(pat, '');
+    }
     s = s.replace(/[^A-Za-z\s&.,()]/g, '');
     return s.replace(/\s+/g, ' ').trim();
   };
@@ -279,15 +268,6 @@ function sumInfoCodeSection(lines: string[], sectionTitleRe: RegExp, stopRes: Re
   return total;
 }
 
-const SECTION_STOPS = [
-  /^\s*Interest\s+from\s+deposit/i,
-  /^\s*Sale\s+of\s+securities/i,
-  /^\s*Purchase\s+of\s+securities/i,
-  /^\s*Dividend/i,
-  /^\s*Part\s+B\d/i,
-  /^\s*Salary\s*$/i,
-];
-
 /**
  * Flexible fallback scanner: finds a label anywhere in the text and returns the
  * nearest trailing number (same line, or within the next few lines). Used when the
@@ -323,18 +303,16 @@ function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
   return maxValue;
 }
 
-const SAVINGS_PATTERNS = [/Interest\s+from\s+savings\s+bank/i, /Savings\s+bank\s+interest/i];
-const DEPOSIT_PATTERNS = [/Interest\s+on\s+deposits?/i, /Deposit\s+interest/i, /Interest\s+from\s+deposits?/i, /Interest\s+on\s+time\s+deposit/i];
-const DIVIDEND_PATTERNS = [/Dividend\s+Income/i, /\bDividend\b/i];
+const aisConfig = extractionConfig.ais;
 
 export function parseAISText(text: string): AISData {
   const lines = text.split('\n');
 
   const { metadata, profile } = parseMetadataAndProfile(text, lines);
 
-  const interestSavings = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+savings\s+bank\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, SAVINGS_PATTERNS);
-  const interestDeposit = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+deposit\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, DEPOSIT_PATTERNS);
-  const dividendIncome = sumInfoCodeSection(lines, /^\s*Dividend\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, DIVIDEND_PATTERNS);
+  const interestSavings = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+savings\s+bank\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.savingsPatterns);
+  const interestDeposit = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+deposit\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.depositPatterns);
+  const dividendIncome = sumInfoCodeSection(lines, /^\s*Dividend\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.dividendPatterns);
 
   const tdsDetailsMap = new Map<string, { tan: string; deductorName: string; section: string; amount: number }>();
   let currentTan: string | null = null;

@@ -13,6 +13,10 @@ Before modifying any file, please read and familiarize yourself with:
 5. **[Gemini API Key Setup Guide](docs/gemini_setup.md)** — Contains explicit instructions for configuring local variables and Cloudflare Worker runtime secrets.
 6. **[Parser Improvement Plan](docs/parser_improvement_plan.md)** — Multi-phase plan for fixing TDS/salary extraction, data model gaps, and reconciliation bugs. Consult before working on parser issues.
 
+## 🧪 Testing Requirement
+
+All code changes must include accompanying unit or integration tests. This is **mandatory** for bug fixes — each fix must add a test that reproduces the bug and passes after the fix. Tests should be placed in the existing test file adjacent to the changed source file, following the patterns already established in the test suite.
+
 ---
 
 ## 🏗️ Technical Stack & Framework

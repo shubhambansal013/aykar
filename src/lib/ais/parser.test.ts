@@ -86,6 +86,75 @@ Derived Value: 3,500.00
     });
   });
 
+  it('should extract TDS from Part B1 transaction detail rows, not from summary row amounts', () => {
+    const text = `
+ Annual Information Statement (AIS)     Financial Year   2025-26
+ Part B1-Information relating to tax deducted or collected at source
+ Salary
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+ 1   TDS-192    Salary received (Section 192)    THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED  8   9,84,690
+(MUMI04584G)
+ SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
+ 1   Q3(Oct-Dec)    30/11/2025     1,066    0    0   Active
+ 2   Q3(Oct-Dec)    31/10/2025     2,17,346    0    0   Active
+ 3   Q2(Jul-Sep)    30/09/2025     1,25,699    8,235    8,235   Active
+ 4   Q2(Jul-Sep)    31/08/2025     1,26,050    8,289    8,289   Active
+ 5   Q2(Jul-Sep)    31/07/2025     1,25,650    8,226    8,226   Active
+ 6   Q1(Apr-Jun)    30/06/2025     1,33,933    9,518    9,518   Active
+ 7   Q1(Apr-Jun)    31/05/2025     1,27,473    8,512    8,512   Active
+ 8   Q1(Apr-Jun)    30/04/2025     1,27,473    8,510    8,510   Active
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+ 2   TDS-192    Salary received (Section 192)    PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)    6   8,49,032
+ SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
+ 1   Q4(Jan-Mar)    31/03/2026     1,64,500    0    0   Active
+ 2   Q4(Jan-Mar)    28/02/2026     1,64,500    0    0   Active
+ 3   Q4(Jan-Mar)    31/01/2026     1,64,500    0    0   Active
+ 4   Q3(Oct-Dec)    31/12/2025     1,64,500    0    0   Active
+ 5   Q3(Oct-Dec)    30/11/2025     1,64,500    0    0   Active
+ 6   Q3(Oct-Dec)    31/10/2025     26,532    0    0   Active
+ Part B2-Information relating to specified financial transaction (SFT)
+    `;
+
+    const parsed = parseAISText(text);
+
+    // The TDS DEDUCTED column values for Thomson Reuters sum to:
+    // 0 + 0 + 8,235 + 8,289 + 8,226 + 9,518 + 8,512 + 8,510 = 51,290
+    expect(parsed.tdsDetails).toHaveLength(1);
+    expect(parsed.tdsDetails[0]).toMatchObject({
+      tan: 'MUMI04584G',
+      section: '192',
+      amount: 51290,
+    });
+
+    // Parametric Technology (BLRP15144D) has zero TDS across all its transaction rows,
+    // so it must NOT appear in tdsDetails — its summary row amount (8,49,032) is salary,
+    // not TDS, and must not be extracted as TDS.
+    expect(parsed.tdsDetails.find(t => t.tan === 'BLRP15144D')).toBeUndefined();
+  });
+
+  it('should handle multiple TDS sections and mixed TAN positions within Part B1', () => {
+    const text = `
+ Part B1-Information relating to tax deducted or collected at source
+ Interest
+ SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
+ 1   TDS-194A    Interest (Section 194A)    HDFC BANK LIMITED (ABCD12345E)    4   45,000
+ SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
+ 1   Q1(Apr-Jun)    30/06/2025     15,000    3,000    3,000   Active
+ 2   Q1(Apr-Jun)    30/09/2025     15,000    3,000    3,000   Active
+ 3   Q1(Apr-Jun)    31/12/2025     10,000    2,000    2,000   Active
+ 4   Q1(Apr-Jun)    31/03/2026     5,000    1,000    1,000   Active
+    `;
+
+    const parsed = parseAISText(text);
+
+    expect(parsed.tdsDetails).toHaveLength(1);
+    expect(parsed.tdsDetails[0]).toMatchObject({
+      tan: 'ABCD12345E',
+      section: '194A',
+      amount: 9000, // 3,000 + 3,000 + 2,000 + 1,000
+    });
+  });
+
   it('should parse security sales transactions and calculate STCG and LTCG(112A) correctly', () => {
     const text = `
 ------------------------------------------------------------------------------------- Annual Information Statement (Part B) --------------------------------------------------------------------------------------

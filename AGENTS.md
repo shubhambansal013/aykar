@@ -14,6 +14,10 @@ Before modifying any file, please read and familiarize yourself with:
 6. **[Parser Improvement Plan](docs/parser_improvement_plan.md)** — Multi-phase plan for fixing TDS/salary extraction, data model gaps, and reconciliation bugs. Consult before working on parser issues.
 7. **[UI Overhaul Plan](docs/ui_overhaul_plan.md)** — Multi-phase plan for moving from a flat field grid to a CA-style computation worksheet. Consult before working on UI/layout changes.
 
+## 🧪 Testing Requirement
+
+All code changes must include accompanying unit or integration tests. This is **mandatory** for bug fixes — each fix must add a test that reproduces the bug and passes after the fix. Tests should be placed in the existing test file adjacent to the changed source file, following the patterns already established in the test suite.
+
 ---
 
 ## 🏗️ Technical Stack & Framework

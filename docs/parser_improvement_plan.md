@@ -9,7 +9,7 @@
 | Phase 0: Eliminate hardcoded parser data | ✅ Done | `2026-07-29` — commit `4234635` |
 | Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `dadc139` |
 | Phase 2: Fix reconciliation logic | ✅ Done | `2026-07-29` — fallback: totalTdsDeducted→tdsSalary; cross-verify vs actual TDS; AIS-only fallback; reconciliation tests updated |
-| Phase 3: Wire Part A into simple parser | ⬜ Pending | |
+| Phase 3: Wire Part A into simple parser | ✅ Done | `2026-07-29` — added totalTdsDeducted/totalTdsDeposited extraction rules to extractionConfig taxComputation; TaxComputationParser extracts them; simple pipeline (parseForm16Text) now populates Part A TDS fields; 4 new tests for table format, labeled format, missing Part A, and false-positive guard |
 | Phase 4: Multi-employer / cross-source TDS | ⬜ Pending | |
 
 ---
@@ -24,6 +24,12 @@
 - `reconciliation.test.ts`: updated fixtures (totalTdsDeducted: 140000), expectations; added AIS-only fallback test
 - Fixed `sanitizeForm16Data` in `page.tsx` missing new fields
 - Fixed incorrect type imports (`../types` → `../proto/compatibilityProxy`) in taxEngine.test.ts and validator.test.ts
+
+### 2026-07-29 — Phase 3: Wire Part A into simple parser
+- `extractionConfig.ts`: added `totalTdsDeducted` / `totalTdsDeposited` extraction rules under `taxComputation`, supporting both `Total (Rs.)` table format (3-number line) and labeled format (`Total tax deducted at source: X`)
+- `TaxComputationParser.ts`: added `ParserUtils.extractAmount` calls for both fields
+- `parser.test.ts`: added 4 tests — table format, labeled format, missing Part A returns 0, false-positive guard (tax payable does not pollute TDS)
+- All 115 form16 tests pass
 
 ### 2026-07-29 — Hardcoding removal + audit
 - Removed company/user-specific fallbacks from form16, ais, tis, form26as parsers
@@ -165,3 +171,13 @@ When 26AS is NOT available:
 - Test multi-employer scenario
 - Test simple parser extraction of Part A TDS
 - Unit tests for `mapFlatToBundle` mapping correctness
+
+---
+
+## Phase Workflow
+
+When completing a phase from this plan:
+
+1. Update the status table at the top of this document — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
+2. Add a new entry under Session Notes documenting the key files changed and why.
+3. Commit the changes to git with a descriptive message referencing the phase.

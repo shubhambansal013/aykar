@@ -7,7 +7,7 @@
 | Phase | Status | Session |
 |-------|--------|---------|
 | Phase 0: Eliminate hardcoded parser data | ✅ Done | `2026-07-29` — commit `4234635` |
-| Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `4234635` (add TDS fields to Form16Data, fix mapFlatToBundle mappings, update proxy getters/setters, add tests) |
+| Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `dadc139` |
 | Phase 2: Fix reconciliation logic | ⬜ Pending | |
 | Phase 3: Wire Part A into simple parser | ⬜ Pending | |
 | Phase 4: Multi-employer / cross-source TDS | ⬜ Pending | |

@@ -1,6 +1,6 @@
 import { ITR1_JSON, ITR2_JSON, ITR_ANY_JSON } from '../types';
 import { Form16Data, ReconciledTaxData, createForm16Proxy } from '../proto/compatibilityProxy';
-import { calculateOldRegime, calculateNewRegime } from './taxEngine';
+import { calculateOldRegime, calculateNewRegime, computeAllInterest } from './taxEngine';
 
 /**
  * Determines whether to use ITR-1 or ITR-2 automatically based on:
@@ -38,6 +38,9 @@ export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW')
 
   // Compute regime-specific values using our Tax Engine
   const computed = regime === 'NEW' ? calculateNewRegime(activeData) : calculateOldRegime(activeData);
+
+  // Compute interest separately (no filing/determination dates known at tax-engine level)
+  const interest = computeAllInterest(computed.totalTaxPayable, computed.totalIncome, activeData);
 
   const recon = activeData as ReconciledTaxData;
   const credits = recon.taxCredits || {
@@ -161,14 +164,14 @@ export function mapForm16ToITR1(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW')
           GrossTaxLiability: computed.taxBeforeRebate,
           Section89: 0,
           NetTaxLiability: taxPayable,
-          TotalIntrstPay: 0,
+          TotalIntrstPay: interest.totalInterestPayable || 0,
           IntrstPay: {
-            IntrstPayUs234A: 0,
-            IntrstPayUs234B: 0,
-            IntrstPayUs234C: 0,
-            LateFilingFee234F: 0,
+            IntrstPayUs234A: interest.interest234A || 0,
+            IntrstPayUs234B: interest.interest234B || 0,
+            IntrstPayUs234C: interest.interest234C || 0,
+            LateFilingFee234F: interest.lateFilingFee234F || 0,
           },
-          TotTaxPlusIntrstPay: taxPayable,
+          TotTaxPlusIntrstPay: (interest.totalTaxPlusInterest || taxPayable),
         },
         TaxPaid: {
           TaxesPaid: {
@@ -219,6 +222,9 @@ export function mapToITR2(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW', form1
 
   // Compute regime-specific values using our Tax Engine
   const computed = regime === 'NEW' ? calculateNewRegime(activeData) : calculateOldRegime(activeData);
+
+  // Compute interest separately (no filing/determination dates known at tax-engine level)
+  const interest = computeAllInterest(computed.totalTaxPayable, computed.totalIncome, activeData);
 
   const recon = activeData as ReconciledTaxData;
   const credits = recon.taxCredits || {
@@ -438,14 +444,14 @@ export function mapToITR2(data: Form16Data, regime: 'OLD' | 'NEW' = 'NEW', form1
           GrossTaxLiability: computed.taxBeforeRebate,
           Section89: 0,
           NetTaxLiability: taxPayable,
-          TotalIntrstPay: 0,
+          TotalIntrstPay: interest.totalInterestPayable || 0,
           IntrstPay: {
-            IntrstPayUs234A: 0,
-            IntrstPayUs234B: 0,
-            IntrstPayUs234C: 0,
-            LateFilingFee234F: 0,
+            IntrstPayUs234A: interest.interest234A || 0,
+            IntrstPayUs234B: interest.interest234B || 0,
+            IntrstPayUs234C: interest.interest234C || 0,
+            LateFilingFee234F: interest.lateFilingFee234F || 0,
           },
-          TotTaxPlusIntrstPay: taxPayable,
+          TotTaxPlusIntrstPay: (interest.totalTaxPlusInterest || taxPayable),
         },
         TaxPaid: {
           TaxesPaid: {

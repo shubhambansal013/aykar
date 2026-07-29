@@ -9,7 +9,7 @@ import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapToITR, shouldUseITR2 } from '@/lib/itr/mapper';
-import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
+import { compareTaxRegimes, recalculateAllFormFields, computeAllInterest } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
@@ -1246,8 +1246,10 @@ export default function Home() {
                           };
                           const totalTaxesPaid = (credits.advanceTax || 0) + (credits.tdsSalary || 0) + (credits.tdsOther || 0) + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
 
-                          const isRefund = totalTaxesPaid > payable;
-                          const diffAmount = Math.abs(totalTaxesPaid - payable);
+                          const interest = computeAllInterest(payable, taxable, extractedDataDomain);
+                          const totalDue = payable + interest.totalInterestPayable;
+                          const isRefund = totalTaxesPaid > totalDue;
+                          const diffAmount = Math.abs(totalTaxesPaid - totalDue);
 
                           return (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1260,9 +1262,45 @@ export default function Home() {
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{taxable.toLocaleString('en-IN')}</Typography>
                               </Box>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Income Tax Due:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{payable.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption" color="textSecondary">Total Prepaid Credits:</Typography>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main' }}>₹{totalTaxesPaid.toLocaleString('en-IN')}</Typography>
                               </Box>
+                              {interest.totalInterestPayable > 0 && (
+                                <>
+                                  <Divider sx={{ my: 0.5 }} />
+                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'error.main', display: 'block', mb: 0.5 }}>
+                                    Interest & Fees (u/s 234A/B/C & 234F):
+                                  </Typography>
+                                  {interest.interest234A > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234A:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234A.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.interest234B > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234B:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234B.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.interest234C > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234C:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234C.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.lateFilingFee234F > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Late Filing Fee u/s 234F:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.lateFilingFee234F.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                </>
+                              )}
                               <Divider sx={{ my: 0.5 }} />
                               <Paper
                                 variant="outlined"

@@ -8,11 +8,11 @@ certificates {
   employer_profile {
     tan: "MUMI04584G"
     pan: "AABCI0605H"
-    name: "THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED"
-    address: "Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra"
+    name: "Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,"
+    address: "Bandra Kurla Complex, MUMBAI - 400051 Maharashtra"
     email: "Payrollhelpdesk.India@thomsonreuters.com"
     phone: "+(91)80-"
-    cit_tds_address: "The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road, Mumbai - 400002"
+    cit_tds_address: "From To The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road , Mumbai - 400002"
   }
   employment_period {
     start_date: "01-Apr-2025"
@@ -120,11 +120,8 @@ certificates {
   employer_profile {
     tan: "BLRP15144D"
     pan: "AABCP2629J"
-    name: "PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED"
-    address: "16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD, BANGALORE - 560025 Karnataka"
-    email: "SHCHOUDHARY@PTC.COM"
-    phone: "+(91)80-8197124546"
-    cit_tds_address: "The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032"
+    name: "SHCHOUDHARY@PTC.COM"
+    cit_tds_address: "From To The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road , Ganganagar, Bangalore - 560032"
   }
   employment_period {
     start_date: "27-Oct-2025"

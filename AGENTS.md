@@ -11,6 +11,12 @@ Before modifying any file, please read and familiarize yourself with:
 3. **[Clean Code & Readability Guidelines](docs/readability.md)** — Defines strict compliance rules based on Uncle Bob's principles. All components must remain highly focused and adhere strictly to the Single Responsibility Principle (SRP).
 4. **[Form-16 Centralized Extraction Configuration](docs/extraction_config.md)** — Details how regexes, boundary definitions, and column indices are decoupled into `extractionConfig.ts`.
 5. **[Gemini API Key Setup Guide](docs/gemini_setup.md)** — Contains explicit instructions for configuring local variables and Cloudflare Worker runtime secrets.
+6. **[Parser Improvement Plan](docs/parser_improvement_plan.md)** — Multi-phase plan for fixing TDS/salary extraction, data model gaps, and reconciliation bugs. Consult before working on parser issues.
+7. **[UI Overhaul Plan](docs/ui_overhaul_plan.md)** — Multi-phase plan for moving from a flat field grid to a CA-style computation worksheet. Consult before working on UI/layout changes.
+
+## 🧪 Testing Requirement
+
+All code changes must include accompanying unit or integration tests. This is **mandatory** for bug fixes — each fix must add a test that reproduces the bug and passes after the fix. Tests should be placed in the existing test file adjacent to the changed source file, following the patterns already established in the test suite.
 
 ---
 
@@ -30,3 +36,13 @@ Before modifying any file, please read and familiarize yourself with:
 - `npm run deploy`: Builds and deploys to Cloudflare.
 - `npm run test`: Run the Vitest test suite.
 - `npm run proto:generate`: Re-compiles `proto3` definitions into TypeScript interfaces.
+
+## 📋 Phase Workflow
+
+When completing a phase from the [Parser Improvement Plan](docs/parser_improvement_plan.md):
+1. Update the status table at the top of `docs/parser_improvement_plan.md` — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
+2. Commit the changes to git with a descriptive message referencing the phase.
+
+## ✅ Commit Policy
+
+Always commit changes when done with a task. Before committing, inspect `git status`, `git diff`, and `git log --oneline -10`; stage only intended files. Write a concise commit message matching the repo style. Do not amend failed commits (create a new one instead). Do not skip hooks or force-push.

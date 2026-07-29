@@ -1,4 +1,5 @@
 import { Form26ASData, createEmptyForm26as, createForm26asProxy } from '../proto/compatibilityProxy';
+import { extractionConfig } from '../form16/extractionConfig';
 
 function extractNumbersNoSpace(line: string): number[] {
   const matches = line.match(/-?\s*\d[\d,]*\.\d{2}/g);
@@ -31,12 +32,9 @@ function findNameInWindow(lines: string[], centerIdx: number, targetTan: string,
 
   const cleanLine = (line: string): string => {
     let s = line.replace(new RegExp(targetTan, 'gi'), '');
-    s = s.replace(/\b(19\d[A-Z]*|206[A-Z]*)\b/gi, '');
-    s = s.replace(/\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, '');
-    s = s.replace(/-?\s*\d[\d,]*\.\d{2}/g, '');
-    s = s.replace(/\b[FUO]\b/g, '');
-    s = s.replace(/\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi, '');
-    s = s.replace(/\b(PART\s+[A-Z])\b/gi, '');
+    for (const pat of extractionConfig.form26as.cleanLinePatterns) {
+      s = s.replace(pat, '');
+    }
     s = s.replace(/[^A-Za-z\s&.,()]/g, '');
     return s.replace(/\s+/g, ' ').trim();
   };

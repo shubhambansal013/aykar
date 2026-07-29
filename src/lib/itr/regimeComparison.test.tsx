@@ -106,15 +106,8 @@ describe('Home Page - Dual Regime Tax Comparison', () => {
     const selectOld = screen.getByTestId('select-old-regime');
     fireEvent.click(selectOld);
 
-    // Verify downloaded file triggers mapToITR with OLD
-    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:url');
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-
-    const downloadBtn = screen.getByTestId('download-itr-button');
-    fireEvent.click(downloadBtn);
-
-    expect(mapper.mapToITR).toHaveBeenCalledWith(expect.any(Object), 'OLD', expect.any(Array));
-    expect(clickSpy).toHaveBeenCalled();
-    clickSpy.mockRestore();
+    // Verify worksheet shows the updated regime
+    expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    expect(screen.getByText('OLD Regime')).toBeDefined();
   }, 45000);
 });

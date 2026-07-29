@@ -1,4 +1,5 @@
 import { AISData, createEmptyAis, createAisProxy } from '../proto/compatibilityProxy';
+import { extractionConfig } from '../form16/extractionConfig';
 import { SecuritySale } from '../../generated/sources/ais';
 
 /**
@@ -82,19 +83,10 @@ function parseSecuritySales(lines: string[]): SecuritySale[] {
         // Extract and construct security name
         const firstLineName = tokens.slice(2, tokens.length - 12).join(' ');
 
-        // Collect subsequent lines name parts
         const cleanedSubLines: string[] = [];
         const isPageHeaderFooter = (l: string): boolean => {
           const trimmed = l.trim();
-          return (
-            /Download\s+ID/i.test(trimmed) ||
-            /Generation\s+Date/i.test(trimmed) ||
-            /^\s*PAN\s+Name\s+Financial\s+Year/i.test(trimmed) ||
-            /^\s*[A-Z]{5}\d{4}[A-Z]\s+[A-Z\s]+\s+\d{4}-\d{2}/i.test(trimmed) ||
-            /SR\.\s+DATE\s+OF\s+SALE/i.test(trimmed) ||
-            /NO\.\s+TRANSFER\s+CLASS/i.test(trimmed) ||
-            /^\s*VALUE\s*$/i.test(trimmed)
-          );
+          return extractionConfig.ais.deductorStopWords.some(pat => pat.test(trimmed));
         };
 
         for (let k = 1; k < blockLines.length; k++) {
@@ -178,12 +170,9 @@ function findNameInWindow(lines: string[], centerIdx: number, targetTan: string)
 
   const cleanLine = (line: string): string => {
     let s = line.replace(new RegExp(targetTan, 'gi'), '');
-    s = s.replace(/\b(19\d[A-Z]*|206[A-Z]*)\b/gi, '');
-    s = s.replace(/\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, '');
-    s = s.replace(/-?\s*\d[\d,]*\.\d{2}/g, '');
-    s = s.replace(/\b[FUO]\b/g, '');
-    s = s.replace(/\b(S\.No|Sl\.No|Section|Date|Status|Booking|Amt|Amount|Paid|Credited|Tax|Deducted|Deposited|TDS|TCS|Total|Challan|BSR|Code|Page|Annual|Statement)\b/gi, '');
-    s = s.replace(/\b(PART\s+[A-Z])\b/gi, '');
+    for (const pat of extractionConfig.ais.cleanLinePatterns) {
+      s = s.replace(pat, '');
+    }
     s = s.replace(/[^A-Za-z\s&.,()]/g, '');
     return s.replace(/\s+/g, ' ').trim();
   };
@@ -279,15 +268,6 @@ function sumInfoCodeSection(lines: string[], sectionTitleRe: RegExp, stopRes: Re
   return total;
 }
 
-const SECTION_STOPS = [
-  /^\s*Interest\s+from\s+deposit/i,
-  /^\s*Sale\s+of\s+securities/i,
-  /^\s*Purchase\s+of\s+securities/i,
-  /^\s*Dividend/i,
-  /^\s*Part\s+B\d/i,
-  /^\s*Salary\s*$/i,
-];
-
 /**
  * Flexible fallback scanner: finds a label anywhere in the text and returns the
  * nearest trailing number (same line, or within the next few lines). Used when the
@@ -323,24 +303,124 @@ function findValueForPatterns(lines: string[], patterns: RegExp[]): number {
   return maxValue;
 }
 
-const SAVINGS_PATTERNS = [/Interest\s+from\s+savings\s+bank/i, /Savings\s+bank\s+interest/i];
-const DEPOSIT_PATTERNS = [/Interest\s+on\s+deposits?/i, /Deposit\s+interest/i, /Interest\s+from\s+deposits?/i, /Interest\s+on\s+time\s+deposit/i];
-const DIVIDEND_PATTERNS = [/Dividend\s+Income/i, /\bDividend\b/i];
+const aisConfig = extractionConfig.ais;
+
+/**
+ * Parses TDS details from the Part B1 section of the AIS.
+ *
+ * AIS Part B1 follows a structured tabular format:
+ *   Summary row:  <S.No>  TDS-<section>  <description>  <source>  <count>  <AMOUNT>
+ *   TAN row:      (<TAN>)        ← often on the next line
+ *   Detail header: SR. NO.  QUARTER  DATE OF PAYMENT/CREDIT  AMOUNT PAID/CREDITED  TDS DEDUCTED  TDS DEPOSITED  STATUS
+ *   Detail rows:  <S.No>  <Quarter>  <Date>  <Amount>  <TDS_DEDUCTED>  <TDS_DEPOSITED>  <Status>
+ *
+ * The summary row's AMOUNT column is the total salary/consideration, NOT TDS.
+ * The actual TDS is in the TDS DEDUCTED column of the detail rows.
+ *
+ * Only detail rows with a positive TDS DEDUCTED value produce an entry so that
+ * employers with zero TDS do not appear in the output.
+ */
+function parsePartB1TDS(
+  lines: string[],
+  startIdx: number,
+  endIdx: number
+): Map<string, { tan: string; deductorName: string; section: string; amount: number }> {
+  const tdsMap = new Map<string, { tan: string; deductorName: string; section: string; amount: number }>();
+
+  let currentTan: string | null = null;
+  let currentSection: string | null = null;
+  let currentDeductorName: string | null = null;
+  let inDetailTable = false;
+
+  for (let i = startIdx; i < endIdx; i++) {
+    const line = lines[i];
+
+    // Detect summary row: starts with a serial number, has an info code like TDS-192
+    const summaryMatch = line.match(/^\s*\d+\s+(TDS-(\d{3}(?:[A-Z][A-Za-z]*)?))\s+/i);
+    if (summaryMatch) {
+      currentSection = summaryMatch[2].toUpperCase();
+      inDetailTable = false;
+      currentTan = null;
+      currentDeductorName = null;
+
+      const tanInline = line.match(/\b([A-Z]{4}\d{5}[A-Z])\b/);
+      if (tanInline) {
+        currentTan = tanInline[1].toUpperCase();
+        currentDeductorName = findNameInWindow(lines, i, currentTan);
+      } else {
+        const nextLine = lines[i + 1]?.trim();
+        if (nextLine) {
+          const nextTan = nextLine.match(/^\(?([A-Z]{4}\d{5}[A-Z])\)?$/);
+          if (nextTan) {
+            currentTan = nextTan[1].toUpperCase();
+            currentDeductorName = findNameInWindow(lines, i + 1, currentTan);
+          }
+        }
+      }
+      continue;
+    }
+
+    // Detect the detail table header that follows a summary row + optional TAN row
+    if (currentSection && /\bQUARTER\b/i.test(line) && /\bDATE OF PAYMENT\b/i.test(line)) {
+      inDetailTable = true;
+      continue;
+    }
+
+    // Parse individual transaction detail rows
+    if (inDetailTable && currentTan && currentSection) {
+      const txMatch = line.match(/^\s*\d+\s+Q[1-4]\(/i);
+      if (txMatch) {
+        const cols = line.split(/\s{2,}/).filter(Boolean);
+        if (cols.length >= 5) {
+          const tdsDeducted = parseFloat(cols[4].replace(/,/g, '')) || 0;
+          if (tdsDeducted > 0) {
+            const key = `${currentTan}_${currentSection}`;
+            const existing = tdsMap.get(key);
+            if (existing) {
+              existing.amount += tdsDeducted;
+            } else {
+              tdsMap.set(key, { tan: currentTan, deductorName: currentDeductorName || '', section: currentSection, amount: tdsDeducted });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return tdsMap;
+}
 
 export function parseAISText(text: string): AISData {
   const lines = text.split('\n');
 
   const { metadata, profile } = parseMetadataAndProfile(text, lines);
 
-  const interestSavings = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+savings\s+bank\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, SAVINGS_PATTERNS);
-  const interestDeposit = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+deposit\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, DEPOSIT_PATTERNS);
-  const dividendIncome = sumInfoCodeSection(lines, /^\s*Dividend\s*$/i, SECTION_STOPS) || findValueForPatterns(lines, DIVIDEND_PATTERNS);
+  const interestSavings = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+savings\s+bank\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.savingsPatterns);
+  const interestDeposit = sumInfoCodeSection(lines, /^\s*Interest\s+from\s+deposit\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.depositPatterns);
+  const dividendIncome = sumInfoCodeSection(lines, /^\s*Dividend\s*$/i, aisConfig.sectionStops) || findValueForPatterns(lines, aisConfig.dividendPatterns);
 
-  const tdsDetailsMap = new Map<string, { tan: string; deductorName: string; section: string; amount: number }>();
+  // Locate Part B1 boundaries
+  const partB1Start = lines.findIndex(l => /^\s*Part\s+B1/i.test(l));
+  const partB1End = partB1Start >= 0
+    ? lines.findIndex((l, i) => i > partB1Start && /^\s*Part\s+B2/i.test(l))
+    : -1;
+  const inPartB1 = (idx: number) => partB1Start >= 0 && idx >= partB1Start && (partB1End < 0 || idx < partB1End);
+
+  // Parse TDS from Part B1 using the proper structure-aware parser
+  let tdsDetailsMap: Map<string, { tan: string; deductorName: string; section: string; amount: number }>;
+  if (partB1Start >= 0) {
+    tdsDetailsMap = parsePartB1TDS(lines, partB1Start, partB1End >= 0 ? partB1End : lines.length);
+  } else {
+    tdsDetailsMap = new Map();
+  }
+
+  // Fallback: scan non-Part-B1 lines for TDS details in simpler formats
   let currentTan: string | null = null;
   let currentDeductorName: string | null = null;
 
   for (let i = 0; i < lines.length; i++) {
+    if (inPartB1(i)) continue;
+
     const line = lines[i];
     const tanMatch = line.match(/\b([A-Z]{4}[0-9]{5}[A-Z])\b/i);
     if (tanMatch) {

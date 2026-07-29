@@ -1,5 +1,6 @@
 import { Form16Bundle } from '../../generated/sources/form16';
 import { createEmptyForm16Bundle, createForm16Proxy } from '../proto/compatibilityProxy';
+import { extractionConfig } from './extractionConfig';
 
 /**
  * Form16Merger is a specialized utility class responsible for merging multiple Form16Bundle structures
@@ -55,6 +56,7 @@ export class Form16Merger {
     this.mergeOtherIncome(merged, doc);
     this.mergeDeductions(merged, doc);
     this.mergeTaxPayable(merged, doc);
+    this.mergeTds(merged, doc);
   }
 
   /**
@@ -142,11 +144,8 @@ export class Form16Merger {
 
     const parts = dateStr.split('-');
     if (parts.length === 3) {
-      const months: Record<string, number> = {
-        apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8,
-        oct: 9, nov: 10, dec: 11, jan: 0, feb: 1, mar: 2
-      };
-      const month = months[parts[1].toLowerCase()];
+      const monthShort = parts[1].toLowerCase().substring(0, 3);
+      const month = extractionConfig.basicInfo.monthNames[monthShort];
       const day = parseInt(parts[0], 10);
       const year = parseInt(parts[2], 10);
 
@@ -176,8 +175,8 @@ export class Form16Merger {
       merged.salary.standardDeduction16ia || 0,
       doc.salary.standardDeduction16ia || 0
     );
-    if (merged.salary.standardDeduction16ia > 75000) {
-      merged.salary.standardDeduction16ia = 75000;
+    if (merged.salary.standardDeduction16ia > extractionConfig.salary.standardDeductionCap) {
+      merged.salary.standardDeduction16ia = extractionConfig.salary.standardDeductionCap;
     }
 
     merged.salary.entertainmentAllowance16ii += doc.salary.entertainmentAllowance16ii || 0;
@@ -260,6 +259,16 @@ export class Form16Merger {
    */
   private static mergeTaxPayable(merged: any, doc: any): void {
     merged.taxPayable += doc.taxPayable || 0;
+  }
+
+  /**
+   * Merges TDS fields across multiple employers.
+   * Each employer's Form 16 Part A has its own totalTdsDeducted / totalTdsDeposited;
+   * for multi-employer scenarios these are summed to reflect total TDS u/s 192.
+   */
+  private static mergeTds(merged: any, doc: any): void {
+    merged.totalTdsDeducted += doc.totalTdsDeducted || 0;
+    merged.totalTdsDeposited += doc.totalTdsDeposited || 0;
   }
 
   /**

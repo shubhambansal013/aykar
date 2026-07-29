@@ -21,6 +21,8 @@ certificates {
     assessment_year: "2026-27"
   }
   part_a {
+    total_tds_deducted: 1769096
+    total_tds_deposited: 1769096
   }
   part_b {
     salary_us_17_1: 7275532

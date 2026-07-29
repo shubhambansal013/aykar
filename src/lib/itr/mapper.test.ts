@@ -32,6 +32,15 @@ describe('mapper and routing tests', () => {
       expect(result.ITR.ITR1.TaxPaid.TaxesPaid.TDS).toBe(46000);
       expect(result.ITR.ITR1.TaxPaid.TaxesPaid.AdvanceTax).toBe(10000);
       expect(result.ITR.ITR1.TaxPaid.TaxesPaid.TotalTaxesPaid).toBe(58500);
+      // Interest fields should be present with correct types
+      expect(result.ITR.ITR1.ITR1_TaxComputation.IntrstPay.IntrstPayUs234A).toBeGreaterThanOrEqual(0);
+      expect(result.ITR.ITR1.ITR1_TaxComputation.IntrstPay.IntrstPayUs234B).toBeGreaterThanOrEqual(0);
+      expect(result.ITR.ITR1.ITR1_TaxComputation.IntrstPay.IntrstPayUs234C).toBeGreaterThanOrEqual(0);
+      expect(result.ITR.ITR1.ITR1_TaxComputation.IntrstPay.LateFilingFee234F).toBeGreaterThanOrEqual(0);
+      expect(result.ITR.ITR1.ITR1_TaxComputation.TotTaxPlusIntrstPay)
+        .toBeGreaterThanOrEqual(result.ITR.ITR1.ITR1_TaxComputation.NetTaxLiability);
+      expect(result.ITR.ITR1.ITR1_TaxComputation.TotalIntrstPay)
+        .toBe(result.ITR.ITR1.ITR1_TaxComputation.TotTaxPlusIntrstPay - result.ITR.ITR1.ITR1_TaxComputation.NetTaxLiability);
     });
 
     it('should map Form16Data to ITR1_JSON structure under NEW Tax Regime', () => {
@@ -155,6 +164,127 @@ describe('mapper and routing tests', () => {
       expect(result.ITR.ITR2.ScheduleS.Details[1].EmployerName).toBe('Beta Inc');
       expect(result.ITR.ITR2.ScheduleS.Details[1].SalaryUs171).toBe(600000);
       expect(result.ITR.ITR2.ScheduleS.TotalSalaries).toBe(900000); // (400000 - 50000) + (600000 - 50000) = 900000
+    });
+  });
+
+  describe('mapFlatToBundle TDS mapping', () => {
+    it('should populate partA totalTdsDeducted and totalTdsDeposited from flat Form16Data fields', () => {
+      const flatWithTds = {
+        ...mockData,
+        totalTdsDeducted: 85000,
+        totalTdsDeposited: 82000,
+        netTaxPayable: 5000,
+      };
+      const proxy = createForm16Proxy(flatWithTds);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(85000);
+      expect(bundle.certificates[0].partA.totalTdsDeposited).toBe(82000);
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(5000);
+    });
+
+    it('should default to 0 when TDS fields are absent and taxPayable is also 0', () => {
+      const flatWithoutTds = {
+        ...mockData,
+        taxPayable: 0,
+      };
+      delete flatWithoutTds.totalTdsDeducted;
+      delete flatWithoutTds.totalTdsDeposited;
+      delete flatWithoutTds.netTaxPayable;
+      const proxy = createForm16Proxy(flatWithoutTds);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(0);
+      expect(bundle.certificates[0].partA.totalTdsDeposited).toBe(0);
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(0);
+    });
+
+    it('should not use taxPayable as totalTdsDeducted', () => {
+      const flatWithMismatch = {
+        ...mockData,
+        taxPayable: 50000,
+        totalTdsDeducted: 42000,
+        totalTdsDeposited: 42000,
+      };
+      const proxy = createForm16Proxy(flatWithMismatch);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(42000);
+      expect(bundle.certificates[0].partA.totalTdsDeducted).not.toBe(50000);
+    });
+  });
+
+  describe('mapFlatToBundle TDS backward compat', () => {
+    it('should fall back to taxPayable for netTaxPayable when netTaxPayable is absent', () => {
+      const flat = { ...mockData, taxPayable: 30000 };
+      delete flat.netTaxPayable;
+      const proxy = createForm16Proxy(flat);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(30000);
+    });
+  });
+
+  describe('Interest under Sections 234A/234B/234C in ITR mapping', () => {
+    it('should compute Section 234B interest in ITR-1 when advance tax is below 90% threshold', () => {
+      const highIncomeNoAdvance = {
+        ...mockData,
+        assessmentYear: '2026',
+        salary: {
+          ...mockData.salary,
+          grossSalary: 1850000,
+          netSalary: 1850000,
+          standardDeduction16ia: 75000,
+          totalDeductionsUs16: 75000,
+          incomeChargeableUnderHeadSalaries: 1775000,
+        },
+        otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+        deductions80C: 0,
+        deductions80CCC: 0,
+        deductions80CCD1: 0,
+        deductions80CCD1B: 0,
+        deductions80CCD2: 0,
+        deductions80D: 0,
+        deductions80E: 0,
+        deductions80G: 0,
+        deductions80TTA: 0,
+        totalChapterVIADeductions: 0,
+        totalIncome: 0,
+        grossTotalIncome: 0,
+        taxCredits: {
+          tdsSalary: 51290,
+          tdsOther: 0,
+          tcs: 0,
+          advanceTax: 0,
+          selfAssessmentTax: 0,
+        },
+      };
+
+      const result = mapForm16ToITR1(highIncomeNoAdvance, 'NEW');
+      const taxComp = result.ITR.ITR1.ITR1_TaxComputation;
+
+      expect(taxComp.IntrstPay.IntrstPayUs234A).toBe(0);
+      expect(taxComp.IntrstPay.IntrstPayUs234B).toBeGreaterThan(0);
+      expect(taxComp.IntrstPay.IntrstPayUs234C).toBe(0);
+      expect(taxComp.TotalIntrstPay).toBe(taxComp.IntrstPay.IntrstPayUs234B);
+      expect(taxComp.TotTaxPlusIntrstPay).toBe(taxComp.NetTaxLiability + taxComp.TotalIntrstPay);
+    });
+
+    it('should compute zero interest when all tax is paid through TDS and advance tax', () => {
+      const fullyPaid = {
+        ...mockData,
+        assessmentYear: '2026',
+        taxCredits: {
+          tdsSalary: 60000,
+          tdsOther: 5000,
+          tcs: 1000,
+          advanceTax: 20000,
+          selfAssessmentTax: 5000,
+        },
+      };
+
+      const result = mapForm16ToITR1(fullyPaid, 'OLD');
+      const taxComp = result.ITR.ITR1.ITR1_TaxComputation;
+
+      expect(taxComp.IntrstPay.IntrstPayUs234B).toBe(0);
+      expect(taxComp.TotalIntrstPay).toBe(0);
+      expect(taxComp.TotTaxPlusIntrstPay).toBe(taxComp.NetTaxLiability);
     });
   });
 

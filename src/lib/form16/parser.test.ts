@@ -721,6 +721,41 @@ describe('mergeForm16Data', () => {
     expect(merged.period.from).toBe('01-Apr-2025');
     expect(merged.period.to).toBe('31-Mar-2026');
   });
+
+  it('should sum totalTdsDeducted and totalTdsDeposited across multiple employers', () => {
+    const doc1 = parseForm16Text(`
+      Name and address of the Employer: Acme Corp
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: BLRG25952D
+      Period with the Employer To 31-Aug-2025 From 01-Apr-2025
+      Salary as per section 17(1) 500,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      Total tax deducted at source 50,000.00
+      Total tax deposited 50,000.00
+      Tax Payable 15,000.00
+    `);
+    const doc2 = parseForm16Text(`
+      Name and address of the Employer: Beta Inc
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: NEWG12345T
+      Period with the Employer To 31-Mar-2026 From 01-Sep-2025
+      Salary as per section 17(1) 700,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      80C 50,000.00
+      Total tax deducted at source 35,000.00
+      Total tax deposited 35,000.00
+      Tax Payable 60,000.00
+    `);
+
+    const merged = mergeForm16Data([doc1, doc2]);
+
+    expect(merged.totalTdsDeducted).toBe(85000);
+    expect(merged.totalTdsDeposited).toBe(85000);
+    expect(merged.taxPayable).toBe(75000);
+    // Salary should also be summed
+    expect(merged.salary.salaryAsPer17_1).toBe(1200000);
+    expect(merged.salary.grossSalary).toBe(1200000);
+  });
 });
 
 describe('parser code quality - no user-specific hardcoding', () => {

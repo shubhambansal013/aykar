@@ -10,7 +10,7 @@
 | Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `dadc139` |
 | Phase 2: Fix reconciliation logic | ✅ Done | `2026-07-29` — fallback: totalTdsDeducted→tdsSalary; cross-verify vs actual TDS; AIS-only fallback; reconciliation tests updated |
 | Phase 3: Wire Part A into simple parser | ✅ Done | `2026-07-29` — added totalTdsDeducted/totalTdsDeposited extraction rules to extractionConfig taxComputation; TaxComputationParser extracts them; simple pipeline (parseForm16Text) now populates Part A TDS fields; 4 new tests for table format, labeled format, missing Part A, and false-positive guard |
-| Phase 4: Multi-employer / cross-source TDS | ⬜ Pending | |
+| Phase 4: Multi-employer / cross-source TDS | ✅ Done | `2026-07-29` — Form16Merger sums totalTdsDeducted/totalTdsDeposited across certificates; 3 new tests for multi-employer merge, 26AS+AIS multi-employer, and AIS-only no-Form16 path |
 
 ---
 
@@ -26,6 +26,13 @@
 - Fixed incorrect type imports (`../types` → `../proto/compatibilityProxy`) in taxEngine.test.ts and validator.test.ts
 
 ### 2026-07-29 — Phase 3: Wire Part A into simple parser
+
+### 2026-07-29 — Phase 4: Multi-employer / cross-source TDS
+- `Form16Merger.ts`: added `mergeTds` method called from `mergeSingleDocument` to sum `totalTdsDeducted` and `totalTdsDeposited` across multiple certificates
+- `reconciliation.ts` already handles cross-source TDS correctly (26AS preferred; AIS supplements missing TANs; supplement loop handles no-Form16 case)
+- `parser.test.ts`: added multi-employer TDS sum test (Acme 50k + Beta 35k = 85k)
+- `reconciliation.test.ts`: added 26AS multi-employer aggregation test (TAN001 from 26AS + TAN002 from AIS); added AIS-only no-Form16 test (all u/s 192 entries picked up by supplement loop)
+- All 258 tests pass
 - `extractionConfig.ts`: added `totalTdsDeducted` / `totalTdsDeposited` extraction rules under `taxComputation`, supporting both `Total (Rs.)` table format (3-number line) and labeled format (`Total tax deducted at source: X`)
 - `TaxComputationParser.ts`: added `ParserUtils.extractAmount` calls for both fields
 - `parser.test.ts`: added 4 tests — table format, labeled format, missing Part A returns 0, false-positive guard (tax payable does not pollute TDS)

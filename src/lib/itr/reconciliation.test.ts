@@ -218,4 +218,68 @@ describe('Reconciliation Module', () => {
     // plus supplement other AIS section 192 entries not already counted (OTHERTAN1 = 25000)
     expect(reconciled.taxCredits?.tdsSalary).toBe(100000);
   });
+
+  it('should aggregate TDS from multiple employers via 26AS and supplement with AIS', () => {
+    // Scenario: two employers, one in 26AS, one only in AIS
+    const form16Multi: Form16Data = {
+      ...mockForm16,
+      employer: { name: 'Employer1 / Employer2', tan: 'TAN001 / TAN002', pan: 'PAN001 / PAN002', address: 'Addr' },
+      totalTdsDeducted: 50000, // already merged across two forms
+    };
+
+    const aisMulti: AISData = {
+      interestSavings: 0,
+      interestDeposit: 0,
+      dividendIncome: 0,
+      tdsDetails: [
+        { tan: 'TAN001', deductorName: 'Employer1', section: '192', amount: 45000 },
+        { tan: 'TAN002', deductorName: 'Employer2', section: '192', amount: 30000 },
+        { tan: 'HDFCTAN', deductorName: 'HDFC BANK', section: '194A', amount: 5000 },
+      ],
+    };
+
+    const twentySixAsMulti: Form26ASData = {
+      tdsSalary: [
+        { tan: 'TAN001', deductorName: 'Employer1', amount: 45000 },
+      ],
+      tdsOther: [
+        { tan: 'HDFCTAN', deductorName: 'HDFC BANK', section: '194A', amount: 3500 },
+      ],
+      tcsDetails: [],
+      advanceTax: [],
+      selfAssessmentTax: [],
+    };
+
+    const reconciled = reconcileAllDocuments(form16Multi, aisMulti, undefined, twentySixAsMulti);
+
+    // tdsSalary: TAN001 (45000 from 26AS) + TAN002 (30000 from AIS supplement, not in 26AS)
+    expect(reconciled.taxCredits?.tdsSalary).toBe(75000);
+    // tdsOther: 3500 from 26AS only — AIS supplement skips HDFCTAN/194A since it already exists in 26AS
+    expect(reconciled.taxCredits?.tdsOther).toBe(3500);
+  });
+
+  it('should produce tdsSalary from AIS u/s 192 when both 26AS and Form 16 are absent', () => {
+    // No Form 16, no 26AS — only AIS with TDS details
+    const aisOnly: AISData = {
+      interestSavings: 0,
+      interestDeposit: 0,
+      dividendIncome: 0,
+      tdsDetails: [
+        { tan: 'TAN001', deductorName: 'Employer1', section: '192', amount: 45000 },
+        { tan: 'TAN002', deductorName: 'Employer2', section: '192', amount: 35000 },
+      ],
+    };
+
+    // Empty form16 (no employer, no TDS)
+    const emptyForm16 = {
+      employer: { name: '', tan: '', pan: '', address: '' },
+      employee: { name: { firstName: '', middleName: '', lastName: '' }, pan: '', address: '' },
+    } as any;
+
+    const reconciled = reconcileAllDocuments(emptyForm16, aisOnly, undefined, undefined);
+
+    // Both AIS u/s 192 entries should be picked up by the supplement loop
+    expect(reconciled.taxCredits?.tdsSalary).toBe(80000);
+    expect(reconciled.taxCredits?.tdsOther).toBe(0);
+  });
 });

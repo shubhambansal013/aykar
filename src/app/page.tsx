@@ -9,7 +9,7 @@ import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapToITR, shouldUseITR2 } from '@/lib/itr/mapper';
-import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
+import { compareTaxRegimes, recalculateAllFormFields, computeAllInterest } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
@@ -117,6 +117,10 @@ export default function Home() {
   const [aisRawText, setAisRawText] = useState<string>('');
   const [tisRawText, setTisRawText] = useState<string>('');
   const [form26asRawText, setForm26asRawText] = useState<string>('');
+
+  // Filing and determination dates for interest computation (derived from Form16 verification dates)
+  const [filingDate, setFilingDate] = useState<string>('');
+  const [determinationDate, setDeterminationDate] = useState<string>('');
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
@@ -492,6 +496,30 @@ export default function Home() {
     const mergedRawText = currentForm16s.map(item => item.rawText).join('\n\n');
     setRawText(mergedRawText);
 
+    // Extract latest verification date from all Form16 certificates as filing date
+    let latestDate: Date | null = null;
+    let assYear = '';
+    for (const item of currentForm16s) {
+      const certs = item.data.certificates || [];
+      for (const cert of certs) {
+        if (cert.employmentPeriod?.assessmentYear) {
+          assYear = cert.employmentPeriod.assessmentYear;
+        }
+        if (cert.verification?.date) {
+          const parsed = new Date(cert.verification.date);
+          if (!isNaN(parsed.getTime()) && (!latestDate || parsed > latestDate)) {
+            latestDate = parsed;
+          }
+        }
+      }
+    }
+    const fDate = latestDate ? latestDate.toISOString().split('T')[0] : '';
+    setFilingDate(fDate);
+    // Default determination date: Dec 31 of the assessment year
+    const ayStart = parseInt(assYear.split('-')[0], 10) || 2026;
+    const dDate = `${ayStart}-12-31`;
+    setDeterminationDate(dDate);
+
     const domainForm16s = currentForm16s.map(item => createForm16Proxy(item.data));
     const mergedData = mergeForm16Data(domainForm16s);
 
@@ -502,7 +530,7 @@ export default function Home() {
       current26as ? createForm26asProxy(current26as) : undefined
     );
 
-    const comparison = compareTaxRegimes(reconciled);
+    const comparison = compareTaxRegimes(reconciled, fDate || undefined, dDate);
     const activeRegime = comparison.optimalRegime;
     setSelectedRegime(activeRegime);
 
@@ -1246,8 +1274,10 @@ export default function Home() {
                           };
                           const totalTaxesPaid = (credits.advanceTax || 0) + (credits.tdsSalary || 0) + (credits.tdsOther || 0) + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
 
-                          const isRefund = totalTaxesPaid > payable;
-                          const diffAmount = Math.abs(totalTaxesPaid - payable);
+                          const interest = computeAllInterest(payable, taxable, extractedDataDomain, filingDate || undefined, determinationDate || undefined);
+                          const totalDue = payable + interest.totalInterestPayable;
+                          const isRefund = totalTaxesPaid > totalDue;
+                          const diffAmount = Math.abs(totalTaxesPaid - totalDue);
 
                           return (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1260,9 +1290,45 @@ export default function Home() {
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{taxable.toLocaleString('en-IN')}</Typography>
                               </Box>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color="textSecondary">Income Tax Due:</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{payable.toLocaleString('en-IN')}</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption" color="textSecondary">Total Prepaid Credits:</Typography>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main' }}>₹{totalTaxesPaid.toLocaleString('en-IN')}</Typography>
                               </Box>
+                              {interest.totalInterestPayable > 0 && (
+                                <>
+                                  <Divider sx={{ my: 0.5 }} />
+                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'error.main', display: 'block', mb: 0.5 }}>
+                                    Interest & Fees (u/s 234A/B/C & 234F):
+                                  </Typography>
+                                  {interest.interest234A > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234A:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234A.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.interest234B > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234B:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234B.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.interest234C > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Interest u/s 234C:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234C.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                  {interest.lateFilingFee234F > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
+                                      <Typography variant="caption" color="textSecondary">Late Filing Fee u/s 234F:</Typography>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.lateFilingFee234F.toLocaleString('en-IN')}</Typography>
+                                    </Box>
+                                  )}
+                                </>
+                              )}
                               <Divider sx={{ my: 0.5 }} />
                               <Paper
                                 variant="outlined"

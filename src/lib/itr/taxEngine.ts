@@ -375,7 +375,7 @@ export function computeAllInterest(
 /**
  * Computes tax payable for Old Regime.
  */
-export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
+export function calculateOldRegime(data: Form16Data, filingDate?: string, determinationDate?: string): TaxRegimeDetails {
   const salary = data.salary || {};
   const otherIncome = data.otherIncome || {};
 
@@ -447,6 +447,8 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
   const balanceTaxPayable = Math.max(0, totalTaxPayable - totalTaxesPaid);
   const refundDue = Math.max(0, totalTaxesPaid - totalTaxPayable);
 
+  const interest = computeAllInterest(totalTaxPayable, Math.round(totalIncome), data, filingDate, determinationDate);
+
   return {
     grossSalary,
     totalExemptAllowances,
@@ -468,19 +470,19 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
     slabTaxBreakdown,
     specialTaxBreakdown,
     marginalRelief87A: 0,
-    interest234A: 0,
-    interest234B: 0,
-    interest234C: 0,
-    lateFilingFee234F: 0,
-    totalInterestPayable: 0,
-    totalTaxPlusInterest: totalTaxPayable,
+    interest234A: interest.interest234A,
+    interest234B: interest.interest234B,
+    interest234C: interest.interest234C,
+    lateFilingFee234F: interest.lateFilingFee234F,
+    totalInterestPayable: interest.totalInterestPayable,
+    totalTaxPlusInterest: interest.totalTaxPlusInterest,
   };
 }
 
 /**
  * Computes tax payable for New Regime.
  */
-export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
+export function calculateNewRegime(data: Form16Data, filingDate?: string, determinationDate?: string): TaxRegimeDetails {
   const salary = data.salary || {};
   const otherIncome = data.otherIncome || {};
 
@@ -569,6 +571,8 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
   const balanceTaxPayable = Math.max(0, totalTaxPayable - totalTaxesPaid);
   const refundDue = Math.max(0, totalTaxesPaid - totalTaxPayable);
 
+  const interest = computeAllInterest(totalTaxPayable, Math.round(totalIncome), data, filingDate, determinationDate);
+
   return {
     grossSalary,
     totalExemptAllowances,
@@ -590,21 +594,21 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
     slabTaxBreakdown,
     specialTaxBreakdown,
     marginalRelief87A,
-    interest234A: 0,
-    interest234B: 0,
-    interest234C: 0,
-    lateFilingFee234F: 0,
-    totalInterestPayable: 0,
-    totalTaxPlusInterest: totalTaxPayable,
+    interest234A: interest.interest234A,
+    interest234B: interest.interest234B,
+    interest234C: interest.interest234C,
+    lateFilingFee234F: interest.lateFilingFee234F,
+    totalInterestPayable: interest.totalInterestPayable,
+    totalTaxPlusInterest: interest.totalTaxPlusInterest,
   };
 }
 
 /**
  * Computes dual tax regimes side-by-side and returns them along with optimal choice.
  */
-export function compareTaxRegimes(data: Form16Data): DualRegimeComparison {
-  const oldRegime = calculateOldRegime(data);
-  const newRegime = calculateNewRegime(data);
+export function compareTaxRegimes(data: Form16Data, filingDate?: string, determinationDate?: string): DualRegimeComparison {
+  const oldRegime = calculateOldRegime(data, filingDate, determinationDate);
+  const newRegime = calculateNewRegime(data, filingDate, determinationDate);
 
   // Optimal regime is the one with lower tax liability
   const optimalRegime = oldRegime.totalTaxPayable <= newRegime.totalTaxPayable ? 'OLD' : 'NEW';

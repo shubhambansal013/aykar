@@ -510,18 +510,25 @@ describe('taxEngine', () => {
       expect(interest.totalTaxPlusInterest).toBe(160825 + 9858);
     });
 
-    it('returns zero interest from calculateOldRegime (separate from tax engine)', () => {
+    it('computes interest correctly from calculateOldRegime using its own interest computation', () => {
       const result = calculateOldRegime({
         ...baseMockData,
         assessmentYear: '2026',
         taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 5000, selfAssessmentTax: 0 },
       } as any);
-      expect(result.interest234B).toBe(0);
+      // totalTaxPayable = 75920
+      // taxDueForAdvance = 75920 - 10000 - 5000 - 2000 = 58920
+      // advanceTax 5000 < 90% of 58920 = 53028
+      // shortfall = 58920 - 5000 = 53920
+      // No determinationDate provided => defaults to dueDate = 2026-07-31
+      // months: Apr 1 to Jul 31 = 4
+      // interest234B = 53920 * 0.01 * 4 = 2156.8 => 2157
+      expect(result.interest234B).toBe(2157);
       expect(result.interest234A).toBe(0);
       expect(result.interest234C).toBe(0);
       expect(result.lateFilingFee234F).toBe(0);
-      expect(result.totalInterestPayable).toBe(0);
-      expect(result.totalTaxPlusInterest).toBe(result.totalTaxPayable);
+      expect(result.totalInterestPayable).toBe(2157);
+      expect(result.totalTaxPlusInterest).toBe(result.totalTaxPayable + 2157);
     });
 
     it('includes interest details in calculateNewRegime result (zero tax = zero interest)', () => {
@@ -534,6 +541,49 @@ describe('taxEngine', () => {
       expect(result.interest234C).toBe(0);
       expect(result.totalInterestPayable).toBe(0);
       expect(result.totalTaxPlusInterest).toBe(0);
+    });
+
+    it('Full Tarush Arora scenario: calculateNewRegime with determinationDate returns correct interest', () => {
+      const tarushData: Form16Data = {
+        ...baseMockData,
+        assessmentYear: '2026',
+        salary: {
+          ...baseMockData.salary,
+          grossSalary: 1833722,
+          totalExemptAllowances: 0,
+          netSalary: 1833722,
+          standardDeduction16ia: 75000,
+          entertainmentAllowance16ii: 0,
+          professionalTax16iii: 0,
+          totalDeductionsUs16: 75000,
+          incomeChargeableUnderHeadSalaries: 1758722,
+        },
+        otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+        deductions80C: 0,
+        deductions80CCC: 0,
+        deductions80CCD1: 0,
+        deductions80CCD1B: 0,
+        deductions80CCD2: 0,
+        deductions80D: 0,
+        deductions80E: 0,
+        deductions80G: 0,
+        deductions80TTA: 0,
+        totalChapterVIADeductions: 0,
+        totalIncome: 1758722,
+        grossTotalIncome: 1758722,
+        taxCredits: { tdsSalary: 51290, tdsOther: 0, tcs: 0, advanceTax: 0, selfAssessmentTax: 0 },
+      };
+
+      const result = calculateNewRegime(tarushData, undefined, '2026-12-31');
+
+      // calculateNewRegime should now compute interest internally via computeAllInterest
+      // With determinationDate='2026-12-31', 234B interest is non-zero (9 months from Apr 1)
+      expect(result.totalTaxPayable).toBeGreaterThan(0);
+      expect(result.interest234B).toBeGreaterThan(0);
+      expect(result.interest234A).toBe(0);
+      expect(result.interest234C).toBe(0);
+      expect(result.totalInterestPayable).toBe(result.interest234B);
+      expect(result.totalTaxPlusInterest).toBe(result.totalTaxPayable + result.totalInterestPayable);
     });
   });
 });

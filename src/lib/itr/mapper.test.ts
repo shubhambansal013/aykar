@@ -158,6 +158,60 @@ describe('mapper and routing tests', () => {
     });
   });
 
+  describe('mapFlatToBundle TDS mapping', () => {
+    it('should populate partA totalTdsDeducted and totalTdsDeposited from flat Form16Data fields', () => {
+      const flatWithTds = {
+        ...mockData,
+        totalTdsDeducted: 85000,
+        totalTdsDeposited: 82000,
+        netTaxPayable: 5000,
+      };
+      const proxy = createForm16Proxy(flatWithTds);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(85000);
+      expect(bundle.certificates[0].partA.totalTdsDeposited).toBe(82000);
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(5000);
+    });
+
+    it('should default to 0 when TDS fields are absent and taxPayable is also 0', () => {
+      const flatWithoutTds = {
+        ...mockData,
+        taxPayable: 0,
+      };
+      delete flatWithoutTds.totalTdsDeducted;
+      delete flatWithoutTds.totalTdsDeposited;
+      delete flatWithoutTds.netTaxPayable;
+      const proxy = createForm16Proxy(flatWithoutTds);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(0);
+      expect(bundle.certificates[0].partA.totalTdsDeposited).toBe(0);
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(0);
+    });
+
+    it('should not use taxPayable as totalTdsDeducted', () => {
+      const flatWithMismatch = {
+        ...mockData,
+        taxPayable: 50000,
+        totalTdsDeducted: 42000,
+        totalTdsDeposited: 42000,
+      };
+      const proxy = createForm16Proxy(flatWithMismatch);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partA.totalTdsDeducted).toBe(42000);
+      expect(bundle.certificates[0].partA.totalTdsDeducted).not.toBe(50000);
+    });
+  });
+
+  describe('mapFlatToBundle TDS backward compat', () => {
+    it('should fall back to taxPayable for netTaxPayable when netTaxPayable is absent', () => {
+      const flat = { ...mockData, taxPayable: 30000 };
+      delete flat.netTaxPayable;
+      const proxy = createForm16Proxy(flat);
+      const bundle = proxy.__bundle;
+      expect(bundle.certificates[0].partB.netTaxPayable).toBe(30000);
+    });
+  });
+
   describe('mapToITR', () => {
     it('should map to ITR-1 if shouldUseITR2 is false', () => {
       const result = mapToITR(mockData, 'NEW');

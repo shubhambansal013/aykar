@@ -17,5 +17,8 @@ export class TaxComputationParser {
     }
 
     data.taxPayable = ParserUtils.extractAmount(text, config.taxPayable);
+
+    data.totalTdsDeducted = ParserUtils.extractAmount(text, config.totalTdsDeducted);
+    data.totalTdsDeposited = ParserUtils.extractAmount(text, config.totalTdsDeposited);
   }
 }

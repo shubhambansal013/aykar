@@ -91,6 +91,8 @@ export interface ExtractionConfig {
     grossTotalIncome: FieldExtractionRule;
     totalIncome: FieldExtractionRule;
     taxPayable: FieldExtractionRule;
+    totalTdsDeducted: FieldExtractionRule;
+    totalTdsDeposited: FieldExtractionRule;
   };
   formatDetection: {
     detailedKeywords: string[];
@@ -487,6 +489,24 @@ export const extractionConfig: ExtractionConfig = {
         /Tax Payable\s+([\d,.-]+\.\d{2})/i
       ],
       numericTokenIndex: -1
+    },
+    totalTdsDeducted: {
+      lineRegexes: [
+        /Total\s*\(Rs\.\)/i,
+      ],
+      fallbackRegexes: [
+        /(?:Total\s+)?(?:tax|TDS)\s+deducted\s+(?:at\s+source)?\s*[:\-.]?\s*([\d,.-]+\.\d{2})/i,
+      ],
+      numericTokenIndex: 1,
+    },
+    totalTdsDeposited: {
+      lineRegexes: [
+        /Total\s*\(Rs\.\)/i,
+      ],
+      fallbackRegexes: [
+        /(?:Total\s+)?(?:tax|TDS)\s+deposited\s*[:\-.]?\s*([\d,.-]+\.\d{2})/i,
+      ],
+      numericTokenIndex: 2,
     }
   },
   formatDetection: {

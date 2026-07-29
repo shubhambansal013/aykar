@@ -56,6 +56,7 @@ export class Form16Merger {
     this.mergeOtherIncome(merged, doc);
     this.mergeDeductions(merged, doc);
     this.mergeTaxPayable(merged, doc);
+    this.mergeTds(merged, doc);
   }
 
   /**
@@ -258,6 +259,16 @@ export class Form16Merger {
    */
   private static mergeTaxPayable(merged: any, doc: any): void {
     merged.taxPayable += doc.taxPayable || 0;
+  }
+
+  /**
+   * Merges TDS fields across multiple employers.
+   * Each employer's Form 16 Part A has its own totalTdsDeducted / totalTdsDeposited;
+   * for multi-employer scenarios these are summed to reflect total TDS u/s 192.
+   */
+  private static mergeTds(merged: any, doc: any): void {
+    merged.totalTdsDeducted += doc.totalTdsDeducted || 0;
+    merged.totalTdsDeposited += doc.totalTdsDeposited || 0;
   }
 
   /**

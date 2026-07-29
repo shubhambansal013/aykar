@@ -391,6 +391,9 @@ export default function Home() {
       totalChapterVIADeductions: 0,
       totalIncome: 0,
       taxPayable: 0,
+      totalTdsDeducted: 0,
+      totalTdsDeposited: 0,
+      netTaxPayable: 0,
     };
 
     if (!data) return defaultData;

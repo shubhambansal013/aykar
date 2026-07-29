@@ -63,6 +63,9 @@ export interface Form16Data {
   totalChapterVIADeductions: number;
   totalIncome: number;
   taxPayable: number;
+  totalTdsDeducted: number;
+  totalTdsDeposited: number;
+  netTaxPayable: number;
 }
 
 export interface AISData {
@@ -364,8 +367,8 @@ function mapFlatToBundle(data: any): Form16Bundle {
       quarterSummaries: [],
       challanDeposits: [],
       totalAmountPaid: data.salary?.grossSalary || 0,
-      totalTdsDeducted: data.taxPayable || 0,
-      totalTdsDeposited: data.taxPayable || 0,
+      totalTdsDeducted: data.totalTdsDeducted ?? 0,
+      totalTdsDeposited: data.totalTdsDeposited ?? 0,
     },
     partB: {
       optingOutOf115BACNewRegime: false,
@@ -419,7 +422,7 @@ function mapFlatToBundle(data: any): Form16Bundle {
       reliefUs89: 0,
       taxDeductedAsPer12BAATds: 0,
       taxCollectedAsPer12BAATcs: 0,
-      netTaxPayable: data.taxPayable || 0,
+      netTaxPayable: data.netTaxPayable ?? data.taxPayable ?? 0,
     },
     perquisitesDetails: undefined,
     verification: {
@@ -796,7 +799,8 @@ export function createForm16Proxy(bundle: any): Form16Data {
         'employer', 'employee', 'assessmentYear', 'period', 'salary', 'otherIncome',
         'grossTotalIncome', 'deductions80C', 'deductions80CCC', 'deductions80CCD1',
         'deductions80CCD1B', 'deductions80CCD2', 'deductions80D', 'deductions80E',
-        'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable'
+        'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable',
+        'totalTdsDeducted', 'totalTdsDeposited', 'netTaxPayable'
       ];
     },
     getOwnPropertyDescriptor(target, prop) {
@@ -854,6 +858,9 @@ export function createForm16Proxy(bundle: any): Form16Data {
       if (prop === 'totalChapterVIADeductions') return cert.partB?.totalChapterViaDeductions || 0;
       if (prop === 'totalIncome') return cert.partB?.totalTaxableIncome || 0;
       if (prop === 'taxPayable') return cert.partB?.taxPayable || 0;
+      if (prop === 'totalTdsDeducted') return cert.partA?.totalTdsDeducted || 0;
+      if (prop === 'totalTdsDeposited') return cert.partA?.totalTdsDeposited || 0;
+      if (prop === 'netTaxPayable') return cert.partB?.netTaxPayable || 0;
 
       if (prop === '__isForm16Proxy') return true;
       if (prop === '__bundle') return bundle;
@@ -923,6 +930,9 @@ export function createForm16Proxy(bundle: any): Form16Data {
       else if (prop === 'totalChapterVIADeductions') cert.partB.totalChapterViaDeductions = Number(value);
       else if (prop === 'totalIncome') cert.partB.totalTaxableIncome = Number(value);
       else if (prop === 'taxPayable') cert.partB.taxPayable = Number(value);
+      else if (prop === 'totalTdsDeducted') { if (!cert.partA) cert.partA = createEmptyForm16Bundle().certificates[0].partA; cert.partA.totalTdsDeducted = Number(value); }
+      else if (prop === 'totalTdsDeposited') { if (!cert.partA) cert.partA = createEmptyForm16Bundle().certificates[0].partA; cert.partA.totalTdsDeposited = Number(value); }
+      else if (prop === 'netTaxPayable') { if (!cert.partB) cert.partB = createEmptyForm16Bundle().certificates[0].partB; cert.partB.netTaxPayable = Number(value); }
       else {
         (bundle as any)[prop] = value;
       }
@@ -1094,7 +1104,8 @@ export function createEngineProxy(res: any): ReconciledTaxData {
     'employer', 'employee', 'assessmentYear', 'period', 'salary', 'otherIncome',
     'grossTotalIncome', 'deductions80C', 'deductions80CCC', 'deductions80CCD1',
     'deductions80CCD1B', 'deductions80CCD2', 'deductions80D', 'deductions80E',
-    'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable'
+    'deductions80G', 'deductions80TTA', 'totalChapterVIADeductions', 'totalIncome', 'taxPayable',
+    'totalTdsDeducted', 'totalTdsDeposited', 'netTaxPayable'
   ];
 
   return new Proxy(res, {

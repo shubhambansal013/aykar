@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateOldRegime, calculateNewRegime, compareTaxRegimes, recalculateAllFormFields } from './taxEngine';
-import { Form16Data } from '../types';
+import { Form16Data } from '../proto/compatibilityProxy';
 
 describe('taxEngine', () => {
   const baseMockData: Form16Data = {
@@ -38,6 +38,9 @@ describe('taxEngine', () => {
     totalChapterVIADeductions: 205000,
     totalIncome: 802500,
     taxPayable: 0,
+    totalTdsDeducted: 0,
+    totalTdsDeposited: 0,
+    netTaxPayable: 0,
   };
 
   it('correctly calculates Old Tax Regime details', () => {

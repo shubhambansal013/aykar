@@ -191,6 +191,91 @@ describe('parseForm16Text', () => {
       expect(result.salary.grossSalary).toBe(999999);
   });
 
+  it('should correctly extract Part A TDS from standard Form-16 text', () => {
+    // Full Form 16 with Part A (table format) and Part B
+    const form16WithPartA = `
+      Name and address of the Employer: Acme Corp India Pvt Ltd
+      PAN OF THE DEDUCTOR ABCDE1234F
+      TAN OF THE DEDUCTOR ABCD12345E
+      PAN OF THE EMPLOYEE VWXYZ9876S
+      Assessment Year 2024-25
+      Period with the employer: From 01-Apr-2023 To 31-Mar-2024
+
+      PART A
+      Quarter(s)  Receipt No.  Amount Paid/Credited  Tax Deducted at Source  Tax Deposited
+      Q1    Apr-Jun    1000000.00    250000.00    250000.00
+      Q2    Jul-Sep    2000000.00    500000.00    500000.00
+      Q3    Oct-Dec    2000000.00    500000.00    500000.00
+      Q4    Jan-Mar    1500000.00    375000.00    375000.00
+      Total (Rs.)    6500000.00    1625000.00    1625000.00
+
+      Details of Tax Deducted and Deposited - Challan
+      ...
+
+      1. Gross Salary
+      (a) Salary as per section 17(1) 1,500,000.00
+      Total Gross Salary 1,500,000.00
+
+      7. Gross Total Income 1,500,000.00
+      9. Total Income 1,500,000.00
+      10. Tax Payable 100,500.00
+    `;
+
+    const result = parseForm16Text(form16WithPartA);
+    expect(result.totalTdsDeducted).toBe(1625000);
+    expect(result.totalTdsDeposited).toBe(1625000);
+    expect(result.taxPayable).toBe(100500);
+  });
+
+  it('should extract Part A TDS from labeled format (without Total (Rs.) table)', () => {
+    const labeledFormat = `
+      Name and address of the Employer: Beta Corp
+      PAN OF THE EMPLOYEE VWXYZ9876S
+      TAN OF THE DEDUCTOR ABCD12345E
+      Assessment Year 2024-25
+
+      PART A
+      Total amount paid/credited: 6,500,000.00
+      Total tax deducted at source: 1,625,000.00
+      Total tax deposited: 1,625,000.00
+
+      1. Gross Salary
+      Gross Total Income 1,500,000.00
+      Total Income 1,200,000.00
+    `;
+
+    const result = parseForm16Text(labeledFormat);
+    expect(result.totalTdsDeducted).toBe(1625000);
+    expect(result.totalTdsDeposited).toBe(1625000);
+  });
+
+  it('should return 0 for totalTdsDeducted and totalTdsDeposited when no Part A data', () => {
+    const noPartA = `
+      Name and address of the Employer: Gamma Corp
+      PAN OF THE EMPLOYEE VWXYZ9876S
+      1. Gross Salary
+      Gross Total Income 500,000.00
+      Total Income 400,000.00
+      Tax Payable 20,000.00
+    `;
+
+    const result = parseForm16Text(noPartA);
+    expect(result.totalTdsDeducted).toBe(0);
+    expect(result.totalTdsDeposited).toBe(0);
+    expect(result.taxPayable).toBe(20000);
+  });
+
+  it('should not extract TDS from tax payable line (false positive guard)', () => {
+    const text = `
+      Tax payable 25,000.00
+      Net tax payable 22,500.00
+    `;
+    const result = parseForm16Text(text);
+    expect(result.totalTdsDeducted).toBe(0);
+    expect(result.totalTdsDeposited).toBe(0);
+    expect(result.taxPayable).toBe(22500); // Net tax payable takes precedence
+  });
+
   it('should test and cover all branches for full coverage requirements', () => {
     // 1. Employee Verification / Declaration Matching
     const textDecl = `I, SHUBHAM BANSAL, son of Suresh Bansal...`;
@@ -635,6 +720,41 @@ describe('mergeForm16Data', () => {
     expect(merged.salary.totalExemptAllowances).toBe(20000);
     expect(merged.period.from).toBe('01-Apr-2025');
     expect(merged.period.to).toBe('31-Mar-2026');
+  });
+
+  it('should sum totalTdsDeducted and totalTdsDeposited across multiple employers', () => {
+    const doc1 = parseForm16Text(`
+      Name and address of the Employer: Acme Corp
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: BLRG25952D
+      Period with the Employer To 31-Aug-2025 From 01-Apr-2025
+      Salary as per section 17(1) 500,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      Total tax deducted at source 50,000.00
+      Total tax deposited 50,000.00
+      Tax Payable 15,000.00
+    `);
+    const doc2 = parseForm16Text(`
+      Name and address of the Employer: Beta Inc
+      PAN of the Employee: CESPB7152N
+      TAN of the Deductor: NEWG12345T
+      Period with the Employer To 31-Mar-2026 From 01-Sep-2025
+      Salary as per section 17(1) 700,000.00
+      Standard deduction u/s 16(ia) 75,000.00
+      80C 50,000.00
+      Total tax deducted at source 35,000.00
+      Total tax deposited 35,000.00
+      Tax Payable 60,000.00
+    `);
+
+    const merged = mergeForm16Data([doc1, doc2]);
+
+    expect(merged.totalTdsDeducted).toBe(85000);
+    expect(merged.totalTdsDeposited).toBe(85000);
+    expect(merged.taxPayable).toBe(75000);
+    // Salary should also be summed
+    expect(merged.salary.salaryAsPer17_1).toBe(1200000);
+    expect(merged.salary.grossSalary).toBe(1200000);
   });
 });
 

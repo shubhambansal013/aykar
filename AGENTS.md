@@ -31,3 +31,9 @@ Before modifying any file, please read and familiarize yourself with:
 - `npm run deploy`: Builds and deploys to Cloudflare.
 - `npm run test`: Run the Vitest test suite.
 - `npm run proto:generate`: Re-compiles `proto3` definitions into TypeScript interfaces.
+
+## 📋 Phase Workflow
+
+When completing a phase from the [Parser Improvement Plan](docs/parser_improvement_plan.md):
+1. Update the status table at the top of `docs/parser_improvement_plan.md` — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
+2. Commit the changes to git with a descriptive message referencing the phase.

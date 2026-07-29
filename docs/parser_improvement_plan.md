@@ -7,14 +7,36 @@
 | Phase | Status | Session |
 |-------|--------|---------|
 | Phase 0: Eliminate hardcoded parser data | ✅ Done | `2026-07-29` — commit `4234635` |
-| Phase 1: Fix data models and mappings | ⬜ Pending | |
-| Phase 2: Fix reconciliation logic | ⬜ Pending | |
-| Phase 3: Wire Part A into simple parser | ⬜ Pending | |
-| Phase 4: Multi-employer / cross-source TDS | ⬜ Pending | |
+| Phase 1: Fix data models and mappings | ✅ Done | `2026-07-29` — commit `dadc139` |
+| Phase 2: Fix reconciliation logic | ✅ Done | `2026-07-29` — fallback: totalTdsDeducted→tdsSalary; cross-verify vs actual TDS; AIS-only fallback; reconciliation tests updated |
+| Phase 3: Wire Part A into simple parser | ✅ Done | `2026-07-29` — added totalTdsDeducted/totalTdsDeposited extraction rules to extractionConfig taxComputation; TaxComputationParser extracts them; simple pipeline (parseForm16Text) now populates Part A TDS fields; 4 new tests for table format, labeled format, missing Part A, and false-positive guard |
+| Phase 4: Multi-employer / cross-source TDS | ✅ Done | `2026-07-29` — Form16Merger sums totalTdsDeducted/totalTdsDeposited across certificates; 3 new tests for multi-employer merge, 26AS+AIS multi-employer, and AIS-only no-Form16 path |
 
 ---
 
 ## Session Notes
+
+### 2026-07-29 — Phase 2: Reconciliation fixes
+- `reconciliation.ts`: fallback now uses `form16.totalTdsDeducted` instead of `form16.taxPayable`
+- `reconciliation.ts`: cross-verification compares 26AS TDS against actual TDS (`totalTdsDeducted`), not `taxPayable`
+- `reconciliation.ts`: AIS-only fallback — when 26AS absent and Form 16 has no TDS, uses AIS TDS u/s 192 entries matching employer TAN
+- `reconciliation.ts`: `countedSalaryTans` set prevents double-counting AIS entries in supplement loop
+- `reconciliation.test.ts`: updated fixtures (totalTdsDeducted: 140000), expectations; added AIS-only fallback test
+- Fixed `sanitizeForm16Data` in `page.tsx` missing new fields
+- Fixed incorrect type imports (`../types` → `../proto/compatibilityProxy`) in taxEngine.test.ts and validator.test.ts
+
+### 2026-07-29 — Phase 3: Wire Part A into simple parser
+
+### 2026-07-29 — Phase 4: Multi-employer / cross-source TDS
+- `Form16Merger.ts`: added `mergeTds` method called from `mergeSingleDocument` to sum `totalTdsDeducted` and `totalTdsDeposited` across multiple certificates
+- `reconciliation.ts` already handles cross-source TDS correctly (26AS preferred; AIS supplements missing TANs; supplement loop handles no-Form16 case)
+- `parser.test.ts`: added multi-employer TDS sum test (Acme 50k + Beta 35k = 85k)
+- `reconciliation.test.ts`: added 26AS multi-employer aggregation test (TAN001 from 26AS + TAN002 from AIS); added AIS-only no-Form16 test (all u/s 192 entries picked up by supplement loop)
+- All 258 tests pass
+- `extractionConfig.ts`: added `totalTdsDeducted` / `totalTdsDeposited` extraction rules under `taxComputation`, supporting both `Total (Rs.)` table format (3-number line) and labeled format (`Total tax deducted at source: X`)
+- `TaxComputationParser.ts`: added `ParserUtils.extractAmount` calls for both fields
+- `parser.test.ts`: added 4 tests — table format, labeled format, missing Part A returns 0, false-positive guard (tax payable does not pollute TDS)
+- All 115 form16 tests pass
 
 ### 2026-07-29 — Hardcoding removal + audit
 - Removed company/user-specific fallbacks from form16, ais, tis, form26as parsers
@@ -156,3 +178,13 @@ When 26AS is NOT available:
 - Test multi-employer scenario
 - Test simple parser extraction of Part A TDS
 - Unit tests for `mapFlatToBundle` mapping correctness
+
+---
+
+## Phase Workflow
+
+When completing a phase from this plan:
+
+1. Update the status table at the top of this document — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
+2. Add a new entry under Session Notes documenting the key files changed and why.
+3. Commit the changes to git with a descriptive message referencing the phase.

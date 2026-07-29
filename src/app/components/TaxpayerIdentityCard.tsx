@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import { Form16Data } from '@/lib/proto/compatibilityProxy';
+import SourceBadge from './SourceBadge';
 
 interface TaxpayerIdentityCardProps {
   data: Form16Data | null;
@@ -42,6 +43,7 @@ export default function TaxpayerIdentityCard({ data }: TaxpayerIdentityCardProps
             Name:
           </Typography>
           <Typography variant="body2">{fmt(name)}</Typography>
+          <SourceBadge source="Form16" />
           <Divider orientation="vertical" flexItem />
           <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 80 }}>
             PAN:

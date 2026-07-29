@@ -11,27 +11,32 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { Form16Data, ReconciledTaxData } from '@/lib/proto/compatibilityProxy';
 import { calculateOldRegime, calculateNewRegime, TaxRegimeDetails } from '@/lib/itr/taxEngine';
+import SourceBadge, { SourceType } from './SourceBadge';
 
 interface TaxComputationProps {
   data: ReconciledTaxData | null;
   selectedRegime: 'OLD' | 'NEW';
+  onValueClick?: (label: string) => void;
 }
 
 function inr(amount: number): string {
   return `₹${(amount || 0).toLocaleString('en-IN')}`;
 }
 
-function LineRow({ label, value, operator, isTotal, isNegative }: {
+function LineRow({ label, value, operator, isTotal, isNegative, source, onClick }: {
   label: string;
   value: string;
   operator?: 'add' | 'subtract' | 'equals';
   isTotal?: boolean;
   isNegative?: boolean;
+  source?: SourceType;
+  onClick?: () => void;
 }) {
   const Icon = operator === 'add' ? AddIcon : operator === 'subtract' ? RemoveIcon : null;
   const opColor = operator === 'add' ? 'success.main' : operator === 'subtract' ? 'error.main' : 'text.primary';
   return (
     <Box
+      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -40,6 +45,8 @@ function LineRow({ label, value, operator, isTotal, isNegative }: {
         px: 1,
         bgcolor: isTotal ? 'action.selected' : 'transparent',
         borderRadius: 1,
+        cursor: onClick ? 'pointer' : 'default',
+        '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
@@ -48,17 +55,20 @@ function LineRow({ label, value, operator, isTotal, isNegative }: {
           {label}
         </Typography>
       </Box>
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: isTotal ? 700 : 500,
-          fontFamily: 'monospace',
-          whiteSpace: 'nowrap',
-          color: isNegative ? 'error.main' : 'text.primary',
-        }}
-      >
-        {value}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: isTotal ? 700 : 500,
+            fontFamily: 'monospace',
+            whiteSpace: 'nowrap',
+            color: isNegative ? 'error.main' : 'text.primary',
+          }}
+        >
+          {value}
+        </Typography>
+        {source && <SourceBadge source={source} />}
+      </Box>
     </Box>
   );
 }
@@ -82,8 +92,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function TaxComputation({ data, selectedRegime }: TaxComputationProps) {
+export default function TaxComputation({ data, selectedRegime, onValueClick }: TaxComputationProps) {
   if (!data) return null;
+
+  const mkClick = (label: string) => onValueClick ? () => onValueClick(label) : undefined;
 
   const regimeCalc: TaxRegimeDetails = selectedRegime === 'OLD'
     ? calculateOldRegime(data)
@@ -132,40 +144,40 @@ export default function TaxComputation({ data, selectedRegime }: TaxComputationP
 
         {/* Section: Gross Total Income */}
         <SectionTitle>Income Summary</SectionTitle>
-        <LineRow label="Gross Total Income" value={inr(regimeCalc.grossTotalIncome)} operator="add" />
-        <LineRow label="Less: Chapter VI-A Deductions" value={inr(regimeCalc.chapterVIADeductions)} operator="subtract" />
-        <LineRow label="Total Income" value={inr(regimeCalc.totalIncome)} operator="equals" isTotal />
+        <LineRow label="Gross Total Income" value={inr(regimeCalc.grossTotalIncome)} operator="add" source="Derived" onClick={mkClick('Gross Total Income')} />
+        <LineRow label="Less: Chapter VI-A Deductions" value={inr(regimeCalc.chapterVIADeductions)} operator="subtract" source="Form16" onClick={mkClick('Chapter VI-A Deductions')} />
+        <LineRow label="Total Income" value={inr(regimeCalc.totalIncome)} operator="equals" isTotal source="Derived" onClick={mkClick('Total Income')} />
 
         {/* Section: Tax on Normal Income */}
         <SectionTitle>Tax Liability</SectionTitle>
-        <LineRow label="Tax on Normal Income (Slab Rate)" value={inr(regimeCalc.taxBeforeRebate - (regimeCalc.specialTaxBreakdown?.reduce((s, t) => s + t.tax, 0) || 0))} operator="add" />
+        <LineRow label="Tax on Normal Income (Slab Rate)" value={inr(regimeCalc.taxBeforeRebate - (regimeCalc.specialTaxBreakdown?.reduce((s, t) => s + t.tax, 0) || 0))} operator="add" source="Derived" onClick={mkClick('Tax on Normal Income')} />
         {regimeCalc.specialTaxBreakdown?.map((st, i) => (
-          <LineRow key={i} label={`${st.name} @ ${st.rate}%`} value={inr(st.tax)} operator="add" />
+          <LineRow key={i} label={`${st.name} @ ${st.rate}%`} value={inr(st.tax)} operator="add" source="Derived" onClick={mkClick(`${st.name}`)} />
         ))}
         {regimeCalc.rebate87A > 0 && (
-          <LineRow label="Less: Rebate u/s 87A" value={inr(regimeCalc.rebate87A)} operator="subtract" />
+          <LineRow label="Less: Rebate u/s 87A" value={inr(regimeCalc.rebate87A)} operator="subtract" source="Derived" onClick={mkClick('Rebate 87A')} />
         )}
-        <LineRow label="Add: Health & Education Cess @ 4%" value={inr(regimeCalc.cess)} operator="add" />
-        <LineRow label="Gross Tax Liability" value={inr(regimeCalc.totalTaxPayable)} operator="equals" isTotal />
+        <LineRow label="Add: Health & Education Cess @ 4%" value={inr(regimeCalc.cess)} operator="add" source="Derived" onClick={mkClick('Cess')} />
+        <LineRow label="Gross Tax Liability" value={inr(regimeCalc.totalTaxPayable)} operator="equals" isTotal source="Derived" onClick={mkClick('Gross Tax Liability')} />
 
         {/* Section: Tax Credits */}
         <SectionTitle>Prepaid Taxes & Credits</SectionTitle>
         {taxCredits.tdsSalary > 0 && (
-          <LineRow label="TDS on Salary (u/s 192)" value={inr(taxCredits.tdsSalary)} operator="add" />
+          <LineRow label="TDS on Salary (u/s 192)" value={inr(taxCredits.tdsSalary)} operator="add" source="Form16" onClick={mkClick('TDS Salary')} />
         )}
         {taxCredits.tdsOther > 0 && (
-          <LineRow label="TDS on Other Income" value={inr(taxCredits.tdsOther)} operator="add" />
+          <LineRow label="TDS on Other Income" value={inr(taxCredits.tdsOther)} operator="add" source="Form16" onClick={mkClick('TDS Other')} />
         )}
         {taxCredits.tcs > 0 && (
-          <LineRow label="TCS (Tax Collected)" value={inr(taxCredits.tcs)} operator="add" />
+          <LineRow label="TCS (Tax Collected)" value={inr(taxCredits.tcs)} operator="add" source="Form16" onClick={mkClick('TCS')} />
         )}
         {taxCredits.advanceTax > 0 && (
-          <LineRow label="Advance Tax" value={inr(taxCredits.advanceTax)} operator="add" />
+          <LineRow label="Advance Tax" value={inr(taxCredits.advanceTax)} operator="add" source="Form16" onClick={mkClick('Advance Tax')} />
         )}
         {taxCredits.selfAssessmentTax > 0 && (
-          <LineRow label="Self-Assessment Tax" value={inr(taxCredits.selfAssessmentTax)} operator="add" />
+          <LineRow label="Self-Assessment Tax" value={inr(taxCredits.selfAssessmentTax)} operator="add" source="Form16" onClick={mkClick('Self-Assessment Tax')} />
         )}
-        <LineRow label="Total Prepaid Credits" value={inr(totalCredits)} operator="equals" isTotal />
+        <LineRow label="Total Prepaid Credits" value={inr(totalCredits)} operator="equals" isTotal source="Derived" onClick={mkClick('Total Prepaid Credits')} />
 
         <Divider sx={{ my: 1.5 }} />
 

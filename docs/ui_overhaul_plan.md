@@ -8,7 +8,7 @@
 |-------|--------|---------|
 | Phase 1: Computation Worksheet Foundation | ✅ Done | `2026-07-29` — Replaced flat editable grid with read-only ComputationWorksheet (TaxpayerIdentityCard, IncomeDetails, TaxComputation). All 258 tests pass. |
 | Phase 2: Verification / Reconciliation Section | ✅ Done | `2026-07-29` — Added ReconciliationTable component with field x source matrix, status chips (Match/Partial/Mismatch), expandable diff detail for mismatches. Removed generic Alert discrepancy boxes from page.tsx. |
-| Phase 3: Source Badges & Document Viewer | 📋 Planned | `2026-07-29` — Plan drafted |
+| Phase 3: Source Badges & Document Viewer | ✅ Done | `2026-07-29` — Added SourceBadge (Form16/26AS/AIS/TIS/Derived/Manual chips) to all computation LineRow values. Created DocumentViewer with per-document tabs, search/highlight, and cross-highlighting from left-panel clicks. Replaced DebugInfoSection. All 261 tests pass. |
 | Phase 4: Slab Visuals & Responsive Polish | 📋 Planned | `2026-07-29` — Plan drafted |
 
 ---
@@ -213,6 +213,19 @@ When completing a phase from this plan:
 3. Commit the changes to git with a descriptive message referencing the phase.
 
 ## Session Notes
+
+### Phase 3 — 2026-07-29
+**Key Changes:**
+- Created `src/app/components/SourceBadge.tsx` — colored chip component (Form16, 26AS, AIS, TIS, Derived, Manual) with distinct icon and color per source type.
+- Created `src/app/components/DocumentViewer.tsx` — replaces DebugInfoSection with per-document tabs (Form-16, AIS, TIS, Form 26AS), searchable/highlightable raw text, match navigation (next/prev), and cross-highlight via `searchQuery` prop.
+- Modified `src/app/components/IncomeDetails.tsx` — added `source` and `onClick` props to `LineRow`, integrated SourceBadge next to every amount value, added `onValueClick` callback.
+- Modified `src/app/components/TaxComputation.tsx` — same SourceBadge/onClick integration as IncomeDetails.
+- Modified `src/app/components/TaxpayerIdentityCard.tsx` — added SourceBadge (Form16) next to Name.
+- Modified `src/app/components/ComputationWorksheet.tsx` — added `onValueClick` prop, passes through to child components.
+- Modified `src/app/page.tsx` — replaced DebugInfoSection with DocumentViewer, added `highlightText` state and `handleValueClick` for cross-highlighting (clicking a computation value on the left scrolls the document viewer to matching text). Renamed `debugTab` → `docTab` with adjusted indices. Removed unused `combinedRawText` memo.
+- Deleted `src/app/components/DebugInfoSection.tsx` and `DebugInfoSection.test.tsx`.
+- Created `src/app/components/DocumentViewer.test.tsx` — tests for tabs, search/highlight, empty states, controlled mode.
+- All 261 tests pass.
 
 ### Phase 2 — 2026-07-29
 **Key Changes:**

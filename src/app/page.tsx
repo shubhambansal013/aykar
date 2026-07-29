@@ -68,7 +68,7 @@ import { AssistantMessage } from '@/app/components/AssistantMessage';
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
 import ComputationWorksheet from '@/app/components/ComputationWorksheet';
 import ReconciliationTable from '@/app/components/ReconciliationTable';
-import DebugInfoSection from '@/app/components/DebugInfoSection';
+import DocumentViewer from '@/app/components/DocumentViewer';
 
 interface Attachment {
   name: string;
@@ -137,8 +137,11 @@ export default function Home() {
 
   // Chat / Split-Screen Resizing & Tab States
   const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'inspect'>('chat');
-  const [debugTab, setDebugTab] = useState<number>(0);
+  const [docTab, setDocTab] = useState<number>(0);
   const [chatWidth, setChatWidth] = useState(600);
+
+  // Cross-highlighting: when user clicks a computation value, search for it in document viewer
+  const [highlightText, setHighlightText] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -196,24 +199,6 @@ export default function Home() {
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
-
-  // Combined Raw Text Memo
-  const combinedRawText = useMemo(() => {
-    let result = '';
-    if (rawText) {
-      result += `--- FORM-16 RAW EXTRACTED TEXT ---\n${rawText}\n\n`;
-    }
-    if (aisRawText) {
-      result += `--- AIS RAW EXTRACTED TEXT ---\n${aisRawText}\n\n`;
-    }
-    if (tisRawText) {
-      result += `--- TIS RAW EXTRACTED TEXT ---\n${tisRawText}\n\n`;
-    }
-    if (form26asRawText) {
-      result += `--- FORM 26AS RAW EXTRACTED TEXT ---\n${form26asRawText}\n\n`;
-    }
-    return result || 'No raw text extracted yet.';
-  }, [rawText, aisRawText, tisRawText, form26asRawText]);
 
   // Gemini Models Memo
   const geminiModels = useMemo(() => {
@@ -766,6 +751,12 @@ export default function Home() {
     setIsDragging(true);
   };
 
+  const handleValueClick = (label: string) => {
+    setHighlightText(label);
+    setRightPanelTab('inspect');
+    setChatOpen(true);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -814,25 +805,25 @@ export default function Home() {
                       {form16List.length > 0 && (
                         <Paper
                           variant="outlined"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setRightPanelTab('inspect');
-                            setDebugTab(1);
-                          }}
-                          sx={{
-                            cursor: 'pointer',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            bgcolor: 'success.light',
-                            color: 'success.dark',
-                            borderColor: 'success.light',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          data-testid="compact-form16-badge-inspect"
+                            onClick={() => {
+                              setChatOpen(true);
+                              setRightPanelTab('inspect');
+                              setDocTab(0);
+                            }}
+                            sx={{
+                              cursor: 'pointer',
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              bgcolor: 'success.light',
+                              color: 'success.dark',
+                              borderColor: 'success.light',
+                              '&:hover': { opacity: 0.8 }
+                            }}
+                            data-testid="compact-form16-badge-inspect"
                         >
                           <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                             Form-16 ({form16List.length}) 🔍
@@ -845,7 +836,7 @@ export default function Home() {
                           onClick={() => {
                             setChatOpen(true);
                             setRightPanelTab('inspect');
-                            setDebugTab(2);
+                            setDocTab(1);
                           }}
                           sx={{
                             cursor: 'pointer',
@@ -873,7 +864,7 @@ export default function Home() {
                           onClick={() => {
                             setChatOpen(true);
                             setRightPanelTab('inspect');
-                            setDebugTab(3);
+                            setDocTab(2);
                           }}
                           sx={{
                             cursor: 'pointer',
@@ -901,7 +892,7 @@ export default function Home() {
                           onClick={() => {
                             setChatOpen(true);
                             setRightPanelTab('inspect');
-                            setDebugTab(4);
+                            setDocTab(3);
                           }}
                           sx={{
                             cursor: 'pointer',
@@ -987,13 +978,13 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(1);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-form16-btn"
+                                  onClick={() => {
+                                    setChatOpen(true);
+                                    setRightPanelTab('inspect');
+                                    setDocTab(0);
+                                  }}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-form16-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1019,13 +1010,13 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(2);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-ais-btn"
+                                  onClick={() => {
+                                    setChatOpen(true);
+                                    setRightPanelTab('inspect');
+                                    setDocTab(1);
+                                  }}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-ais-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1051,13 +1042,13 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(3);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-tis-btn"
+                                  onClick={() => {
+                                    setChatOpen(true);
+                                    setRightPanelTab('inspect');
+                                    setDocTab(2);
+                                  }}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-tis-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1083,13 +1074,13 @@ export default function Home() {
                               <Button
                                 variant="text"
                                 size="small"
-                                onClick={() => {
-                                  setChatOpen(true);
-                                  setRightPanelTab('inspect');
-                                  setDebugTab(4);
-                                }}
-                                sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                data-testid="view-extracted-form26as-btn"
+                                  onClick={() => {
+                                    setChatOpen(true);
+                                    setRightPanelTab('inspect');
+                                    setDocTab(3);
+                                  }}
+                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
+                                  data-testid="view-extracted-form26as-btn"
                               >
                                 View Extracted Data
                               </Button>
@@ -1345,6 +1336,7 @@ export default function Home() {
                     selectedRegime={selectedRegime}
                     itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
                     onAiReview={() => handleSendMessage(true)}
+                    onValueClick={handleValueClick}
                   />
 
                 </>
@@ -1549,11 +1541,11 @@ export default function Home() {
                         color="primary"
                         size="small"
                         startIcon={<CodeIcon sx={{ fontSize: 12 }} />}
-                        onClick={() => {
-                          setChatOpen(true);
-                          setRightPanelTab('inspect');
-                          setDebugTab(0);
-                        }}
+                          onClick={() => {
+                            setChatOpen(true);
+                            setRightPanelTab('inspect');
+                            setDocTab(0);
+                          }}
                         data-testid="parsed-itr-badge"
                         sx={{
                           textTransform: 'none',
@@ -1687,16 +1679,16 @@ export default function Home() {
               overflowY: 'auto',
               bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.1)' : '#f8fafc',
             }}>
-              <DebugInfoSection
+              <DocumentViewer
                 mode={mode}
-                combinedRawText={combinedRawText}
-                extractedData={extractedData}
-                form16List={form16List}
-                aisData={aisData}
-                tisData={tisData}
-                form26asData={form26asData}
-                activeTab={debugTab}
-                onTabChange={setDebugTab}
+                rawText={rawText}
+                aisRawText={aisRawText}
+                tisRawText={tisRawText}
+                form26asRawText={form26asRawText}
+                searchQuery={highlightText}
+                onSearchChange={setHighlightText}
+                activeTab={docTab}
+                onTabChange={setDocTab}
               />
             </Box>
           </Box>

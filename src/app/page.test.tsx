@@ -1124,9 +1124,9 @@ describe('Home Page', () => {
 
     fireEvent.click(inspectBtn);
 
-    // Verify right panel is open and showing the DebugInfoSection tabs
-    expect(screen.getByText('Debug Information & Raw Extracted Documents')).toBeDefined();
-    expect(screen.getByText('Engine Reconciliation Result (Protobuf)')).toBeDefined();
+    // Verify right panel is open and showing the DocumentViewer tabs
+    expect(screen.getByText('Document Viewer')).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Form-16/i })).toBeDefined();
 
     vi.restoreAllMocks();
   }, 45000);

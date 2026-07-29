@@ -13,9 +13,10 @@ interface ComputationWorksheetProps {
   selectedRegime: 'OLD' | 'NEW';
   itrFormType?: 'ITR-1' | 'ITR-2';
   onAiReview?: () => void;
+  onValueClick?: (label: string) => void;
 }
 
-export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, onAiReview }: ComputationWorksheetProps) {
+export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, onAiReview, onValueClick }: ComputationWorksheetProps) {
   if (!data) return null;
 
   return (
@@ -56,8 +57,8 @@ export default function ComputationWorksheet({ data, form16List, selectedRegime,
         )}
       </Box>
       <TaxpayerIdentityCard data={data} />
-      <IncomeDetails data={data} form16List={form16List} />
-      <TaxComputation data={data} selectedRegime={selectedRegime} />
+      <IncomeDetails data={data} form16List={form16List} onValueClick={onValueClick} />
+      <TaxComputation data={data} selectedRegime={selectedRegime} onValueClick={onValueClick} />
     </Box>
   );
 }

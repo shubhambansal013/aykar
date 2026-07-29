@@ -11,26 +11,31 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { Form16Data, ReconciledTaxData, createForm16Proxy } from '@/lib/proto/compatibilityProxy';
 import { Form16Bundle } from '@/generated/sources/form16';
+import SourceBadge, { SourceType } from './SourceBadge';
 
 interface IncomeDetailsProps {
   data: ReconciledTaxData | null;
   form16List: Array<{ file: File; rawText: string; data: Form16Bundle }>;
+  onValueClick?: (label: string) => void;
 }
 
 function inr(amount: number): string {
   return `₹${(amount || 0).toLocaleString('en-IN')}`;
 }
 
-function LineRow({ label, value, operator, isTotal }: {
+function LineRow({ label, value, operator, isTotal, source, onClick }: {
   label: string;
   value: string;
   operator?: 'add' | 'subtract' | 'equals';
   isTotal?: boolean;
+  source?: SourceType;
+  onClick?: () => void;
 }) {
   const Icon = operator === 'add' ? AddIcon : operator === 'subtract' ? RemoveIcon : null;
   const opColor = operator === 'add' ? 'success.main' : operator === 'subtract' ? 'error.main' : 'text.primary';
   return (
     <Box
+      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -39,6 +44,8 @@ function LineRow({ label, value, operator, isTotal }: {
         px: 1,
         bgcolor: isTotal ? 'action.selected' : 'transparent',
         borderRadius: 1,
+        cursor: onClick ? 'pointer' : 'default',
+        '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
@@ -47,16 +54,19 @@ function LineRow({ label, value, operator, isTotal }: {
           {label}
         </Typography>
       </Box>
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: isTotal ? 700 : 500,
-          fontFamily: 'monospace',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {value}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: isTotal ? 700 : 500,
+            fontFamily: 'monospace',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {value}
+        </Typography>
+        {source && <SourceBadge source={source} />}
+      </Box>
     </Box>
   );
 }
@@ -98,7 +108,7 @@ function EmployerRow({ employer, salary }: { employer: any; salary: any }) {
   );
 }
 
-export default function IncomeDetails({ data, form16List }: IncomeDetailsProps) {
+export default function IncomeDetails({ data, form16List, onValueClick }: IncomeDetailsProps) {
   if (!data) return null;
 
   const salary = data.salary;
@@ -115,8 +125,7 @@ export default function IncomeDetails({ data, form16List }: IncomeDetailsProps) 
   const hasCapitalGains = stcg > 0 || ltcg > 0;
   const hasOtherIncome = houseProperty > 0 || otherSources > 0;
 
-  // Total of all non-salary incomes
-  const otherIncomesTotal = houseProperty + otherSources + stcg + ltcg;
+  const mkClick = (label: string) => onValueClick ? () => onValueClick(label) : undefined;
 
   return (
     <Card variant="outlined" sx={{ mb: 2 }}>
@@ -150,24 +159,24 @@ export default function IncomeDetails({ data, form16List }: IncomeDetailsProps) 
         )}
 
         {/* Consolidated salary lines */}
-        <LineRow label="Gross Salary" value={inr(grossSalary)} operator="add" />
-        <LineRow label="Less: Standard Deduction" value={inr(standardDeduction)} operator="subtract" />
-        <LineRow label="Less: Professional Tax / Entertainment Allowance" value={inr((salary?.totalDeductionsUs16 || 0) - standardDeduction)} operator="subtract" />
-        <LineRow label="Income chargeable under Salaries" value={inr(incomeFromSalary)} operator="equals" isTotal />
+        <LineRow label="Gross Salary" value={inr(grossSalary)} operator="add" source="Form16" onClick={mkClick('Gross Salary')} />
+        <LineRow label="Less: Standard Deduction" value={inr(standardDeduction)} operator="subtract" source="Form16" onClick={mkClick('Standard Deduction')} />
+        <LineRow label="Less: Professional Tax / Entertainment Allowance" value={inr((salary?.totalDeductionsUs16 || 0) - standardDeduction)} operator="subtract" source="Form16" onClick={mkClick('Professional Tax')} />
+        <LineRow label="Income chargeable under Salaries" value={inr(incomeFromSalary)} operator="equals" isTotal source="Derived" onClick={mkClick('Income from Salary')} />
 
         {/* Other Incomes */}
         <SectionTitle>Other Incomes</SectionTitle>
         {hasCapitalGains && (
           <>
-            {stcg > 0 && <LineRow label="Short Term Capital Gains" value={inr(stcg)} operator="add" />}
-            {ltcg > 0 && <LineRow label="Long Term Capital Gains u/s 112A" value={inr(ltcg)} operator="add" />}
+            {stcg > 0 && <LineRow label="Short Term Capital Gains" value={inr(stcg)} operator="add" source="Derived" onClick={mkClick('Short Term Capital Gains')} />}
+            {ltcg > 0 && <LineRow label="Long Term Capital Gains u/s 112A" value={inr(ltcg)} operator="add" source="Derived" onClick={mkClick('Long Term Capital Gains')} />}
           </>
         )}
         {houseProperty !== 0 && (
-          <LineRow label="Income from House Property" value={inr(houseProperty)} operator={houseProperty > 0 ? 'add' : 'subtract'} />
+          <LineRow label="Income from House Property" value={inr(houseProperty)} operator={houseProperty > 0 ? 'add' : 'subtract'} source="Form16" onClick={mkClick('House Property')} />
         )}
         {otherSources > 0 && (
-          <LineRow label="Income from Other Sources" value={inr(otherSources)} operator="add" />
+          <LineRow label="Income from Other Sources" value={inr(otherSources)} operator="add" source="Derived" onClick={mkClick('Other Sources')} />
         )}
         {!hasOtherIncome && !hasCapitalGains && (
           <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 0.5 }}>
@@ -178,7 +187,7 @@ export default function IncomeDetails({ data, form16List }: IncomeDetailsProps) 
         <Divider sx={{ my: 1 }} />
 
         {/* Gross Total Income */}
-        <LineRow label="Gross Total Income" value={inr(grossTotalIncome)} operator="equals" isTotal />
+        <LineRow label="Gross Total Income" value={inr(grossTotalIncome)} operator="equals" isTotal source="Derived" onClick={mkClick('Gross Total Income')} />
       </CardContent>
     </Card>
   );

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateForm16Data } from './validator';
-import { Form16Data } from '../types';
+import { Form16Data } from '../proto/compatibilityProxy';
 
 describe('validateForm16Data', () => {
   const baseData: Form16Data = {

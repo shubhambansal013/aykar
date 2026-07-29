@@ -42,3 +42,7 @@ All code changes must include accompanying unit or integration tests. This is **
 When completing a phase from the [Parser Improvement Plan](docs/parser_improvement_plan.md):
 1. Update the status table at the top of `docs/parser_improvement_plan.md` — set the phase to ✅ Done, add the date and a brief summary of changes in the Session column.
 2. Commit the changes to git with a descriptive message referencing the phase.
+
+## ✅ Commit Policy
+
+Always commit changes when done with a task. Before committing, inspect `git status`, `git diff`, and `git log --oneline -10`; stage only intended files. Write a concise commit message matching the repo style. Do not amend failed commits (create a new one instead). Do not skip hooks or force-push.

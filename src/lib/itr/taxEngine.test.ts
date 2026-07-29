@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateOldRegime, calculateNewRegime, compareTaxRegimes, recalculateAllFormFields } from './taxEngine';
+import { calculateOldRegime, calculateNewRegime, compareTaxRegimes, recalculateAllFormFields, computeAllInterest } from './taxEngine';
 import { Form16Data } from '../proto/compatibilityProxy';
 
 describe('taxEngine', () => {
@@ -353,6 +353,187 @@ describe('taxEngine', () => {
 
       const resultDeductions = recalculateAllFormFields(data, 'OLD', 'totalChapterVIADeductions');
       expect(resultDeductions.totalChapterVIADeductions).toBe(250000); // Maintained override
+    });
+  });
+
+  describe('Interest under Sections 234A/234B/234C', () => {
+    it('computes Section 234B interest when advance tax < 90% of tax due', () => {
+      const interest = computeAllInterest(
+        100000, // totalTaxPayable
+        800000, // totalIncome
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 5000, selfAssessmentTax: 0 },
+        } as any,
+        '2027-01-01', // filing date: Jan 1, 2027 (9 months from Apr 1)
+      );
+      // taxDueForAdvance = 100000 - 10000 - 5000 - 2000 = 83000
+      // 90% of 83000 = 74700, advanceTax = 5000 < 74700 => shortfall = 83000 - 5000 = 78000
+      // months: Apr 1, 2026 to Jan 1, 2027 = 9 months
+      // interest = 78000 * 1% * 9 = 7020
+      expect(interest.interest234B).toBe(7020);
+    });
+
+    it('computes zero Section 234B interest when advance tax >= 90% of tax due', () => {
+      const interest = computeAllInterest(
+        100000, // totalTaxPayable
+        800000, // totalIncome
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 80000, selfAssessmentTax: 0 },
+        } as any,
+        '2027-01-01',
+      );
+      // taxDueForAdvance = 100000 - 10000 - 5000 - 2000 = 83000
+      // 90% of 83000 = 74700, advanceTax = 80000 >= 74700 => no interest
+      expect(interest.interest234B).toBe(0);
+    });
+
+    it('computes Section 234C interest with installment-level advance tax data', () => {
+      const interest = computeAllInterest(
+        200000, // totalTaxPayable
+        1500000, // totalIncome
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 20000, tdsOther: 10000, tcs: 5000, advanceTax: 120000, selfAssessmentTax: 0 },
+          form26asData: {
+            advanceTax: [
+              { date: '2025-06-10', amount: 15000 },
+              { date: '2025-09-12', amount: 30000 },
+              { date: '2025-12-10', amount: 40000 },
+              { date: '2026-03-10', amount: 35000 },
+            ],
+          },
+        } as any,
+      );
+      // taxDue = 200000 - 20000 - 10000 - 5000 = 165000
+      // June 15: required 15% = 24750, paid 15000, shortfall 9750, interest = 9750 * 1% * 3 = 292.5
+      // Sep 15: required 45% = 74250, cumulative paid = 15000+30000 = 45000, shortfall 29250, interest = 29250 * 1% * 3 = 877.5
+      // Dec 15: required 75% = 123750, cumulative paid = 15000+30000+40000 = 85000, shortfall 38750, interest = 38750 * 1% * 3 = 1162.5
+      // Mar 15: required 100% = 165000, cumulative paid = 15000+30000+40000+35000 = 120000, shortfall 45000, interest = 45000 * 1% * 1 = 450
+      // Total = 292.5 + 877.5 + 1162.5 + 450 = 2782.5 => 2783
+      expect(interest.interest234C).toBe(2783);
+    });
+
+    it('computes zero Section 234C when no installment data available', () => {
+      const interest = computeAllInterest(
+        200000,
+        1500000,
+        {
+          ...baseMockData,
+          taxCredits: { tdsSalary: 20000, tdsOther: 10000, tcs: 5000, advanceTax: 120000, selfAssessmentTax: 0 },
+        } as any,
+      );
+      expect(interest.interest234C).toBe(0);
+    });
+
+    it('computes Section 234A interest when filing is late', () => {
+      const interest = computeAllInterest(
+        100000,
+        800000,
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 30000, selfAssessmentTax: 10000 },
+        } as any,
+        '2027-01-15', // filing date: Jan 15, 2027 (late)
+      );
+      // netTaxDue = 100000 - 10000 - 5000 - 2000 - 30000 - 10000 = 43000
+      // dueDate = 2026-07-31, filingDate = 2027-01-15
+      // Months: Aug 2026, Sep, Oct, Nov, Dec, Jan 2027 = 6 months
+      // interest = 43000 * 1% * 6 = 2580
+      expect(interest.interest234A).toBe(2580);
+    });
+
+    it('computes zero Section 234A interest when filing is on time', () => {
+      const interest = computeAllInterest(
+        100000,
+        800000,
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 30000, selfAssessmentTax: 10000 },
+        } as any,
+        '2026-07-31', // filing on due date
+      );
+      expect(interest.interest234A).toBe(0);
+    });
+
+    it('computes late filing fee Section 234F', () => {
+      const interestHighIncome = computeAllInterest(
+        100000,
+        600000, // > 500000
+        { ...baseMockData, assessmentYear: '2026' } as any,
+        '2027-01-15',
+      );
+      expect(interestHighIncome.lateFilingFee234F).toBe(5000);
+
+      const interestLowIncome = computeAllInterest(
+        10000,
+        300000, // <= 500000
+        { ...baseMockData, assessmentYear: '2026' } as any,
+        '2027-01-15',
+      );
+      expect(interestLowIncome.lateFilingFee234F).toBe(1000);
+    });
+
+    it('returns zero late filing fee when filing is on time', () => {
+      const interest = computeAllInterest(
+        100000,
+        800000,
+        { ...baseMockData, assessmentYear: '2026' } as any,
+        '2026-07-31',
+      );
+      expect(interest.lateFilingFee234F).toBe(0);
+    });
+
+    it('computes Section 234B interest matching Tarush Arora scenario at ₹9,858 (determinationDate only)', () => {
+      const interest = computeAllInterest(
+        160825,
+        1775000,
+        {
+          ...baseMockData,
+          assessmentYear: '2026',
+          taxCredits: { tdsSalary: 51290, tdsOther: 0, tcs: 0, advanceTax: 0, selfAssessmentTax: 0 },
+        } as any,
+        undefined,
+        '2026-12-31',
+      );
+      expect(interest.interest234B).toBe(9858);
+      expect(interest.interest234A).toBe(0);
+      expect(interest.interest234C).toBe(0);
+      expect(interest.lateFilingFee234F).toBe(0);
+      expect(interest.totalInterestPayable).toBe(9858);
+      expect(interest.totalTaxPlusInterest).toBe(160825 + 9858);
+    });
+
+    it('returns zero interest from calculateOldRegime (separate from tax engine)', () => {
+      const result = calculateOldRegime({
+        ...baseMockData,
+        assessmentYear: '2026',
+        taxCredits: { tdsSalary: 10000, tdsOther: 5000, tcs: 2000, advanceTax: 5000, selfAssessmentTax: 0 },
+      } as any);
+      expect(result.interest234B).toBe(0);
+      expect(result.interest234A).toBe(0);
+      expect(result.interest234C).toBe(0);
+      expect(result.lateFilingFee234F).toBe(0);
+      expect(result.totalInterestPayable).toBe(0);
+      expect(result.totalTaxPlusInterest).toBe(result.totalTaxPayable);
+    });
+
+    it('includes interest details in calculateNewRegime result (zero tax = zero interest)', () => {
+      const result = calculateNewRegime({
+        ...baseMockData,
+        taxCredits: { tdsSalary: 0, tdsOther: 0, tcs: 0, advanceTax: 0, selfAssessmentTax: 0 },
+      } as any);
+      expect(result.interest234B).toBe(0);
+      expect(result.interest234A).toBe(0);
+      expect(result.interest234C).toBe(0);
+      expect(result.totalInterestPayable).toBe(0);
+      expect(result.totalTaxPlusInterest).toBe(0);
     });
   });
 });

@@ -1,5 +1,14 @@
 import { Form16Data, ReconciledTaxData } from '../proto/compatibilityProxy';
 
+export interface InterestDetails {
+  interest234A: number;
+  interest234B: number;
+  interest234C: number;
+  lateFilingFee234F: number;
+  totalInterestPayable: number;
+  totalTaxPlusInterest: number;
+}
+
 export interface TaxRegimeDetails {
   grossSalary: number;
   totalExemptAllowances: number;
@@ -22,6 +31,13 @@ export interface TaxRegimeDetails {
   slabTaxBreakdown?: Array<{ range: string; rate: number; taxableAmount: number; tax: number }>;
   specialTaxBreakdown?: Array<{ name: string; rate: number; income: number; tax: number }>;
   marginalRelief87A?: number;
+  // Interest under Sections 234A, 234B, 234C and late filing fee 234F
+  interest234A: number;
+  interest234B: number;
+  interest234C: number;
+  lateFilingFee234F: number;
+  totalInterestPayable: number;
+  totalTaxPlusInterest: number;
 }
 
 export interface DualRegimeComparison {
@@ -140,6 +156,223 @@ export function computeSlabTax(income: number, slabs: typeof NEW_REGIME_SLABS): 
 }
 
 /**
+ * Extract the financial year start year from assessment year string (e.g. "2026" -> 2025).
+ */
+function getFYStartYear(assessmentYear: string): number {
+  return (parseInt(assessmentYear, 10) || 2026) - 1;
+}
+
+/**
+ * Compute the number of months (or part thereof) between two dates.
+ * Each calendar month started counts as one month.
+ */
+function monthsBetween(from: Date, to: Date): number {
+  if (to <= from) return 0;
+  let count = 0;
+  const cursor = new Date(from);
+  while (cursor < to) {
+    count++;
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return count;
+}
+
+/**
+ * Compute interest under Section 234B — default in payment of advance tax.
+ *
+ * If advance tax paid < 90% of (totalTaxPayable - TDS - TCS), interest @ 1% per month
+ * on the shortfall from April 1 of the AY to March 31 (12 months).
+ */
+function computeInterest234B(
+  totalTaxPayable: number,
+  tdsSalary: number,
+  tdsOther: number,
+  tcs: number,
+  advanceTax: number,
+  assessmentYear: string,
+  filingDate: string,
+): number {
+  const taxDueForAdvance = Math.max(0, totalTaxPayable - tdsSalary - tdsOther - tcs);
+  if (taxDueForAdvance <= 0) return 0;
+  if (advanceTax >= 0.9 * taxDueForAdvance) return 0;
+
+  const shortfall = taxDueForAdvance - advanceTax;
+  // Period: April 1 of the AY to the filing/determination date
+  const fyStart = getFYStartYear(assessmentYear);
+  const startDate = new Date(fyStart + 1, 3, 1); // April 1
+  const endDate = new Date(filingDate);
+  const months = monthsBetween(startDate, endDate);
+  return Math.round(shortfall * 0.01 * months);
+}
+
+/**
+ * Compute interest under Section 234C — deferment of advance tax installments.
+ *
+ * Uses installment-level advance tax challan dates from form26asData when available.
+ * Falls back to 0 when no installment detail exists (assumes lump-sum payment by Mar 15).
+ */
+function computeInterest234C(
+  totalTaxPayable: number,
+  tdsSalary: number,
+  tdsOther: number,
+  tcs: number,
+  advanceTaxInstallments: Array<{ date: string; amount: number }> | undefined,
+  assessmentYear: string,
+): number {
+  const taxDue = Math.max(0, totalTaxPayable - tdsSalary - tdsOther - tcs);
+  if (taxDue <= 0) return 0;
+  if (!advanceTaxInstallments || advanceTaxInstallments.length === 0) return 0;
+
+  const fyStart = getFYStartYear(assessmentYear);
+
+  const installments = [
+    { month: 6, day: 15, pct: 0.15, penaltyMonths: 3 },
+    { month: 9, day: 15, pct: 0.45, penaltyMonths: 3 },
+    { month: 12, day: 15, pct: 0.75, penaltyMonths: 3 },
+    { month: 3, day: 15, pct: 1.0, penaltyMonths: 1 },
+  ];
+
+  const sorted = [...advanceTaxInstallments].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+
+  let totalInterest = 0;
+
+  for (const inst of installments) {
+    const dueDate = new Date(
+      inst.month <= 3 ? fyStart + 1 : fyStart,
+      inst.month - 1,
+      inst.day,
+    );
+    const paidByDue = sorted
+      .filter((p) => new Date(p.date) <= dueDate)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const required = taxDue * inst.pct;
+    const shortfall = Math.max(0, required - paidByDue);
+    if (shortfall > 0) {
+      totalInterest += shortfall * 0.01 * inst.penaltyMonths;
+    }
+  }
+
+  return Math.round(totalInterest);
+}
+
+/**
+ * Compute interest under Section 234A — delay in filing the return.
+ *
+ * Interest @ 1% per month from the due date to the filing date
+ * on the net tax due (totalTaxPayable - all credits).
+ */
+function computeInterest234A(
+  totalTaxPayable: number,
+  tdsSalary: number,
+  tdsOther: number,
+  tcs: number,
+  advanceTax: number,
+  selfAssessmentTax: number,
+  dueDate: string,
+  filingDate: string,
+): number {
+  const netTaxDue = Math.max(
+    0,
+    totalTaxPayable - tdsSalary - tdsOther - tcs - advanceTax - selfAssessmentTax,
+  );
+  if (netTaxDue <= 0) return 0;
+
+  const due = new Date(dueDate);
+  const filed = new Date(filingDate);
+  if (filed <= due) return 0;
+
+  const months = monthsBetween(due, filed);
+  return Math.round(netTaxDue * 0.01 * months);
+}
+
+/**
+ * Compute late filing fee under Section 234F.
+ */
+function computeLateFilingFee234F(totalIncome: number, dueDate: string, filingDate: string): number {
+  const due = new Date(dueDate);
+  const filed = new Date(filingDate);
+  if (filed <= due) return 0;
+  return totalIncome <= 500000 ? 1000 : 5000;
+}
+
+/**
+ * Compute all interest components (234A, 234B, 234C, 234F) for a given regime's tax output.
+ * Returns InterestDetails with rounded values.
+ */
+export function computeAllInterest(
+  totalTaxPayable: number,
+  totalIncome: number,
+  data: Form16Data,
+  filingDate?: string,
+  determinationDate?: string,
+): InterestDetails {
+  const recon = data as ReconciledTaxData;
+  const credits = recon.taxCredits || {
+    tdsSalary: 0,
+    tdsOther: 0,
+    tcs: 0,
+    advanceTax: 0,
+    selfAssessmentTax: 0,
+  };
+  const tdsSalary = credits.tdsSalary || 0;
+  const tdsOther = credits.tdsOther || 0;
+  const tcs = credits.tcs || 0;
+  const advanceTax = credits.advanceTax || 0;
+  const selfAssessmentTax = credits.selfAssessmentTax || 0;
+
+  const assessmentYear = data.assessmentYear || '2026';
+  const fyStart = getFYStartYear(assessmentYear);
+
+  const dueDate = `${fyStart + 1}-07-31`;
+
+  // 234B uses determinationDate (defaults to dueDate if neither is provided)
+  const actualDeterminationDate = determinationDate || filingDate || dueDate;
+  // 234A/234F use filingDate (defaults to dueDate — on-time filing => 0)
+  const actualFilingDate = filingDate || dueDate;
+
+  const form26asData = (data as any).form26asData;
+  const advanceTaxInstallments = form26asData?.advanceTax as
+    | Array<{ date: string; amount: number }>
+    | undefined;
+
+  const interest234B = computeInterest234B(totalTaxPayable, tdsSalary, tdsOther, tcs, advanceTax, assessmentYear, actualDeterminationDate);
+  const interest234C = computeInterest234C(
+    totalTaxPayable,
+    tdsSalary,
+    tdsOther,
+    tcs,
+    advanceTaxInstallments,
+    assessmentYear,
+  );
+  const interest234A = computeInterest234A(
+    totalTaxPayable,
+    tdsSalary,
+    tdsOther,
+    tcs,
+    advanceTax,
+    selfAssessmentTax,
+    dueDate,
+    actualFilingDate,
+  );
+  const lateFilingFee234F = computeLateFilingFee234F(totalIncome, dueDate, actualFilingDate);
+
+  const totalInterestPayable = interest234A + interest234B + interest234C + lateFilingFee234F;
+  const totalTaxPlusInterest = totalTaxPayable + totalInterestPayable;
+
+  return {
+    interest234A,
+    interest234B,
+    interest234C,
+    lateFilingFee234F,
+    totalInterestPayable,
+    totalTaxPlusInterest,
+  };
+}
+
+/**
  * Computes tax payable for Old Regime.
  */
 export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
@@ -235,6 +468,12 @@ export function calculateOldRegime(data: Form16Data): TaxRegimeDetails {
     slabTaxBreakdown,
     specialTaxBreakdown,
     marginalRelief87A: 0,
+    interest234A: 0,
+    interest234B: 0,
+    interest234C: 0,
+    lateFilingFee234F: 0,
+    totalInterestPayable: 0,
+    totalTaxPlusInterest: totalTaxPayable,
   };
 }
 
@@ -351,6 +590,12 @@ export function calculateNewRegime(data: Form16Data): TaxRegimeDetails {
     slabTaxBreakdown,
     specialTaxBreakdown,
     marginalRelief87A,
+    interest234A: 0,
+    interest234B: 0,
+    interest234C: 0,
+    lateFilingFee234F: 0,
+    totalInterestPayable: 0,
+    totalTaxPlusInterest: totalTaxPayable,
   };
 }
 

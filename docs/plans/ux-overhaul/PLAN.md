@@ -72,7 +72,7 @@ Three specific user complaints drove this:
 
 | Phase | Title | Status | Notes |
 |---|---|---|---|
-| 1 | Foundation — Extract shared components | pending | LineRow, SectionTitle, ChatPanel, DocumentUpload |
+| 1 | Foundation — Extract shared components | done | LineRow, SectionTitle, ChatPanel, DocumentUpload |
 | 2 | Architecture — Remove redundancy, restructure flow | pending | Depends on Phase 1's shared components |
 | 3 | Polish — Tabular layout & color reduction | pending | Depends on Phase 1's LineRow |
 

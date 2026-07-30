@@ -36,15 +36,9 @@ import {
   CircularProgress,
   Paper,
   Tooltip,
-  InputAdornment,
   Grid,
   Divider,
   Fab,
-  Select,
-  MenuItem,
-  FormControl,
-  FormControlLabel,
-  Checkbox,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -56,25 +50,21 @@ import {
   AccordionDetails,
 } from '@mui/material';
 
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ChatIcon from '@mui/icons-material/Chat';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import CloseIcon from '@mui/icons-material/Close';
-import SendIcon from '@mui/icons-material/Send';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CodeIcon from '@mui/icons-material/Code';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { AssistantMessage } from '@/app/components/AssistantMessage';
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
 import ComputationWorksheet from '@/app/components/ComputationWorksheet';
 import ReconciliationTable from '@/app/components/ReconciliationTable';
 import DocumentViewer from '@/app/components/DocumentViewer';
+import ChatPanel from '@/app/components/ChatPanel';
+import DocumentUpload from '@/app/components/DocumentUpload';
 
 interface Attachment {
   name: string;
@@ -783,6 +773,27 @@ export default function Home() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleRemoveAis = () => {
+    setAisFile(null);
+    setAisData(null);
+    setAisRawText('');
+    reRunReconciliation(form16List, null, tisData, form26asData, '', tisRawText, form26asRawText);
+  };
+
+  const handleRemoveTis = () => {
+    setTisFile(null);
+    setTisData(null);
+    setTisRawText('');
+    reRunReconciliation(form16List, aisData, null, form26asData, aisRawText, '', form26asRawText);
+  };
+
+  const handleRemoveForm26as = () => {
+    setForm26asFile(null);
+    setForm26asData(null);
+    setForm26asRawText('');
+    reRunReconciliation(form16List, aisData, tisData, null, aisRawText, tisRawText, '');
+  };
+
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -869,274 +880,28 @@ export default function Home() {
             display: { xs: 'block', md: 'block' }
           }}>
             <Container maxWidth="md" sx={{ py: 3 }}>
-              {/* Compact Upload Status Bar */}
-              {isUploadCollapsed && (
-                <Paper variant="outlined" sx={{ p: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)', borderColor: 'success.light' }} data-testid="compact-upload-status">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      Compact Upload Status: {readyDocsCount}/4 Docs Ready
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                      {form16List.length > 0 && (
-                        <Paper
-                          variant="outlined"
-                            onClick={() => openRightPanel('inspect', 0)}
-                            sx={{
-                              cursor: 'pointer',
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 1.5,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
-                              bgcolor: 'success.light',
-                              color: 'success.dark',
-                              borderColor: 'success.light',
-                              '&:hover': { opacity: 0.8 }
-                            }}
-                            data-testid="compact-form16-badge-inspect"
-                        >
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                            Form-16 ({form16List.length}) 🔍
-                          </Typography>
-                        </Paper>
-                      )}
-                      {aisFile && (
-                        <Paper
-                          variant="outlined"
-                          onClick={() => openRightPanel('inspect', 1)}
-                          sx={{
-                            cursor: 'pointer',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            bgcolor: 'success.light',
-                            color: 'success.dark',
-                            borderColor: 'success.light',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          data-testid="compact-ais-badge-inspect"
-                        >
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                            AIS 🔍
-                          </Typography>
-                        </Paper>
-                      )}
-                      {tisFile && (
-                        <Paper
-                          variant="outlined"
-                          onClick={() => openRightPanel('inspect', 2)}
-                          sx={{
-                            cursor: 'pointer',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            bgcolor: 'success.light',
-                            color: 'success.dark',
-                            borderColor: 'success.light',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          data-testid="compact-tis-badge-inspect"
-                        >
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                            TIS 🔍
-                          </Typography>
-                        </Paper>
-                      )}
-                      {form26asFile && (
-                        <Paper
-                          variant="outlined"
-                          onClick={() => openRightPanel('inspect', 3)}
-                          sx={{
-                            cursor: 'pointer',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            bgcolor: 'success.light',
-                            color: 'success.dark',
-                            borderColor: 'success.light',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          data-testid="compact-form26as-badge-inspect"
-                        >
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                            Form 26AS 🔍
-                          </Typography>
-                        </Paper>
-                      )}
-                    </Box>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="small"
-                    onClick={() => setShowUploadArea(true)}
-                    data-testid="manage-files-btn"
-                    sx={{ textTransform: 'none', fontWeight: 'bold' }}
-                  >
-                    Manage Files
-                  </Button>
-                </Paper>
-              )}
-
-              {/* Large Document Upload Card */}
-              <Box sx={{ display: isUploadCollapsed ? 'none' : 'block' }}>
-                <Card variant="outlined" sx={{ mb: 2.5 }}>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                      <Typography variant="h6" sx={{ m: 0, fontWeight: 'bold' }}>
-                        1. Upload Financial Documents
-                      </Typography>
-                      {hasUploadedDocs && (
-                        <Button
-                          variant="text"
-                          color="primary"
-                          size="small"
-                          onClick={() => setShowUploadArea(false)}
-                          sx={{ textTransform: 'none', fontWeight: 'bold' }}
-                          data-testid="collapse-upload-btn"
-                        >
-                          Collapse
-                        </Button>
-                      )}
-                    </Box>
-                    <Grid container spacing={2}>
-                      {/* Form-16 */}
-                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                          <Typography id="file-upload-label" variant="subtitle2" component="label" htmlFor="file-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                            1. Upload Form-16 PDF
-                          </Typography>
-                          <input id="file-upload" type="file" accept=".pdf" multiple onChange={handleFileUpload} style={{ display: 'none' }} aria-labelledby="file-upload-label" />
-                          <Button component="label" htmlFor="file-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                            {form16List.length > 0 ? `${form16List.length} Uploaded` : 'Upload'}
-                          </Button>
-                          {form16List.length > 0 && (
-                            <>
-                              <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5, textAlign: 'left', width: '100%' }}>
-                                {form16List.map((item, idx) => (
-                                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'action.hover', p: 0.5, px: 1, borderRadius: 1, gap: 1 }}>
-                                    <Typography variant="caption" sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flexGrow: 1, fontSize: '0.7rem' }}>
-                                      {item.file.name}
-                                    </Typography>
-                                    <IconButton size="small" onClick={(evt) => { evt.preventDefault(); handleRemoveForm16(idx); }} aria-label={`delete form16 file ${idx}`} sx={{ p: 0.25 }}>
-                                      <CloseIcon sx={{ fontSize: 12 }} />
-                                    </IconButton>
-                                  </Box>
-                                ))}
-                              </Box>
-                              <Button
-                                variant="text"
-                                size="small"
-                                  onClick={() => openRightPanel('inspect', 0)}
-                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                  data-testid="view-extracted-form16-btn"
-                              >
-                                View Extracted Data
-                              </Button>
-                            </>
-                          )}
-                          {loading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                        </Box>
-                      </Grid>
-
-                      {/* AIS */}
-                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                          <Typography id="ais-label" variant="subtitle2" component="label" htmlFor="ais-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                            AIS PDF (Annual Info)
-                          </Typography>
-                          <input id="ais-upload" type="file" accept=".pdf" onChange={handleAISUpload} style={{ display: 'none' }} aria-labelledby="ais-label" />
-                          <Button component="label" htmlFor="ais-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                            {aisFile ? 'Uploaded' : 'Upload'}
-                          </Button>
-                          {aisFile && (
-                            <>
-                              <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{aisFile.name}</Typography>
-                              <Button
-                                variant="text"
-                                size="small"
-                                  onClick={() => openRightPanel('inspect', 1)}
-                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                  data-testid="view-extracted-ais-btn"
-                              >
-                                View Extracted Data
-                              </Button>
-                            </>
-                          )}
-                          {aisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                        </Box>
-                      </Grid>
-
-                      {/* TIS */}
-                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                          <Typography id="tis-label" variant="subtitle2" component="label" htmlFor="tis-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                            TIS PDF (Tax Summary)
-                          </Typography>
-                          <input id="tis-upload" type="file" accept=".pdf" onChange={handleTISUpload} style={{ display: 'none' }} aria-labelledby="tis-label" />
-                          <Button component="label" htmlFor="tis-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                            {tisFile ? 'Uploaded' : 'Upload'}
-                          </Button>
-                          {tisFile && (
-                            <>
-                              <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{tisFile.name}</Typography>
-                              <Button
-                                variant="text"
-                                size="small"
-                                  onClick={() => openRightPanel('inspect', 2)}
-                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                  data-testid="view-extracted-tis-btn"
-                              >
-                                View Extracted Data
-                              </Button>
-                            </>
-                          )}
-                          {tisLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                        </Box>
-                      </Grid>
-
-                      {/* Form 26AS */}
-                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Box sx={{ border: '1px dashed', borderColor: 'primary.main', borderRadius: 1.5, p: 2, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.02)' : 'rgba(2, 132, 199, 0.02)' }}>
-                          <Typography id="f26as-label" variant="subtitle2" component="label" htmlFor="f26as-upload" sx={{ cursor: 'pointer', fontWeight: 'bold', display: 'block', mb: 1 }}>
-                            Form 26AS PDF (Tax Paid)
-                          </Typography>
-                          <input id="f26as-upload" type="file" accept=".pdf" onChange={handleForm26ASUpload} style={{ display: 'none' }} aria-labelledby="f26as-label" />
-                          <Button component="label" htmlFor="f26as-upload" variant="outlined" size="small" startIcon={<CloudUploadIcon />} sx={{ mt: 'auto' }}>
-                            {form26asFile ? 'Uploaded' : 'Upload'}
-                          </Button>
-                          {form26asFile && (
-                            <>
-                              <Typography variant="caption" sx={{ mt: 1, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{form26asFile.name}</Typography>
-                              <Button
-                                variant="text"
-                                size="small"
-                                  onClick={() => openRightPanel('inspect', 3)}
-                                  sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem', py: 0 }}
-                                  data-testid="view-extracted-form26as-btn"
-                              >
-                                View Extracted Data
-                              </Button>
-                            </>
-                          )}
-                          {form26asLoading && <CircularProgress size={16} sx={{ mt: 1, mx: 'auto' }} />}
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Box>
+              <DocumentUpload
+                form16List={form16List}
+                aisFile={aisFile}
+                tisFile={tisFile}
+                form26asFile={form26asFile}
+                aisLoading={aisLoading}
+                tisLoading={tisLoading}
+                form26asLoading={form26asLoading}
+                loading={loading}
+                isUploadCollapsed={isUploadCollapsed}
+                showUploadArea={showUploadArea}
+                mode={mode}
+                readyDocsCount={readyDocsCount}
+                onFileUpload={handleFileUpload}
+                onAISUpload={handleAISUpload}
+                onTISUpload={handleTISUpload}
+                onForm26ASUpload={handleForm26ASUpload}
+                onToggleShowUploadArea={() => setShowUploadArea(true)}
+                onCollapseUpload={() => setShowUploadArea(false)}
+                onRemoveForm16={handleRemoveForm16}
+                onOpenRightPanel={openRightPanel}
+              />
 
               {/* Reconciliation Table (Section 4) */}
               <ReconciliationTable data={extractedDataDomain} />
@@ -1494,260 +1259,40 @@ export default function Home() {
               flexGrow: 1,
               minHeight: 0,
             }}>
-              {/* Chat Sub-Header (Model Selector & Send only raw data checkbox) */}
-              <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SmartToyIcon color="primary" sx={{ fontSize: 18 }} />
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Chat Options</Typography>
-                  </Box>
-                  <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
-                    <Select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      sx={{ fontSize: '0.75rem', py: 0 }}
-                      aria-label="select gemini model"
-                    >
-                      {geminiModels.map((m) => (
-                        <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>
-                          {m.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={sendOnlyRawData}
-                      onChange={(e) => setSendOnlyRawData(e.target.checked)}
-                      size="small"
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Typography variant="caption" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      Send only raw data to AI agent
-                    </Typography>
-                  }
-                  sx={{ m: 0 }}
-                />
-              </Box>
-
-              {/* Chat Messages */}
-              <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
-                {messages.length === 0 && (
-                  <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
-                    <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
-                      You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
-                    </Typography>
-                  </Box>
-                )}
-
-                {messages.map((msg, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '85%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 0.25,
-                    }}
-                  >
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 1.25,
-                        borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                        bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
-                        color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                        borderColor: msg.role === 'user' ? 'primary.main' : 'divider',
-                        boxShadow: 'none',
-                      }}
-                    >
-                      {msg.role === 'user' ? (
-                        <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                          {msg.content}
-                        </Typography>
-                      ) : (
-                        <AssistantMessage
-                          content={msg.content}
-                          msgIdx={idx}
-                          acceptedMessages={acceptedMessages}
-                          rejectedMessages={rejectedMessages}
-                          onAccept={handleAcceptProposal}
-                          onReject={handleRejectProposal}
-                          onUndo={handleUndoProposal}
-                          currentData={extractedData}
-                        />
-                      )}
-                      {msg.attachments && msg.attachments.length > 0 && (
-                        <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}>Attached Documents:</Typography>
-                          {msg.attachments.map((att, attIdx) => (
-                            <Typography key={attIdx} variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, opacity: 0.9, fontSize: '0.7rem' }}>
-                              <AttachFileIcon sx={{ fontSize: 10 }} /> {att.name}
-                            </Typography>
-                          ))}
-                        </Box>
-                      )}
-                    </Paper>
-                    <Typography variant="caption" color="textSecondary" sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', px: 0.5, fontSize: '0.7rem' }}>
-                      {msg.role === 'user' ? 'You' : 'AI Assistant'}
-                    </Typography>
-                  </Box>
-                ))}
-
-                {chatLoading && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: 'flex-start' }}>
-                    <CircularProgress size={12} />
-                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>AI is generating response...</Typography>
-                  </Box>
-                )}
-                <div ref={messagesEndRef} />
-              </Box>
-
-              <Divider />
-
-              {/* Chat Input */}
-              <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
-                {/* Badges for Selected Context Files */}
-                {(file || aisFile || tisFile || form26asFile || attachments.length > 0 || (!sendOnlyRawData && extractedData)) && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                    {/* Parsed Data Button */}
-                    {!sendOnlyRawData && extractedData && (
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        size="small"
-                        startIcon={<CodeIcon sx={{ fontSize: 12 }} />}
-                          onClick={() => openRightPanel('inspect', 0)}
-                        data-testid="parsed-itr-badge"
-                        sx={{
-                          textTransform: 'none',
-                          fontSize: '0.7rem',
-                          py: 0.25,
-                          px: 1,
-                          borderRadius: 1,
-                          minHeight: 0,
-                          height: 24,
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        Inspect Form Data
-                      </Button>
-                    )}
-
-                    {/* Form-16 Context */}
-                    {form16List.map((item, idx) => (
-                      <Paper key={idx} variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid={idx === 0 ? "form16-badge" : `form16-badge-${idx}`}>
-                        <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                          {item.file.name}
-                        </Typography>
-                        <IconButton size="small" onClick={() => handleRemoveForm16(idx)} aria-label={idx === 0 ? "remove form16 context" : `remove form16 context ${idx}`}>
-                          <CloseIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </Paper>
-                    ))}
-
-                    {/* AIS Context */}
-                    {aisFile && (
-                      <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="ais-badge">
-                        <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                          {aisFile.name}
-                        </Typography>
-                        <IconButton size="small" onClick={() => { setAisFile(null); setAisData(null); setAisRawText(''); reRunReconciliation(form16List, null, tisData, form26asData, '', tisRawText, form26asRawText); }} aria-label="remove ais context">
-                          <CloseIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </Paper>
-                    )}
-
-                    {/* TIS Context */}
-                    {tisFile && (
-                      <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="tis-badge">
-                        <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                          {tisFile.name}
-                        </Typography>
-                        <IconButton size="small" onClick={() => { setTisFile(null); setTisData(null); setTisRawText(''); reRunReconciliation(form16List, aisData, null, form26asData, aisRawText, '', form26asRawText); }} aria-label="remove tis context">
-                          <CloseIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </Paper>
-                    )}
-
-                    {/* Form 26AS Context */}
-                    {form26asFile && (
-                      <Paper variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }} data-testid="form26as-badge">
-                        <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                          {form26asFile.name}
-                        </Typography>
-                        <IconButton size="small" onClick={() => { setForm26asFile(null); setForm26asData(null); setForm26asRawText(''); reRunReconciliation(form16List, aisData, tisData, null, aisRawText, tisRawText, ''); }} aria-label="remove form26as context">
-                          <CloseIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </Paper>
-                    )}
-
-                    {/* Supplementary Attachments */}
-                    {attachments.map((att, idx) => (
-                      <Paper key={idx} variant="outlined" sx={{ pl: 0.75, pr: 0.25, py: 0.25, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover' }}>
-                        <AttachFileIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem' }}>
-                          {att.name}
-                        </Typography>
-                        <IconButton size="small" onClick={() => removeAttachment(idx)} aria-label="remove attachment">
-                          <CloseIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </Paper>
-                    ))}
-                  </Box>
-                )}
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <input id="chat-attachment-upload" type="file" onChange={handleAttachmentUpload} style={{ display: 'none' }} />
-                  <Tooltip title="Attach supplementary document (PDF, Text, or Image)">
-                    <span>
-                      <IconButton component="label" htmlFor="chat-attachment-upload" color="primary" disabled={attachingFile} aria-label="attach document" size="small">
-                        {attachingFile ? <CircularProgress size={20} /> : <AttachFileIcon fontSize="small" />}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-
-                  <TextField
-                    fullWidth
-                    placeholder="Ask your tax question..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSendMessage(false);
-                      }
-                    }}
-                    slotProps={{
-                      input: {
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => handleSendMessage(false)}
-                              color="primary"
-                              disabled={chatLoading || (!inputMessage.trim() && attachments.length === 0)}
-                              aria-label="send message"
-                              size="small"
-                            >
-                              <SendIcon fontSize="small" />
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
+              <ChatPanel
+                variant="desktop"
+                messages={messages}
+                chatLoading={chatLoading}
+                inputMessage={inputMessage}
+                onInputChange={(val) => setInputMessage(val)}
+                onSend={() => handleSendMessage(false)}
+                onAttachmentUpload={handleAttachmentUpload}
+                form16List={form16List}
+                aisFile={aisFile}
+                tisFile={tisFile}
+                form26asFile={form26asFile}
+                attachments={attachments}
+                extractedData={extractedData}
+                sendOnlyRawData={sendOnlyRawData}
+                selectedModel={selectedModel}
+                geminiModels={geminiModels}
+                onModelChange={(model) => setSelectedModel(model)}
+                onRemoveForm16={handleRemoveForm16}
+                onRemoveAis={handleRemoveAis}
+                onRemoveTis={handleRemoveTis}
+                onRemoveForm26as={handleRemoveForm26as}
+                onRemoveAttachment={removeAttachment}
+                onOpenRightPanel={openRightPanel}
+                messagesEndRef={messagesEndRef}
+                acceptedMessages={acceptedMessages}
+                rejectedMessages={rejectedMessages}
+                handleAcceptProposal={handleAcceptProposal}
+                handleRejectProposal={handleRejectProposal}
+                handleUndoProposal={handleUndoProposal}
+                mode={mode}
+                attachingFile={attachingFile}
+                onSendOnlyRawDataChange={(val) => setSendOnlyRawData(val)}
+              />
             </Box>
 
             {/* View 2: Document Inspection / Split-screen Verification */}
@@ -1811,103 +1356,38 @@ export default function Home() {
           </AppBar>
 
           <Box sx={{ display: rightPanelTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
-            {/* Chat Sub-Header */}
-            <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
-              <SmartToyIcon color="primary" sx={{ fontSize: 18 }} />
-              <Typography variant="body2" sx={{ fontWeight: 'bold', flex: 1 }}>Chat</Typography>
-              <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
-                <Select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  sx={{ fontSize: '0.75rem', py: 0 }}
-                  aria-label="select gemini model"
-                >
-                  {geminiModels.map((m) => (
-                    <MenuItem key={m.value} value={m.value} sx={{ fontSize: '0.75rem' }}>{m.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-
-            {/* Chat Messages */}
-            <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(15, 23, 42, 0.2)' : '#f8fafc' }}>
-              {messages.length === 0 && (
-                <Box sx={{ textAlign: 'center', my: 'auto', px: 2, color: 'text.secondary' }}>
-                  <SmartToyIcon sx={{ fontSize: 36, mb: 1, opacity: 0.6, color: 'primary.main' }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary' }}>Ask me anything about your taxes!</Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.4 }}>
-                    You can ask for recommendations on tax savings, double check standard deductions, or upload additional P&L reports.
-                  </Typography>
-                </Box>
-              )}
-              {messages.map((msg, idx) => (
-                <Box key={idx} sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                  <Paper variant="outlined" sx={{
-                    p: 1.25,
-                    borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
-                    color: msg.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                    borderColor: msg.role === 'user' ? 'primary.main' : 'divider',
-                    boxShadow: 'none',
-                  }}>
-                    {msg.role === 'user' ? (
-                      <Typography variant="body2" sx={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                        {msg.content}
-                      </Typography>
-                    ) : (
-                      <AssistantMessage
-                        content={msg.content}
-                        msgIdx={idx}
-                        acceptedMessages={acceptedMessages}
-                        rejectedMessages={rejectedMessages}
-                        onAccept={handleAcceptProposal}
-                        onReject={handleRejectProposal}
-                        onUndo={handleUndoProposal}
-                        currentData={extractedData}
-                      />
-                    )}
-                  </Paper>
-                  <Typography variant="caption" color="textSecondary" sx={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', px: 0.5, fontSize: '0.7rem' }}>
-                    {msg.role === 'user' ? 'You' : 'AI Assistant'}
-                  </Typography>
-                </Box>
-              ))}
-              {chatLoading && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: 'flex-start' }}>
-                  <CircularProgress size={12} />
-                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>AI is generating response...</Typography>
-                </Box>
-              )}
-              <div ref={messagesEndRef} />
-            </Box>
-
-            <Divider />
-
-            {/* Chat Input */}
-            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'background.paper' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TextField
-                  fullWidth
-                  placeholder="Ask your tax question..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSendMessage(false);
-                  }}
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => handleSendMessage(false)} color="primary" disabled={chatLoading || (!inputMessage.trim() && attachments.length === 0)} aria-label="send message" size="small">
-                            <SendIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }
-                  }}
-                />
-              </Box>
-            </Box>
+            <ChatPanel
+              variant="mobile"
+              messages={messages}
+              chatLoading={chatLoading}
+              inputMessage={inputMessage}
+              onInputChange={(val) => setInputMessage(val)}
+              onSend={() => handleSendMessage(false)}
+              onAttachmentUpload={handleAttachmentUpload}
+              form16List={form16List}
+              aisFile={aisFile}
+              tisFile={tisFile}
+              form26asFile={form26asFile}
+              attachments={attachments}
+              extractedData={extractedData}
+              sendOnlyRawData={sendOnlyRawData}
+              selectedModel={selectedModel}
+              geminiModels={geminiModels}
+              onModelChange={(model) => setSelectedModel(model)}
+              onRemoveForm16={handleRemoveForm16}
+              onRemoveAis={handleRemoveAis}
+              onRemoveTis={handleRemoveTis}
+              onRemoveForm26as={handleRemoveForm26as}
+              onRemoveAttachment={removeAttachment}
+              onOpenRightPanel={openRightPanel}
+              messagesEndRef={messagesEndRef}
+              acceptedMessages={acceptedMessages}
+              rejectedMessages={rejectedMessages}
+              handleAcceptProposal={handleAcceptProposal}
+              handleRejectProposal={handleRejectProposal}
+              handleUndoProposal={handleUndoProposal}
+              mode={mode}
+            />
           </Box>
 
           {/* Document Viewer in Mobile */}

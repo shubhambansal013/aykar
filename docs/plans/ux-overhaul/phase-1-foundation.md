@@ -43,19 +43,19 @@ What this phase does **not** touch:
 ## Todos
 
 ### 1a. Create LineRow component
-- [ ] Read both `IncomeDetails.tsx` and `TaxComputation.tsx` to confirm the
+- [x] Read both `IncomeDetails.tsx` and `TaxComputation.tsx` to confirm the
       exact shared code
-- [ ] Create `src/app/components/LineRow.tsx` exporting:
+- [x] Create `src/app/components/LineRow.tsx` exporting:
   - `LineRow` component (takes: label, value, operator?, isTotal?, isNegative?,
     source?, onClick?)
   - `SectionTitle` component (takes: children)
-- [ ] Both components should use the **current** styling (colors, spacing) as-is
+- [x] Both components should use the **current** styling (colors, spacing) as-is
       — no visual changes in this phase
-- [ ] Update `IncomeDetails.tsx` to import `LineRow`/`SectionTitle` from the new
+- [x] Update `IncomeDetails.tsx` to import `LineRow`/`SectionTitle` from the new
       file, delete its local copies
-- [ ] Update `TaxComputation.tsx` to import `LineRow`/`SectionTitle` from the new
+- [x] Update `TaxComputation.tsx` to import `LineRow`/`SectionTitle` from the new
       file, delete its local copies
-- [ ] Create `src/app/components/LineRow.test.tsx` with tests:
+- [x] Create `src/app/components/LineRow.test.tsx` with tests:
   - renders label and value
   - shows add icon when operator is 'add'
   - shows subtract icon when operator is 'subtract'
@@ -66,9 +66,9 @@ What this phase does **not** touch:
   - SectionTitle renders children with correct styling
 
 ### 1b. Create ChatPanel component
-- [ ] Read page.tsx lines 1491-1751 (desktop chat) and lines 1813-1911 (mobile
+- [x] Read page.tsx lines 1491-1751 (desktop chat) and lines 1813-1911 (mobile
       dialog chat) to identify the common pattern
-- [ ] Create `src/app/components/ChatPanel.tsx` that accepts:
+- [x] Create `src/app/components/ChatPanel.tsx` that accepts:
   ```
   {
     messages: Message[];
@@ -88,18 +88,18 @@ What this phase does **not** touch:
     rejectedMessages
   }
   ```
-- [ ] Replace the desktop chat block in page.tsx with `<ChatPanel variant="desktop" ... />`
-- [ ] Replace the mobile dialog chat block in page.tsx with `<ChatPanel variant="mobile" ... />`
-- [ ] Create `src/app/components/ChatPanel.test.tsx` with tests:
+- [x] Replace the desktop chat block in page.tsx with `<ChatPanel variant="desktop" ... />`
+- [x] Replace the mobile dialog chat block in page.tsx with `<ChatPanel variant="mobile" ... />`
+- [x] Create `src/app/components/ChatPanel.test.tsx` with tests:
   - renders empty state when no messages
   - renders user and assistant messages
   - shows loading indicator when chatLoading is true
   - input field reflects inputMessage value
 
 ### 1c. Create DocumentUpload component
-- [ ] Read page.tsx lines 843-1138 (the upload area: compact status bar + upload grid)
-- [ ] Identify which state/handlers are needed as props vs internal
-- [ ] Create `src/app/components/DocumentUpload.tsx` that accepts:
+- [x] Read page.tsx lines 843-1138 (the upload area: compact status bar + upload grid)
+- [x] Identify which state/handlers are needed as props vs internal
+- [x] Create `src/app/components/DocumentUpload.tsx` that accepts:
   ```
   {
     form16List, aisFile, tisFile, form26asFile,
@@ -114,17 +114,17 @@ What this phase does **not** touch:
     onOpenRightPanel: (tab: 'chat' | 'inspect', docIdx: number) => void;
   }
   ```
-- [ ] Replace the upload block in page.tsx with `<DocumentUpload ... />`
-- [ ] Create `src/app/components/DocumentUpload.test.tsx` with tests:
+- [x] Replace the upload block in page.tsx with `<DocumentUpload ... />`
+- [x] Create `src/app/components/DocumentUpload.test.tsx` with tests:
   - renders upload grid with 4 document slots
   - shows compact status bar when isUploadCollapsed is true
   - shows file names after upload
   - calls onFileUpload when form-16 file is selected
 
 ### 1d. Verify
-- [ ] `npm run test` — all existing tests pass, new tests pass
-- [ ] `npm run build` — no build errors
-- [ ] Manual check: app loads, documents upload, chat works
+- [x] `npm run test` — all existing tests pass, new tests pass
+- [x] `npm run build` — no build errors
+- [x] Manual check: app loads, documents upload, chat works
 
 ## Acceptance criteria
 

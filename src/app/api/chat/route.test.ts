@@ -130,6 +130,38 @@ describe('AI Chat Route API Handler', () => {
     expect(bodyObj.contents[0].parts[1].inlineData).toBeUndefined();
   });
 
+  test('sends reviewPrompt as user message when isReview is true and no messages exist', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'MOCK_KEY');
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: 'Review response' }] } }]
+      })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const mockReq = new NextRequest('http://localhost/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: [],
+        itrData: { employee: { pan: 'ABCDE1234F' } },
+        isReview: true,
+      }),
+    });
+
+    const response = await POST(mockReq);
+    expect(response.status).toBe(200);
+
+    const bodyObj = JSON.parse(mockFetch.mock.calls[0][1].body);
+    // reviewPrompt should be the only user message (not in systemInstruction)
+    expect(bodyObj.contents[0].role).toBe('user');
+    expect(bodyObj.contents[0].parts[0].text).toContain('comprehensive validation, review, and reconciliation');
+    // systemInstruction should NOT contain the reviewPrompt text
+    expect(bodyObj.systemInstruction.parts[0].text).not.toContain('Special Instruction: The user is requesting a formal validation');
+    expect(bodyObj.systemInstruction.parts[0].text).toContain('ABCDE1234F');
+  });
+
   test('respects custom model name requested in body', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'MOCK_KEY');
 

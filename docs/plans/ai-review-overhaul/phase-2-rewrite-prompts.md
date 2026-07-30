@@ -29,25 +29,25 @@ This phase does NOT touch:
 
 ## Todos
 
-- [ ] Fix duplicate injection: Remove lines 77-79 from `route.ts` (appending
+- [x] Fix duplicate injection: Remove lines 77-79 from `route.ts` (appending
       `reviewPrompt` to `contextPrompt`)
-- [ ] Rewrite `reviewPrompt` in `config.ts`:
+- [x] Rewrite `reviewPrompt` in `config.ts`:
       - Add instruction: "First provide a brief human-readable summary of
         your findings (1-3 sentences about what you checked and what you
         found). Then output the structured JSON block."
       - Remove the strict "Do NOT return raw markdown text" constraint
       - Add: "Group recommendations by severity: critical errors first,
         then warnings, then tax-saving opportunities."
-- [ ] Adjust `systemPrompt` in `config.ts`:
+- [x] Adjust `systemPrompt` in `config.ts`:
       - Change "For ANY subsequent chat message" to "When you identify
         corrections or discrepancies, output a structured JSON block..."
       - Keep the JSON schema definition as-is
-- [ ] In `AssistantMessage.tsx`: when `recommendations` is empty, show
+- [x] In `AssistantMessage.tsx`: when `recommendations` is empty, show
       green "✅ All checks passed" card instead of nothing
-- [ ] In `AssistantMessage.tsx`: when `diffs.length === 0` AND `recommendations.length === 0`, suppress the "AI Suggested Updates" card entirely
-- [ ] Update tests in `page.test.tsx` and `route.test.ts` that assert on
+- [x] In `AssistantMessage.tsx`: when `diffs.length === 0` AND `recommendations.length === 0`, suppress the "AI Suggested Updates" card entirely
+- [x] Update tests in `page.test.tsx` and `route.test.ts` that assert on
       prompt content or response format
-- [ ] Run `npm run test` to verify everything passes
+- [x] Run `npm run test` to verify everything passes
 
 ## Acceptance criteria
 

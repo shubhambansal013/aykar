@@ -141,6 +141,53 @@ Some outro text.`;
     expect(screen.queryByText('Accept & Apply')).toBeNull();
   });
 
+  test('shows success card when recommendations array is empty', () => {
+    const content = `\`\`\`json
+{
+  "recommendations": [],
+  "updatedForm16Data": { "employee": { "pan": "ABCDE1234F" } }
+}
+\`\`\``;
+
+    render(
+      <AssistantMessage
+        content={content}
+        msgIdx={5}
+        acceptedMessages={{}}
+        rejectedMessages={{}}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+        currentData={null}
+      />
+    );
+
+    expect(screen.getByText('✅ All checks passed — no issues found.')).toBeDefined();
+  });
+
+  test('suppresses AI Suggested Updates card when both recommendations and diffs are empty', () => {
+    const content = `\`\`\`json
+{
+  "recommendations": [],
+  "updatedForm16Data": null
+}
+\`\`\``;
+
+    render(
+      <AssistantMessage
+        content={content}
+        msgIdx={6}
+        acceptedMessages={{}}
+        rejectedMessages={{}}
+        onAccept={vi.fn()}
+        onReject={vi.fn()}
+        currentData={null}
+      />
+    );
+
+    expect(screen.queryByText('AI Suggested Updates')).toBeNull();
+    expect(screen.getByText('✅ All checks passed — no issues found.')).toBeDefined();
+  });
+
   test('handles malformed JSON inside code block gracefully', () => {
     const malformedContent = `Some conversational intro.
 \`\`\`json

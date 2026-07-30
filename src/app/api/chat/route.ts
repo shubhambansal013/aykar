@@ -74,10 +74,6 @@ export async function POST(req: NextRequest) {
       contextPrompt += `\n\nHere is the raw extracted text from the Form 26AS PDF:\n${form26asRawText.substring(0, 10000)}`;
     }
 
-    if (isReview) {
-      contextPrompt += `\n\nSpecial Instruction: The user is requesting a formal validation and review. Focus on identifying missing fields, potential discrepancies (such as standard deduction errors), and tax saving opportunities. Follow this instruction strictly:\n"${reviewPrompt}"`;
-    }
-
     // Format messages for Gemini API
     const formattedContents: ChatMessage[] = (messages || []).map((msg: any) => {
       // Handle roles conversion: 'assistant' to 'model' for Gemini

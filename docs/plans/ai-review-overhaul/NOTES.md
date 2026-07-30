@@ -5,6 +5,18 @@ go during execution. Newest at the bottom.
 
 ---
 
+## 2026-07-30 — Phase 2 complete
+
+- Removed `if (isReview)` block (lines 77-79) from `route.ts` that appended `reviewPrompt` to `contextPrompt` — now only injects as user message
+- Changed `systemPrompt` in `config.ts`: "For ANY subsequent chat message" → "When you identify corrections or discrepancies"
+- Rewrote `reviewPrompt` in `config.ts`:
+  - Added instruction for human-readable summary first (1-3 sentences)
+  - Removed strict "Do NOT return raw markdown text" constraint
+  - Added severity grouping order (critical errors → warnings → tax-saving opportunities)
+- `AssistantMessage.tsx`: Shows green "✅ All checks passed" card when recommendations is empty; suppresses "AI Suggested Updates" card when both recommendations and diffs are empty
+- Added 2 new tests in `AssistantMessage.test.tsx`: empty recommendations success card, suppressed card when both empty
+- Added 1 new test in `route.test.ts`: verifies reviewPrompt is sent as user message only, not in systemInstruction
+
 ## 2026-07-30 — Phase 1 complete
 
 - Added `setRightPanelTab('chat')` in `handleSendMessage` when `isReviewRequest` is true (line 647 in page.tsx)

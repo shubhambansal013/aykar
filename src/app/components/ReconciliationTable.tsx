@@ -60,9 +60,9 @@ function getStatus(values: SourceValues): { status: 'match' | 'partial' | 'misma
 }
 
 const STATUS_STYLE = {
-  match: { bgcolor: 'success.light', color: 'success.dark', icon: <VerifiedIcon sx={{ fontSize: 16 }} /> },
-  partial: { bgcolor: 'warning.light', color: 'warning.dark', icon: <WarningAmberIcon sx={{ fontSize: 16 }} /> },
-  mismatch: { bgcolor: 'error.light', color: 'error.dark', icon: <ErrorIcon sx={{ fontSize: 16 }} /> },
+  match: { bgcolor: 'action.hover', color: 'text.secondary', icon: <VerifiedIcon sx={{ fontSize: 16 }} /> },
+  partial: { bgcolor: 'action.hover', color: 'text.secondary', icon: <WarningAmberIcon sx={{ fontSize: 16 }} /> },
+  mismatch: { bgcolor: 'action.hover', color: 'text.secondary', icon: <ErrorIcon sx={{ fontSize: 16 }} /> },
 } as const;
 
 function DiffDetail({ values }: { values: SourceValues }) {
@@ -204,8 +204,10 @@ export default function ReconciliationTable({ data }: ReconciliationTableProps) 
                   <React.Fragment key={row.fieldKey}>
                     <TableRow
                       sx={{
-                        bgcolor: isMismatch ? 'warning.light' : 'inherit',
-                        '&:hover': { bgcolor: isMismatch ? 'warning.light' : 'action.hover' },
+                        bgcolor: 'inherit',
+                        borderLeft: isMismatch ? '3px solid' : 'none',
+                        borderColor: isMismatch ? 'text.secondary' : 'none',
+                        '&:hover': { bgcolor: 'action.hover' },
                       }}
                       data-testid={`recon-row-${row.fieldKey}`}
                     >
@@ -224,7 +226,6 @@ export default function ReconciliationTable({ data }: ReconciliationTableProps) 
                             fontSize: '0.65rem',
                             bgcolor: STATUS_STYLE[status].bgcolor,
                             color: STATUS_STYLE[status].color,
-                            borderColor: 'transparent',
                             minWidth: 72,
                           }}
                           variant="outlined"

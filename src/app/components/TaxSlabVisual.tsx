@@ -21,20 +21,20 @@ function inr(amount: number): string {
 }
 
 const NEW_COLORS = [
-  '#e5e7eb',
-  '#bbf7d0',
-  '#86efac',
-  '#4ade80',
-  '#22c55e',
-  '#16a34a',
-  '#15803d',
+  'rgba(37, 99, 235, 0.08)',
+  'rgba(37, 99, 235, 0.15)',
+  'rgba(37, 99, 235, 0.22)',
+  'rgba(37, 99, 235, 0.30)',
+  'rgba(37, 99, 235, 0.38)',
+  'rgba(37, 99, 235, 0.46)',
+  'rgba(37, 99, 235, 0.55)',
 ];
 
 const OLD_COLORS = [
-  '#e5e7eb',
-  '#bfdbfe',
-  '#93c5fd',
-  '#3b82f6',
+  'rgba(37, 99, 235, 0.06)',
+  'rgba(37, 99, 235, 0.12)',
+  'rgba(37, 99, 235, 0.18)',
+  'rgba(37, 99, 235, 0.25)',
 ];
 
 export default function TaxSlabVisual({ slabs, totalIncome, regime }: TaxSlabVisualProps) {
@@ -47,7 +47,7 @@ export default function TaxSlabVisual({ slabs, totalIncome, regime }: TaxSlabVis
 
   return (
     <Box sx={{ mt: 2 }} data-testid="tax-slab-visual">
-      <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'primary.main', display: 'block', mb: 1.5 }}>
+      <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1.5 }}>
         Tax Slab Visual — {regime === 'NEW' ? 'New' : 'Old'} Regime
       </Typography>
 
@@ -90,7 +90,7 @@ export default function TaxSlabVisual({ slabs, totalIncome, regime }: TaxSlabVis
           alignItems: 'center',
           gap: 0.5,
         }}>
-          <Typography variant="caption" sx={{ fontWeight: 700, color: 'error.main', fontSize: '0.7rem' }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.7rem' }}>
             {inr(totalIncome)}
           </Typography>
           <Box sx={{
@@ -99,7 +99,7 @@ export default function TaxSlabVisual({ slabs, totalIncome, regime }: TaxSlabVis
             borderLeft: '5px solid transparent',
             borderRight: '5px solid transparent',
             borderBottom: '7px solid',
-            borderBottomColor: 'error.main',
+            borderBottomColor: 'text.secondary',
           }} />
         </Box>
       </Box>

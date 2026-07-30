@@ -42,7 +42,7 @@ reviews, and polishes the UX around the button and review results display.
 
 | Phase | Title | Status | Notes |
 |---|---|---|---|
-| 1 | Fix bug + button loading state | pending | |
+| 1 | Fix bug + button loading state | ✅ Done | 2026-07-30 — Added setRightPanelTab('chat') in handleSendMessage for AI Review; wired chatLoading prop through ComputationWorksheet with disabled+spinner state |
 | 2 | Rewrite AI review prompts | pending | Depends on phase 1 |
 | 3 | Review results UX polish | pending | Depends on phase 2 |
 

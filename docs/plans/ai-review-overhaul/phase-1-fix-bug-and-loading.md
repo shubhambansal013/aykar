@@ -27,15 +27,15 @@ This phase does NOT touch:
 
 ## Todos
 
-- [ ] In `handleSendMessage` (page.tsx:626), add `setRightPanelTab('chat')`
+- [x] In `handleSendMessage` (page.tsx:626), add `setRightPanelTab('chat')`
       when `isReviewRequest` is true (after `setChatOpen(true)`)
-- [ ] Add `chatLoading` prop to `ComputationWorksheet` interface
-- [ ] In `ComputationWorksheet` button (lines 84-94), show disabled state
+- [x] Add `chatLoading` prop to `ComputationWorksheet` interface
+- [x] In `ComputationWorksheet` button (lines 84-94), show disabled state
       + `CircularProgress` spinner when `chatLoading` is true; label "Reviewing…"
-- [ ] Wire `chatLoading` from `page.tsx` into `<ComputationWorksheet>`
-- [ ] Update test at `page.test.tsx:174` to verify `rightPanelTab` switches
+- [x] Wire `chatLoading` from `page.tsx` into `<ComputationWorksheet>`
+- [x] Update test at `page.test.tsx:174` to verify `rightPanelTab` switches
       to `'chat'` after clicking AI Review
-- [ ] Add test that AI Review button is disabled while `chatLoading` is true
+- [x] Add test that AI Review button is disabled while `chatLoading` is true
 
 ## Acceptance criteria
 

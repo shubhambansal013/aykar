@@ -643,6 +643,9 @@ export default function Home() {
     setAttachments([]);
     setChatLoading(true);
     setChatOpen(true);
+    if (isReviewRequest) {
+      setRightPanelTab('chat');
+    }
 
     try {
       const domainData = extractedData ? createEngineProxy(extractedData) : null;
@@ -879,6 +882,7 @@ export default function Home() {
                     data={extractedDataDomain}
                     form16List={form16List}
                     selectedRegime={selectedRegime}
+                    chatLoading={chatLoading}
                     itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
                     onAiReview={() => handleSendMessage(true)}
                     onValueClick={handleValueClick}

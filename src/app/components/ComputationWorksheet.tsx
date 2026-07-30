@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Box, Button, Paper, Typography, Accordion, AccordionSummary, AccordionDetails
+  Box, Button, Paper, Typography, Accordion, AccordionSummary, AccordionDetails, CircularProgress
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -18,6 +18,7 @@ interface ComputationWorksheetProps {
   form16List: Array<{ file: File; rawText: string; data: Form16Bundle }>;
   selectedRegime: 'OLD' | 'NEW';
   itrFormType?: 'ITR-1' | 'ITR-2';
+  chatLoading?: boolean;
   onAiReview?: () => void;
   onValueClick?: (label: string) => void;
 }
@@ -54,7 +55,7 @@ function CollapsibleSection({ title, icon, defaultExpanded, children }: {
   );
 }
 
-export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, onAiReview, onValueClick }: ComputationWorksheetProps) {
+export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, chatLoading, onAiReview, onValueClick }: ComputationWorksheetProps) {
   if (!data) return null;
 
   const header = (
@@ -85,11 +86,12 @@ export default function ComputationWorksheet({ data, form16List, selectedRegime,
         <Button
           variant="contained"
           color="secondary"
-          startIcon={<SmartToyIcon fontSize="small" />}
+          startIcon={chatLoading ? <CircularProgress size={16} color="inherit" /> : <SmartToyIcon fontSize="small" />}
           onClick={onAiReview}
           size="small"
+          disabled={chatLoading}
         >
-          AI Review
+          {chatLoading ? 'Reviewing…' : 'AI Review'}
         </Button>
       )}
     </Box>

@@ -188,7 +188,35 @@ Some outro text.`;
     expect(screen.getByText('✅ All checks passed — no issues found.')).toBeDefined();
   });
 
-  test('handles malformed JSON inside code block gracefully', () => {
+  test('shows summary header with correct severity counts', () => {
+  const content = `\`\`\`json
+{
+  "recommendations": [
+    { "type": "error", "field": "salary.grossSalary", "message": "Gross salary mismatch", "suggestion": "Check payslip" },
+    { "type": "error", "field": "deductions80C", "message": "80C limit exceeded", "suggestion": "Reduce" },
+    { "type": "warning", "field": "deductions80D", "message": "Low 80D claim", "suggestion": "Consider increasing" },
+    { "type": "info", "field": "deductions80G", "message": "80G available", "suggestion": "Claim it" }
+  ]
+}
+\`\`\``;
+
+  render(
+    <AssistantMessage
+      content={content}
+      msgIdx={7}
+      acceptedMessages={{}}
+      rejectedMessages={{}}
+      onAccept={vi.fn()}
+      onReject={vi.fn()}
+      currentData={null}
+    />
+  );
+
+  expect(screen.getByTestId('review-summary-header')).toBeDefined();
+  expect(screen.getByText(/2 errors, 1 warning, 1 suggestion found/)).toBeDefined();
+});
+
+test('handles malformed JSON inside code block gracefully', () => {
     const malformedContent = `Some conversational intro.
 \`\`\`json
 {

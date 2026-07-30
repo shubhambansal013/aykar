@@ -48,6 +48,13 @@ export function AssistantMessage({
   const recommendations = json && Array.isArray(json.recommendations) ? json.recommendations : [];
   const updatedData = json ? json.updatedForm16Data : null;
 
+  const severityCounts = useMemo(() => {
+    const errors = recommendations.filter((r: any) => r.type === 'error').length;
+    const warnings = recommendations.filter((r: any) => r.type === 'warning').length;
+    const info = recommendations.filter((r: any) => r.type === 'info' || (r.type !== 'error' && r.type !== 'warning')).length;
+    return { errors, warnings, info };
+  }, [recommendations]);
+
   const diffs = useMemo(() => {
     return getForm16Differences(ensureForm16Data(currentData), updatedData);
   }, [currentData, updatedData]);
@@ -79,6 +86,21 @@ export function AssistantMessage({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {parseMarkdown(textOutside)}
         </Box>
+      )}
+
+      {/* Summary Header */}
+      {recommendations.length > 0 && (
+        <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }} data-testid="review-summary-header">
+          <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Review Summary</AlertTitle>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {severityCounts.errors > 0 && `${severityCounts.errors} error${severityCounts.errors > 1 ? 's' : ''}`}
+            {severityCounts.errors > 0 && (severityCounts.warnings > 0 || severityCounts.info > 0) ? ', ' : ''}
+            {severityCounts.warnings > 0 && `${severityCounts.warnings} warning${severityCounts.warnings > 1 ? 's' : ''}`}
+            {severityCounts.warnings > 0 && severityCounts.info > 0 ? ', ' : ''}
+            {severityCounts.info > 0 && `${severityCounts.info} suggestion${severityCounts.info > 1 ? 's' : ''}`}
+            {severityCounts.errors > 0 || severityCounts.warnings > 0 || severityCounts.info > 0 ? ' found' : ''}
+          </Typography>
+        </Alert>
       )}
 
       {/* Recommendations Cards */}

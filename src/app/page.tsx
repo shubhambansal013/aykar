@@ -106,6 +106,11 @@ export default function Home() {
   const [mode, setMode] = useState<'light' | 'dark'>('light');
 
 
+  // AI Review UX States
+  const [reviewCompleted, setReviewCompleted] = useState(false);
+  const [reviewDataVersion, setReviewDataVersion] = useState(0);
+  const [dataVersion, setDataVersion] = useState(0);
+
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -306,6 +311,7 @@ export default function Home() {
       const proxy = createEngineProxy(updated);
       return (proxy as any).__bundle || proxy;
     });
+    setDataVersion(v => v + 1);
   };
 
   // Helper: Sanitize AI suggested object with default structure
@@ -419,6 +425,8 @@ export default function Home() {
     setExtractedData(protoData);
     setAppliedAiSuggestions(protoData);
     setErrors(validateForm16Data(createEngineProxy(protoData)));
+    setReviewCompleted(false);
+    setDataVersion(v => v + 1);
   };
 
   const handleRejectProposal = (msgIdx: number) => {
@@ -466,6 +474,7 @@ export default function Home() {
       setOriginalParsedData(null);
       setRawText('');
       setErrors([]);
+      setDataVersion(v => v + 1);
       return;
     }
 
@@ -514,9 +523,10 @@ export default function Home() {
     const proxy = createEngineProxy(recalculated);
     const protoResult = (proxy as any).__bundle || proxy;
 
-    setExtractedData(protoResult);
+      setExtractedData(protoResult);
     setOriginalParsedData(EngineReconciliationResult.fromPartial(protoResult));
     setErrors(validateForm16Data(createEngineProxy(protoResult)));
+    setDataVersion(v => v + 1);
   };
 
   const handleRemoveForm16 = (index: number) => {
@@ -673,6 +683,10 @@ export default function Home() {
 
       const reply = (await response.json()) as Message;
       setMessages((prev) => [...prev, reply]);
+      if (isReviewRequest) {
+        setReviewCompleted(true);
+        setReviewDataVersion(dataVersion);
+      }
     } catch (err: any) {
       console.error('Chat error:', err);
       setMessages((prev) => [
@@ -883,6 +897,9 @@ export default function Home() {
                     form16List={form16List}
                     selectedRegime={selectedRegime}
                     chatLoading={chatLoading}
+                    reviewCompleted={reviewCompleted}
+                    reviewDataVersion={reviewDataVersion}
+                    dataVersion={dataVersion}
                     itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
                     onAiReview={() => handleSendMessage(true)}
                     onValueClick={handleValueClick}

@@ -44,7 +44,7 @@ reviews, and polishes the UX around the button and review results display.
 |---|---|---|---|
 | 1 | Fix bug + button loading state | ✅ Done | 2026-07-30 — Added setRightPanelTab('chat') in handleSendMessage for AI Review; wired chatLoading prop through ComputationWorksheet with disabled+spinner state |
 | 2 | Rewrite AI review prompts | ✅ Done | 2026-07-30 — Removed duplicate reviewPrompt injection from system context; rewrote prompts for summary-first output + severity grouping; added empty-state cards in AssistantMessage |
-| 3 | Review results UX polish | pending | Depends on phase 2 |
+| 3 | Review results UX polish | ✅ Done | 2026-07-30 — Added reviewCompleted + dataVersion + reviewDataVersion state; wired to ComputationWorksheet with ✓ Reviewed badge and amber Re-review button; added summary header card in AssistantMessage with severity counts; 35 tests pass |
 
 ## Phase files
 

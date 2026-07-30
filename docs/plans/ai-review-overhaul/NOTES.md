@@ -17,6 +17,23 @@ go during execution. Newest at the bottom.
 - Added 2 new tests in `AssistantMessage.test.tsx`: empty recommendations success card, suppressed card when both empty
 - Added 1 new test in `route.test.ts`: verifies reviewPrompt is sent as user message only, not in systemInstruction
 
+## 2026-07-30 — Phase 3 complete
+
+- Added `reviewCompleted`, `reviewDataVersion`, `dataVersion` states to `page.tsx`
+- After successful AI review response, `reviewCompleted` set to true, `reviewDataVersion` captured at `dataVersion`
+- `dataVersion` incremented in `reRunReconciliation`, `handleAcceptProposal`, and `updateNestedValue`
+- `reviewCompleted` only reset in `handleAcceptProposal` (not on uploads — re-review state handles that via version comparison)
+- ComputationWorksheet: new `reviewCompleted`, `reviewDataVersion`, `dataVersion` props
+- Button section shows:
+  - `dataVersion === reviewDataVersion` → green "✓ Reviewed" Chip
+  - `dataVersion > reviewDataVersion` → amber "Re-review" button
+  - `!reviewCompleted` → normal "AI Review" button
+- AssistantMessage: summary header card with severity counts (errors/warnings/suggestions) — shown before recommendations
+- Updated existing page test (`disables AI Review button` now checks for `review-completed-badge`)
+- Two new page tests: `shows ✓ Reviewed badge after AI Review completes`, `shows Re-review button when data changes after review`
+- One new AssistantMessage test: `shows summary header with correct severity counts`
+- Total: 35 tests pass
+
 ## 2026-07-30 — Phase 1 complete
 
 - Added `setRightPanelTab('chat')` in `handleSendMessage` when `isReviewRequest` is true (line 647 in page.tsx)

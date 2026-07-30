@@ -1,9 +1,10 @@
 import React from 'react';
 import {
-  Box, Button, Paper, Typography, Accordion, AccordionSummary, AccordionDetails, CircularProgress
+  Box, Button, Paper, Typography, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Chip
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonIcon from '@mui/icons-material/Person';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import CalculateIcon from '@mui/icons-material/Calculate';
@@ -19,6 +20,9 @@ interface ComputationWorksheetProps {
   selectedRegime: 'OLD' | 'NEW';
   itrFormType?: 'ITR-1' | 'ITR-2';
   chatLoading?: boolean;
+  reviewCompleted?: boolean;
+  reviewDataVersion?: number;
+  dataVersion?: number;
   onAiReview?: () => void;
   onValueClick?: (label: string) => void;
 }
@@ -55,7 +59,7 @@ function CollapsibleSection({ title, icon, defaultExpanded, children }: {
   );
 }
 
-export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, chatLoading, onAiReview, onValueClick }: ComputationWorksheetProps) {
+export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, chatLoading, reviewCompleted, reviewDataVersion, dataVersion, onAiReview, onValueClick }: ComputationWorksheetProps) {
   if (!data) return null;
 
   const header = (
@@ -83,16 +87,39 @@ export default function ComputationWorksheet({ data, form16List, selectedRegime,
         )}
       </Box>
       {onAiReview && (
-        <Button
-          variant="contained"
-          color="secondary"
-          startIcon={chatLoading ? <CircularProgress size={16} color="inherit" /> : <SmartToyIcon fontSize="small" />}
-          onClick={onAiReview}
-          size="small"
-          disabled={chatLoading}
-        >
-          {chatLoading ? 'Reviewing…' : 'AI Review'}
-        </Button>
+        reviewCompleted && dataVersion !== undefined && reviewDataVersion !== undefined && dataVersion === reviewDataVersion ? (
+          <Chip
+            icon={<CheckCircleIcon fontSize="small" />}
+            label="✓ Reviewed"
+            color="success"
+            size="small"
+            variant="outlined"
+            data-testid="review-completed-badge"
+          />
+        ) : reviewCompleted && dataVersion !== undefined && reviewDataVersion !== undefined && dataVersion > reviewDataVersion ? (
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<SmartToyIcon fontSize="small" />}
+            onClick={onAiReview}
+            size="small"
+            disabled={chatLoading}
+            data-testid="re-review-button"
+          >
+            {chatLoading ? 'Reviewing…' : 'Re-review'}
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={chatLoading ? <CircularProgress size={16} color="inherit" /> : <SmartToyIcon fontSize="small" />}
+            onClick={onAiReview}
+            size="small"
+            disabled={chatLoading}
+          >
+            {chatLoading ? 'Reviewing…' : 'AI Review'}
+          </Button>
+        )
       )}
     </Box>
   );

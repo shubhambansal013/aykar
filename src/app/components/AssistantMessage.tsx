@@ -48,6 +48,13 @@ export function AssistantMessage({
   const recommendations = json && Array.isArray(json.recommendations) ? json.recommendations : [];
   const updatedData = json ? json.updatedForm16Data : null;
 
+  const severityCounts = useMemo(() => {
+    const errors = recommendations.filter((r: any) => r.type === 'error').length;
+    const warnings = recommendations.filter((r: any) => r.type === 'warning').length;
+    const info = recommendations.filter((r: any) => r.type === 'info' || (r.type !== 'error' && r.type !== 'warning')).length;
+    return { errors, warnings, info };
+  }, [recommendations]);
+
   const diffs = useMemo(() => {
     return getForm16Differences(ensureForm16Data(currentData), updatedData);
   }, [currentData, updatedData]);
@@ -81,32 +88,55 @@ export function AssistantMessage({
         </Box>
       )}
 
-      {/* Recommendations Cards */}
-      {recommendations.map((rec: any, rIdx: number) => {
-        let severity: 'error' | 'warning' | 'info' | 'success' = 'info';
-        if (rec.type === 'error') severity = 'error';
-        else if (rec.type === 'warning') severity = 'warning';
-        else if (rec.type === 'info') severity = 'info';
+      {/* Summary Header */}
+      {recommendations.length > 0 && (
+        <Alert severity="info" variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }} data-testid="review-summary-header">
+          <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>Review Summary</AlertTitle>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {severityCounts.errors > 0 && `${severityCounts.errors} error${severityCounts.errors > 1 ? 's' : ''}`}
+            {severityCounts.errors > 0 && (severityCounts.warnings > 0 || severityCounts.info > 0) ? ', ' : ''}
+            {severityCounts.warnings > 0 && `${severityCounts.warnings} warning${severityCounts.warnings > 1 ? 's' : ''}`}
+            {severityCounts.warnings > 0 && severityCounts.info > 0 ? ', ' : ''}
+            {severityCounts.info > 0 && `${severityCounts.info} suggestion${severityCounts.info > 1 ? 's' : ''}`}
+            {severityCounts.errors > 0 || severityCounts.warnings > 0 || severityCounts.info > 0 ? ' found' : ''}
+          </Typography>
+        </Alert>
+      )}
 
-        return (
-          <Alert key={rIdx} severity={severity} variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }}>
-            <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>
-              {rec.field ? `Field: ${rec.field}` : 'Recommendation'}
-            </AlertTitle>
-            <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
-              {rec.message}
-            </Typography>
-            {rec.suggestion && (
-              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
-                Suggestion: {rec.suggestion}
+      {/* Recommendations Cards */}
+      {recommendations.length > 0 ? (
+        recommendations.map((rec: any, rIdx: number) => {
+          let severity: 'error' | 'warning' | 'info' | 'success' = 'info';
+          if (rec.type === 'error') severity = 'error';
+          else if (rec.type === 'warning') severity = 'warning';
+          else if (rec.type === 'info') severity = 'info';
+
+          return (
+            <Alert key={rIdx} severity={severity} variant="outlined" sx={{ borderRadius: 1.5, py: 0.5 }}>
+              <AlertTitle sx={{ fontWeight: 'bold', fontSize: '0.8rem', m: 0 }}>
+                {rec.field ? `Field: ${rec.field}` : 'Recommendation'}
+              </AlertTitle>
+              <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
+                {rec.message}
               </Typography>
-            )}
-          </Alert>
-        );
-      })}
+              {rec.suggestion && (
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
+                  Suggestion: {rec.suggestion}
+                </Typography>
+              )}
+            </Alert>
+          );
+        })
+      ) : (
+        <Alert severity="success" variant="outlined" sx={{ borderRadius: 1.5, py: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+            ✅ All checks passed — no issues found.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Proposed Updated Data Action Card */}
-      {updatedData && (diffs.length > 0 || isAccepted || isRejected) && (
+      {updatedData && (diffs.length > 0 || recommendations.length > 0) && (
         <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed' }}>
           <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>

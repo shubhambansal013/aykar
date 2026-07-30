@@ -217,13 +217,199 @@ describe('Home Page', () => {
     expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
     expect(screen.getAllByText('₹10,00,000').length).toBeGreaterThan(0);
 
+    // Open the right panel and switch to inspect tab to verify the bug fix
+    const chatFab = screen.getByLabelText('open ai chat window');
+    fireEvent.click(chatFab);
+    const inspectTab = screen.getByTestId('right-panel-tab-inspect');
+    fireEvent.click(inspectTab);
+
     // Trigger AI Review
     const reviewBtn = screen.getByText('AI Review');
     expect(reviewBtn).toBeDefined();
+    expect((reviewBtn as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(reviewBtn);
 
     await waitFor(() => {
+      // Right panel tab should have switched to 'chat'
+      expect(screen.getByTestId('right-panel-tab-chat').getAttribute('aria-selected')).toBe('true');
       expect(screen.getByText('AI Review Complete!')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('disables AI Review button while request is in flight', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    // Mock fetch to hang so we can check disabled state mid-flight
+    let resolveFetch: (value: any) => void;
+    const fetchPromise = new Promise((resolve) => { resolveFetch = resolve; });
+    const mockFetch = vi.fn().mockReturnValue(fetchPromise);
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Click AI Review button — it should become disabled
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    await waitFor(() => {
+      const btn = screen.getByRole('button', { name: /Reviewing…/i }) as HTMLButtonElement;
+      expect(btn.disabled).toBe(true);
+    });
+
+    // Resolve the fetch to clean up
+    resolveFetch!({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'Done' })
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('shows ✓ Reviewed badge after AI Review completes', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'AI Review Complete!' })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Trigger AI Review
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    // Wait for the review to complete and the badge to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('shows Re-review button when data changes after review', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'Review complete' })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Trigger AI Review
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    // Wait for badge
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    // Upload a second file to change data (triggers dataVersion increment)
+    const file2 = new File(['dummy content 2'], 'test2.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file2, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+    fireEvent.change(fileInput, { target: { files: [file2] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('re-review-button')).toBeDefined();
     });
 
     vi.restoreAllMocks();

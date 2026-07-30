@@ -69,7 +69,7 @@ export default function DocumentUpload({
   return (
     <>
       {isUploadCollapsed && (
-        <Paper variant="outlined" sx={{ p: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)', borderColor: 'success.light' }} data-testid="compact-upload-status">
+        <Paper variant="outlined" sx={{ p: 1.5, mb: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, bgcolor: mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)', borderColor: 'success.light' }} data-testid="compact-upload-status">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <CheckCircleIcon color="success" sx={{ fontSize: 20 }} />
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -188,7 +188,7 @@ export default function DocumentUpload({
       )}
 
       <Box sx={{ display: isUploadCollapsed ? 'none' : 'block' }}>
-        <Card variant="outlined" sx={{ mb: 2.5 }}>
+        <Card variant="outlined" sx={{ mb: 2 }}>
           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="h6" sx={{ m: 0, fontWeight: 'bold' }}>

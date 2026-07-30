@@ -907,7 +907,7 @@ export default function Home() {
                       severity="warning"
                       variant="outlined"
                       sx={{
-                        mb: 2.5,
+                        mb: 2,
                         borderRadius: 1.5,
                         py: 1,
                         cursor: 'pointer',

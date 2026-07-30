@@ -14,14 +14,15 @@ export function LineRow({ label, value, operator, isTotal, isNegative, source, o
   onClick?: () => void;
 }) {
   const Icon = operator === 'add' ? AddIcon : operator === 'subtract' ? RemoveIcon : null;
-  const opColor = operator === 'add' ? 'success.main' : operator === 'subtract' ? 'error.main' : 'text.primary';
+  const opColor = 'text.secondary';
   return (
     <Box
       onClick={onClick}
       sx={{
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto auto',
+        gap: 1,
         alignItems: 'center',
-        justifyContent: 'space-between',
         py: 0.4,
         px: 1,
         bgcolor: isTotal ? 'action.selected' : 'transparent',
@@ -30,26 +31,25 @@ export function LineRow({ label, value, operator, isTotal, isNegative, source, o
         '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         {Icon && <Icon sx={{ fontSize: '1rem', color: opColor }} />}
         <Typography variant="body2" sx={{ fontWeight: isTotal ? 700 : 400 }}>
           {label}
         </Typography>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: isTotal ? 700 : 500,
-            fontFamily: 'monospace',
-            whiteSpace: 'nowrap',
-            color: isNegative ? 'error.main' : 'text.primary',
-          }}
-        >
-          {value}
-        </Typography>
-        {source && <SourceBadge source={source} />}
-      </Box>
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: isTotal ? 700 : 500,
+          fontFamily: 'monospace',
+          whiteSpace: 'nowrap',
+          justifySelf: 'end',
+          color: isNegative ? 'error.main' : 'text.primary',
+        }}
+      >
+        {value}
+      </Typography>
+      {source && <SourceBadge source={source} />}
     </Box>
   );
 }
@@ -60,9 +60,8 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
       variant="subtitle2"
       sx={{
         fontWeight: 'bold',
-        color: 'primary.main',
-        borderBottom: 2,
-        borderColor: 'primary.main',
+        borderBottom: 1,
+        borderColor: 'divider',
         pb: 0.5,
         mb: 1,
         mt: 0.5,

@@ -28,3 +28,17 @@ Suggested entry format:
 - **2g**: Removed chat IconButton from AppBar (only FAB remains). Cleaned unused MUI imports from page.tsx.
 - **2h**: Updated 12 tests referencing removed AppBar chat button → FAB's `'open ai chat window'`. Removed `selected-itr-form-badge-summary` assertion. Fixed `getByText` → `getAllByText` for section titles duplicated by Accordion.
 - 301 tests pass, build passes, page.tsx reduced from ~1424 to ~1183 lines.
+
+---
+
+## Phase 3 — 2026-07-30
+
+- **3a**: LineRow converted from flexbox to CSS grid (`1fr auto auto`). Value column uses `justifySelf: 'end'` for right-alignment. SourceBadge in third column.
+- **3b**: SourceBadge SOURCE_CONFIG all colors changed to `'default'`. All chips now gray outline.
+- **3c**: ReconciliationTable STATUS_STYLE changed to all `action.hover` background + `text.secondary`. Mismatch rows use gray left border instead of yellow background.
+- **3d**: TaxRegimeComparisonCard — "Optimal" badges inside cards changed to gray outline. Border color logic simplified (selected=primary.main, else=divider). Total tax payable uses `text.primary` instead of `success.main`. Recommendation banner `boxShadow` set to 0.
+- **3e**: TaxSlabVisual — NEW_COLORS and OLD_COLORS replaced with primary blue opacity gradients. Arrow marker uses `text.secondary` instead of `error.main`. Section title color removed.
+- **3f**: Operator icons (add/subtract) in LineRow changed from green/red to `text.secondary`.
+- **3g**: All `mb: 2.5` occurrences changed to `mb: 2` across TaxRegimeComparisonCard, DocumentUpload, page.tsx.
+- **3h**: SectionTitle in LineRow changed from colored bottom border (`primary.main`, width 2) to gray divider (`divider`, width 1).
+- **3i**: All 301 tests pass, build passes.

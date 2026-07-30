@@ -137,10 +137,12 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            py: 1,
-            px: 1.5,
+            py: 2,
+            px: 2,
             bgcolor: isRefund ? 'success.light' : 'warning.light',
             borderRadius: 1.5,
+            borderTop: 3,
+            borderColor: isRefund ? 'success.main' : 'warning.main',
           }}
         >
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
@@ -151,6 +153,7 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
             sx={{
               fontWeight: 700,
               fontFamily: 'monospace',
+              fontSize: '1.1rem',
               color: isRefund ? 'success.dark' : 'warning.dark',
             }}
           >

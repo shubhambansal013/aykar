@@ -115,6 +115,35 @@ export default function IncomeDetails({ data, form16List, onValueClick }: Income
           </Typography>
         )}
 
+        {data.detectedIncomeSources && data.detectedIncomeSources.length > 0 && (
+          <>
+            <Box sx={{ pl: 0.5, mt: 1, mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Supplementary Sources (AIS/TIS)
+              </Typography>
+              {data.detectedIncomeSources.map((item, i) => {
+                let catLabel = 'Other';
+                if (item.category === 'interestSavings') catLabel = 'Savings bank interest';
+                if (item.category === 'interestDeposit') catLabel = 'Interest on deposit';
+                if (item.category === 'dividendIncome') catLabel = 'Dividend';
+                return (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 0.5, py: 0.25 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                      {catLabel}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled', ml: 0.5 }}>
+                        ({item.source})
+                      </Typography>
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      ₹{item.amount.toLocaleString('en-IN')}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          </>
+        )}
+
         <Divider sx={{ my: 1 }} />
 
         {/* Gross Total Income */}

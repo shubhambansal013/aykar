@@ -71,9 +71,9 @@ Three specific user complaints drove this:
 ## Phase status
 
 | Phase | Title | Status | Notes |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1 | Foundation — Extract shared components | done | LineRow, SectionTitle, ChatPanel, DocumentUpload |
-| 2 | Architecture — Remove redundancy, restructure flow | pending | Depends on Phase 1's shared components |
+| 2 | Architecture — Remove redundancy, restructure flow | done | Auto-collapse fixed, Taxpayer Summary Card removed, Supplementary Income merged into IncomeDetails, sections reordered (Upload → ComputationWorksheet → RegimeComparison → ReconTable → Validation), universal collapsible, net result elevated, AppBar simplified, chat button removed |
 | 3 | Polish — Tabular layout & color reduction | pending | Depends on Phase 1's LineRow |
 
 Status values: `pending`, `in-progress`, `done`.

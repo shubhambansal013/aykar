@@ -9,7 +9,7 @@ import { parseForm26ASText } from '@/lib/form26as/parser';
 import { reconcileAllDocuments } from '@/lib/itr/reconciliation';
 import { validateForm16Data } from '@/lib/itr/validator';
 import { mapToITR, shouldUseITR2 } from '@/lib/itr/mapper';
-import { compareTaxRegimes, recalculateAllFormFields, computeAllInterest } from '@/lib/itr/taxEngine';
+import { compareTaxRegimes, recalculateAllFormFields } from '@/lib/itr/taxEngine';
 import { Form16Data, ReconciledTaxData, AISData, TISData, Form26ASData, createForm16Proxy, createAisProxy, createTisProxy, createForm26asProxy, createEngineProxy } from '@/lib/proto/compatibilityProxy';
 import { aiConfig, providersConfig } from '@/lib/ai/config';
 
@@ -27,27 +27,14 @@ import {
   Typography,
   Container,
   Box,
-  Card,
-  CardContent,
-  Button,
   IconButton,
-  TextField,
   Alert,
-  CircularProgress,
-  Paper,
   Tooltip,
-  Grid,
-  Divider,
   Fab,
   Dialog,
-  DialogTitle,
-  DialogContent,
   Tabs,
   Tab,
   useMediaQuery,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from '@mui/material';
 
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -55,9 +42,8 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
 import DescriptionIcon from '@mui/icons-material/Description';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import TaxRegimeComparisonCard from '@/app/components/TaxRegimeComparisonCard';
 import ComputationWorksheet from '@/app/components/ComputationWorksheet';
@@ -114,7 +100,7 @@ export default function Home() {
 
   // Validation, Loading & Theme States
   const [errors, setErrors] = useState<string[]>([]);
-  const [showUploadArea, setShowUploadArea] = useState(false);
+  const [showUploadArea, setShowUploadArea] = useState(true);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
@@ -215,7 +201,7 @@ export default function Home() {
   }, [extractedData]);
 
   const hasUploadedDocs = form16List.length > 0 || !!aisFile || !!tisFile || !!form26asFile;
-  const isUploadCollapsed = hasUploadedDocs && !showUploadArea;
+  const isUploadCollapsed = !showUploadArea;
   const readyDocsCount = (form16List.length > 0 ? 1 : 0) + (aisFile ? 1 : 0) + (tisFile ? 1 : 0) + (form26asFile ? 1 : 0);
 
   // MUI Theme Memo
@@ -844,22 +830,6 @@ export default function Home() {
                 </IconButton>
               </Tooltip>
             )}
-            <Tooltip title={isMobile ? 'Ask AI / Chat' : 'Ask AI / Chat'}>
-              <IconButton
-                onClick={() => {
-                  if (isMobile) {
-                    setMobileDocOpen(true);
-                    setRightPanelTab('chat');
-                  } else {
-                    setChatOpen((prev) => !prev);
-                  }
-                }}
-                color="inherit"
-                aria-label="open ai chat"
-              >
-                <ChatIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
             <Tooltip title={`Toggle ${mode === 'light' ? 'Dark' : 'Light'} Mode`}>
               <IconButton onClick={() => setMode((prev) => (prev === 'light' ? 'dark' : 'light'))} color="inherit" aria-label="toggle color mode">
                 {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
@@ -903,246 +873,36 @@ export default function Home() {
                 onOpenRightPanel={openRightPanel}
               />
 
-              {/* Reconciliation Table (Section 4) */}
-              <ReconciliationTable data={extractedDataDomain} />
-
-              {/* Supplementary Income */}
-              {extractedDataDomain && extractedDataDomain.detectedIncomeSources && (extractedDataDomain.detectedIncomeSources?.length ?? 0) > 0 && (
-                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.01)' : 'rgba(2, 132, 199, 0.01)' }}>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
-                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Detected Supplementary Income Sources (AIS/TIS)
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary" sx={{ mb: 1.5, display: 'block' }}>
-                      The following additional incomes were found in the uploaded AIS/TIS documents and have been successfully merged into your other sources to prevent under-reporting:
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                      {extractedDataDomain.detectedIncomeSources?.map((item, i) => {
-                        let catLabel = 'Other';
-                        if (item.category === 'interestSavings') catLabel = 'Savings bank interest';
-                        if (item.category === 'interestDeposit') catLabel = 'Interest on deposit';
-                        if (item.category === 'dividendIncome') catLabel = 'Dividend';
-
-                        return (
-                          <Paper key={i} variant="outlined" sx={{ p: 1, px: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box>
-                              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontSize: '0.675rem' }}>{catLabel} ({item.source})</Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{item.amount.toLocaleString('en-IN')}</Typography>
-                            </Box>
-                            <IconButton size="small" color="success">
-                              <CheckCircleIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Paper>
-                        );
-                      })}
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Taxpayer Summary Card */}
-              {extractedData && extractedDataDomain && (
-                <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2, position: { xs: 'sticky', md: 'static' }, top: 0, zIndex: { xs: 10, md: 'auto' } }}>
-                  <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: '800', fontSize: '1.2rem', color: 'primary.main', m: 0 }}>
-                          Taxpayer Assessment & Filing Summary
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          Formal CA Computation Worksheet • Section 139(1) Filing
-                        </Typography>
-                      </Box>
-                      <Paper
-                        variant="outlined"
-                        sx={{
-                          px: 2,
-                          py: 0.5,
-                          borderRadius: 2,
-                          bgcolor: 'primary.light',
-                          color: 'primary.dark',
-                          borderColor: 'primary.light',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                        }}
-                        data-testid="selected-itr-form-badge-summary"
-                      >
-                        <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-                          Form: {shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2 (Capital Gains / Multi-Employer)' : 'ITR-1 (Sahaj)'}
-                        </Typography>
-                      </Paper>
-                    </Box>
-
-                    <Grid container spacing={3}>
-                      {/* Left Side: Identity Info */}
-                      <Grid size={{ xs: 12, md: 7 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                          Taxpayer Information
-                        </Typography>
-                        <Grid container spacing={1}>
-                          <Grid size={{ xs: 4 }}>
-                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Name:</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 8 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {`${extractedDataDomain.employee?.name?.firstName || ''} ${extractedDataDomain.employee?.name?.middleName || ''} ${extractedDataDomain.employee?.name?.lastName || ''}`.trim().replace(/\s+/g, ' ') || 'N/A'}
-                            </Typography>
-                          </Grid>
-
-                          <Grid size={{ xs: 4 }}>
-                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>PAN:</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 8 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                              {extractedDataDomain.employee?.pan || 'N/A'}
-                            </Typography>
-                          </Grid>
-
-                          <Grid size={{ xs: 4 }}>
-                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Assessment Year:</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 8 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {extractedDataDomain.assessmentYear || '2026-27'}
-                            </Typography>
-                          </Grid>
-
-                          <Grid size={{ xs: 4 }}>
-                            <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 500 }}>Filing Due Date:</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 8 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              31st July 2026
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </Grid>
-
-                      {/* Right Side: Quick Financial Status */}
-                      <Grid size={{ xs: 12, md: 5 }} sx={{ borderLeft: { md: '1px solid' }, borderColor: { md: 'divider' }, pl: { md: 3 } }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                          Computation Summary ({selectedRegime} Regime)
-                        </Typography>
-
-                        {(() => {
-                          const grossTotal = extractedDataDomain.grossTotalIncome || 0;
-                          const taxable = extractedDataDomain.totalIncome || 0;
-                          const payable = extractedDataDomain.taxPayable || 0;
-
-                          const credits = extractedDataDomain.taxCredits || {
-                            tdsSalary: 0,
-                            tdsOther: 0,
-                            tcs: 0,
-                            advanceTax: 0,
-                            selfAssessmentTax: 0,
-                          };
-                          const totalTaxesPaid = (credits.advanceTax || 0) + (credits.tdsSalary || 0) + (credits.tdsOther || 0) + (credits.tcs || 0) + (credits.selfAssessmentTax || 0);
-
-                          const interest = computeAllInterest(payable, taxable, extractedDataDomain, filingDate || undefined, determinationDate || undefined);
-                          const totalDue = payable + interest.totalInterestPayable;
-                          const isRefund = totalTaxesPaid > totalDue;
-                          const diffAmount = Math.abs(totalTaxesPaid - totalDue);
-
-                          return (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption" color="textSecondary">Gross Total Income:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{grossTotal.toLocaleString('en-IN')}</Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption" color="textSecondary">Net Taxable Income:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{taxable.toLocaleString('en-IN')}</Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption" color="textSecondary">Income Tax Due:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>₹{payable.toLocaleString('en-IN')}</Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption" color="textSecondary">Total Prepaid Credits:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main' }}>₹{totalTaxesPaid.toLocaleString('en-IN')}</Typography>
-                              </Box>
-                              {interest.totalInterestPayable > 0 && (
-                                <>
-                                  <Divider sx={{ my: 0.5 }} />
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'error.main', display: 'block', mb: 0.5 }}>
-                                    Interest & Fees (u/s 234A/B/C & 234F):
-                                  </Typography>
-                                  {interest.interest234A > 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
-                                      <Typography variant="caption" color="textSecondary">Interest u/s 234A:</Typography>
-                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234A.toLocaleString('en-IN')}</Typography>
-                                    </Box>
-                                  )}
-                                  {interest.interest234B > 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
-                                      <Typography variant="caption" color="textSecondary">Interest u/s 234B:</Typography>
-                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234B.toLocaleString('en-IN')}</Typography>
-                                    </Box>
-                                  )}
-                                  {interest.interest234C > 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
-                                      <Typography variant="caption" color="textSecondary">Interest u/s 234C:</Typography>
-                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.interest234C.toLocaleString('en-IN')}</Typography>
-                                    </Box>
-                                  )}
-                                  {interest.lateFilingFee234F > 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pl: 1 }}>
-                                      <Typography variant="caption" color="textSecondary">Late Filing Fee u/s 234F:</Typography>
-                                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>₹{interest.lateFilingFee234F.toLocaleString('en-IN')}</Typography>
-                                    </Box>
-                                  )}
-                                </>
-                              )}
-                              <Divider sx={{ my: 0.5 }} />
-                              <Paper
-                                variant="outlined"
-                                sx={{
-                                  p: 1.5,
-                                  textAlign: 'center',
-                                  borderRadius: 2,
-                                  bgcolor: isRefund ? 'success.dark' : 'error.dark',
-                                  color: '#ffffff',
-                                  borderColor: 'transparent',
-                                }}
-                              >
-                                <Typography variant="caption" sx={{ display: 'block', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.7rem', opacity: 0.9 }}>
-                                  {isRefund ? 'ESTIMATED REFUND DUE' : 'NET BALANCE TAX PAYABLE'}
-                                </Typography>
-                                <Typography variant="h6" sx={{ fontWeight: '900', m: 0 }}>
-                                  ₹{diffAmount.toLocaleString('en-IN')}
-                                </Typography>
-                              </Paper>
-                            </Box>
-                          );
-                        })()}
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Tax Regime Comparison Card */}
-              {extractedData && (
-                <TaxRegimeComparisonCard
-                  extractedData={extractedData}
-                  selectedRegime={selectedRegime}
-                  mode={mode}
-                  onSelectRegime={(regime) => {
-                    setSelectedRegime(regime);
-                    setExtractedData((prev) => {
-                      if (!prev) return null;
-                      const recalculated = recalculateAllFormFields(createEngineProxy(prev), regime);
-                      return (recalculated as any).__bundle || recalculated;
-                    });
-                  }}
-                />
-              )}
-
               {extractedData && (
                 <>
+                  <ComputationWorksheet
+                    data={extractedDataDomain}
+                    form16List={form16List}
+                    selectedRegime={selectedRegime}
+                    itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
+                    onAiReview={() => handleSendMessage(true)}
+                    onValueClick={handleValueClick}
+                  />
+
+                  {/* Tax Regime Comparison Card */}
+                  <TaxRegimeComparisonCard
+                    extractedData={extractedData}
+                    selectedRegime={selectedRegime}
+                    mode={mode}
+                    onSelectRegime={(regime) => {
+                      setSelectedRegime(regime);
+                      setExtractedData((prev) => {
+                        if (!prev) return null;
+                        const recalculated = recalculateAllFormFields(createEngineProxy(prev), regime);
+                        return (recalculated as any).__bundle || recalculated;
+                      });
+                    }}
+                  />
+
+                  <ReconciliationTable data={extractedDataDomain} />
+
                   {/* Validation warnings */}
-              {errors.length > 0 && (
+                  {errors.length > 0 && (
                     <Alert
                       severity="warning"
                       variant="outlined"
@@ -1176,17 +936,6 @@ export default function Home() {
                       </Box>
                     </Alert>
                   )}
-
-                  <ComputationWorksheet
-                    data={extractedDataDomain}
-                    form16List={form16List}
-                    selectedRegime={selectedRegime}
-                    itrFormType={extractedDataDomain && shouldUseITR2(extractedDataDomain, form16List.length) ? 'ITR-2' : 'ITR-1'}
-                    onAiReview={() => handleSendMessage(true)}
-                    onValueClick={handleValueClick}
-                    collapsible={isMobile}
-                  />
-
                 </>
               )}
             </Container>

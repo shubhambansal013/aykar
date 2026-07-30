@@ -17,3 +17,14 @@ Suggested entry format:
 ```
 
 ---
+
+## Phase 2 — 2026-07-30
+- **2a**: Changed `showUploadArea` default to `true`, removed `hasUploadedDocs &&` from `isUploadCollapsed` — upload stays open after first doc.
+- **2b**: Deleted Taxpayer Summary Card (~180 lines) from page.tsx. Removed unused imports: `Grid`, `CheckCircleIcon`, `computeAllInterest`.
+- **2c**: Removed Supplementary Income card from page.tsx. Added compact sub-section inside IncomeDetails (under "Other Incomes") using existing `data.detectedIncomeSources`. No new prop needed.
+- **2d**: Reordered left panel: DocumentUpload → ComputationWorksheet → TaxRegimeComparisonCard → ReconciliationTable → Validation/Alerts.
+- **2e**: Made ComputationWorksheet always collapsible — removed `collapsible` prop. Identity defaults to collapsed, Income & Tax expanded.
+- **2f**: Elevated net result box in TaxComputation: `py: 2, px: 2`, `borderTop: 3`, font `1.1rem`.
+- **2g**: Removed chat IconButton from AppBar (only FAB remains). Cleaned unused MUI imports from page.tsx.
+- **2h**: Updated 12 tests referencing removed AppBar chat button → FAB's `'open ai chat window'`. Removed `selected-itr-form-badge-summary` assertion. Fixed `getByText` → `getAllByText` for section titles duplicated by Accordion.
+- 301 tests pass, build passes, page.tsx reduced from ~1424 to ~1183 lines.

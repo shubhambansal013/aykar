@@ -20,7 +20,6 @@ interface ComputationWorksheetProps {
   itrFormType?: 'ITR-1' | 'ITR-2';
   onAiReview?: () => void;
   onValueClick?: (label: string) => void;
-  collapsible?: boolean;
 }
 
 function CollapsibleSection({ title, icon, defaultExpanded, children }: {
@@ -55,7 +54,7 @@ function CollapsibleSection({ title, icon, defaultExpanded, children }: {
   );
 }
 
-export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, onAiReview, onValueClick, collapsible }: ComputationWorksheetProps) {
+export default function ComputationWorksheet({ data, form16List, selectedRegime, itrFormType, onAiReview, onValueClick }: ComputationWorksheetProps) {
   if (!data) return null;
 
   const header = (
@@ -98,25 +97,15 @@ export default function ComputationWorksheet({ data, form16List, selectedRegime,
 
   const sections = (
     <>
-      {collapsible ? (
-        <>
-          <CollapsibleSection title="Taxpayer Identity" icon={<PersonIcon fontSize="small" color="primary" />} defaultExpanded>
-            <TaxpayerIdentityCard data={data} />
-          </CollapsibleSection>
-          <CollapsibleSection title="Income Details" icon={<AccountBalanceIcon fontSize="small" color="primary" />} defaultExpanded>
-            <IncomeDetails data={data} form16List={form16List} onValueClick={onValueClick} />
-          </CollapsibleSection>
-          <CollapsibleSection title="Tax Computation" icon={<CalculateIcon fontSize="small" color="primary" />} defaultExpanded>
-            <TaxComputation data={data} selectedRegime={selectedRegime} onValueClick={onValueClick} />
-          </CollapsibleSection>
-        </>
-      ) : (
-        <>
-          <TaxpayerIdentityCard data={data} />
-          <IncomeDetails data={data} form16List={form16List} onValueClick={onValueClick} />
-          <TaxComputation data={data} selectedRegime={selectedRegime} onValueClick={onValueClick} />
-        </>
-      )}
+      <CollapsibleSection title="Taxpayer Identity" icon={<PersonIcon fontSize="small" color="primary" />} defaultExpanded={false}>
+        <TaxpayerIdentityCard data={data} />
+      </CollapsibleSection>
+      <CollapsibleSection title="Income Details" icon={<AccountBalanceIcon fontSize="small" color="primary" />} defaultExpanded>
+        <IncomeDetails data={data} form16List={form16List} onValueClick={onValueClick} />
+      </CollapsibleSection>
+      <CollapsibleSection title="Tax Computation" icon={<CalculateIcon fontSize="small" color="primary" />} defaultExpanded>
+        <TaxComputation data={data} selectedRegime={selectedRegime} onValueClick={onValueClick} />
+      </CollapsibleSection>
     </>
   );
 

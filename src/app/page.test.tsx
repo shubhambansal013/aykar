@@ -55,11 +55,10 @@ describe('Home Page', () => {
   test('renders Form-16 parser title and AI Chat elements with correct default model', () => {
     render(<Home />);
     expect(screen.getByText(/Form-16 to ITR JSON Parser|ITR Assist/i)).toBeDefined();
-    expect(screen.getByLabelText('open ai chat')).toBeDefined();
     expect(screen.getByLabelText('open ai chat window')).toBeDefined();
 
     // Open chat to inspect default model
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Default model selector should display gemini-3.1-flash-lite
@@ -89,7 +88,7 @@ describe('Home Page', () => {
     render(<Home />);
 
     // Open AI Chat first
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Context list should initially not contain any Form-16 file representation
@@ -133,7 +132,7 @@ describe('Home Page', () => {
 
   test('opens AI Chat Drawer when requested', async () => {
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     expect(screen.getByText(/AI Chat/i)).toBeDefined();
@@ -154,7 +153,7 @@ describe('Home Page', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const input = screen.getByPlaceholderText(/Ask your tax question.../i);
@@ -304,7 +303,7 @@ describe('Home Page', () => {
   test('handles attaching and removing files in AI Chat', async () => {
     // Finding input and matching attachment
     const { container } = render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const file = new File(['dummy attachment'], 'test.png', { type: 'image/png' });
@@ -336,7 +335,7 @@ describe('Home Page', () => {
 
   test('handles chat resizing drag', () => {
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const resizer = screen.getByTestId('resizer');
@@ -388,7 +387,7 @@ describe('Home Page', () => {
     });
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Verify checkbox is unchecked by default
@@ -687,7 +686,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Initially, no badges
@@ -895,7 +894,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat to access context badges if needed
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i) as HTMLInputElement;
@@ -947,9 +946,9 @@ describe('Home Page', () => {
     });
 
     // 1. Check that the ComputationWorksheet section headings are present
-    expect(screen.getByText('Taxpayer Identity')).toBeDefined();
-    expect(screen.getByText('Income Details')).toBeDefined();
-    expect(screen.getByText('Tax Computation')).toBeDefined();
+    expect(screen.getAllByText('Taxpayer Identity').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Income Details').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Tax Computation').length).toBeGreaterThanOrEqual(1);
 
     // 2. Verify the ITR form badge is shown
     expect(screen.getByTestId('selected-itr-form-badge')).toBeDefined();
@@ -1030,7 +1029,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Upload first Form-16
@@ -1201,7 +1200,6 @@ describe('Home Page', () => {
     });
 
     // Verify that it correctly switches to recommending/badge for ITR-2
-    expect(screen.getByTestId('selected-itr-form-badge-summary').textContent).toContain('Form: ITR-2');
     expect(screen.getByTestId('selected-itr-form-badge').textContent).toContain('Form: ITR-2');
 
     vi.restoreAllMocks();

@@ -7,7 +7,7 @@ describe('FormatDetector', () => {
       FORM NO. 12BA
       Statement showing particulars of perquisites
       DETAILS OF TAX DEDUCTED AND DEPOSITED
-      Employer: THOMSON REUTERS
+      Employer: HORIZON TECH
     `;
     const fp = FormatDetector.detect(text);
     expect(fp.template).toBe('DETAILED_FORM_16');

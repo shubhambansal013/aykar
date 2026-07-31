@@ -1,0 +1,17 @@
+metadata {
+  financial_year: "2025-26"
+}
+profile {
+  pan: "ABJPA1234F"
+  name: "ARJUN SHARMA"
+  address: "11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI, DELHI, 110096"
+}
+tds_salary {
+  tan: "BLRM22334F"
+  deductor_name: "BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED"
+}
+tds_salary {
+  tan: "DELM12345F"
+  deductor_name: "HORIZON TECH SOLUTIONS PRIVATE LIMITED"
+  amount: 51290
+}

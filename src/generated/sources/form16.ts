@@ -21,7 +21,7 @@ export interface Form16Bundle {
 }
 
 export interface Form16 {
-  /** e.g., "UXBGJYA" or "SFOLYRA" */
+  /** e.g., "XZQWBN" or "LVKMPR" */
   certificateNumber: string;
   employerProfile: EmployerProfile | undefined;
   employmentPeriod:
@@ -53,15 +53,15 @@ export interface EmployerProfile {
   tan: string;
   /** Deductor PAN */
   pan: string;
-  /** e.g., "PARAMETRIC TECHNOLOGY..." */
+  /** e.g., "BRIDGE SOFTWARE..." */
   name: string;
   /** Full employer address */
   address: string;
-  /** e.g., "shchoudhary@ptc.com" */
+  /** e.g., "hr@bridgesoft.com" */
   email?:
     | string
     | undefined;
-  /** e.g., "+(91)80-8197124546" */
+  /** e.g., "+(91)80-23456789" */
   phone?:
     | string
     | undefined;

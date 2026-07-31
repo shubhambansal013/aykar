@@ -4,8 +4,8 @@ import { CompletenessReporter } from './CompletenessReporter';
 describe('CompletenessReporter', () => {
   it('should calculate completeness and confidence score correctly for fully populated data', () => {
     const mockData = {
-      employer: { name: 'Acme Corp', tan: 'MUMI04584G', pan: 'AABCI0605H' },
-      employee: { pan: 'CYXPA6852K' },
+      employer: { name: 'Acme Corp', tan: 'DELM12345F', pan: 'AABCH1234F' },
+      employee: { pan: 'ABJPA1234F' },
       assessmentYear: '2026-27',
       salary: {
         grossSalary: 100000,

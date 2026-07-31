@@ -79,7 +79,7 @@ describe('validateForm16Data', () => {
   it('should perform cross-verification and catch mismatches/under-reporting', () => {
     const data = {
       ...baseData,
-      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      employer: { name: 'NEXUS', tan: 'HYDN44556F', pan: 'AABBN2233C', address: 'HYD' },
       taxPayable: 150000,
       aisData: {
         interestSavings: 15000,
@@ -94,7 +94,7 @@ describe('validateForm16Data', () => {
         dividendIncome: 5000
       },
       form26asData: {
-        tdsSalary: [{ tan: 'HYDQ00152F', deductorName: 'OPTUM', amount: 140000 }], // TDS mismatch (150k vs 140k)
+        tdsSalary: [{ tan: 'HYDN44556F', deductorName: 'NEXUS', amount: 140000 }], // TDS mismatch (150k vs 140k)
         tdsOther: [],
         tcsDetails: [],
         advanceTax: [],
@@ -137,7 +137,7 @@ describe('validateForm16Data', () => {
   it('should catch missing TDS u/s 192 in Form 26AS', () => {
     const data = {
       ...baseData,
-      employer: { name: 'OPTUM', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
+      employer: { name: 'NEXUS', tan: 'HYDN44556F', pan: 'AABBN2233C', address: 'HYD' },
       taxPayable: 150000,
       form26asData: {
         tdsSalary: [],

@@ -1,16 +1,16 @@
 taxpayer_profile {
-  pan: "CYXPA6852K"
-  name: "TARUSH ARORA"
+  pan: "ABJPA1234F"
+  name: "ARJUN SHARMA"
   address: ""
 }
 certificates {
-  certificate_number: "SFOLYRA"
+  certificate_number: "LVKMPR"
   employer_profile {
-    tan: "MUMI04584G"
-    pan: "AABCI0605H"
-    name: "Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,"
-    address: "Bandra Kurla Complex, MUMBAI - 400051 Maharashtra"
-    email: "Payrollhelpdesk.India@thomsonreuters.com"
+    tan: "DELM12345F"
+    pan: "AABCH1234F"
+    name: "Level 8, Tower B, Cyber Park,, G Block C-20,"
+    address: "Sector 62, NOIDA - 201309 Uttar Pradesh"
+    email: "payroll.helpdesk@horizontech.in"
     phone: "+(91)80-"
     cit_tds_address: "From To The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G. Mittal Ayurvedic Hospital Building, Charni Road , Mumbai - 400002"
   }
@@ -18,7 +18,7 @@ certificates {
     start_date: "01-Apr-2025"
     end_date: "24-Oct-2025"
     assessment_year: "2026-27"
-    employee_reference_no: "6126833"
+    employee_reference_no: "1009876"
   }
   part_a {
     quarter_summaries {
@@ -108,19 +108,19 @@ certificates {
   perquisites_details {
   }
   verification {
-    signatory_name: "KUMAR VIJETA"
-    parent_name: "UMESH PRASAD"
+    signatory_name: "VIJAY NAMBIAR"
+    parent_name: "RAMESH KRISHNAN"
     designation: "DIRECTOR PAYROLL OPERATIONS APAC UK"
     place: "MUMBAI SUBURBAN"
     date: "05-Jun-2026"
   }
 }
 certificates {
-  certificate_number: "UXBGJYA"
+  certificate_number: "XZQWBN"
   employer_profile {
-    tan: "BLRP15144D"
-    pan: "AABCP2629J"
-    name: "SHCHOUDHARY@PTC.COM"
+    tan: "BLRM22334F"
+    pan: "AABCB4567C"
+    name: "HR@BRIDGESOFT.COM"
     cit_tds_address: "From To The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road , Ganganagar, Bangalore - 560032"
   }
   employment_period {
@@ -181,8 +181,8 @@ certificates {
   perquisites_details {
   }
   verification {
-    signatory_name: "ARVIND LAXMAN BODGAL"
-    parent_name: "LAXMAN RAMCHANDRA BODGAL"
+    signatory_name: "SANDEEP KULKARNI"
+    parent_name: "GOPAL KULKARNI"
     designation: "GROUP LEAD ACCOUNTING"
     place: "BANGALORE"
     date: "03-Jun-2026"

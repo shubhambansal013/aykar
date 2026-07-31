@@ -13,7 +13,7 @@ message Form16Bundle {
 }
 
 message Form16 {
-  string certificate_number = 1;                // e.g., "UXBGJYA" or "SFOLYRA"
+  string certificate_number = 1;                // e.g., "XZQWBN" or "LVKMPR"
   EmployerProfile employer_profile = 2;
   EmploymentPeriod employment_period = 3;
 
@@ -30,10 +30,10 @@ message Form16 {
 message EmployerProfile {
   string tan = 1;                               // Deductor TAN
   string pan = 2;                               // Deductor PAN
-  string name = 3;                              // e.g., "PARAMETRIC TECHNOLOGY..."
+  string name = 3;                              // e.g., "BRIDGE SOFTWARE..."
   string address = 4;                           // Full employer address
-  optional string email = 5;                     // e.g., "shchoudhary@ptc.com"
-  optional string phone = 6;                     // e.g., "+(91)80-8197124546"
+  optional string email = 5;                     // e.g., "hr@bridgesoft.com"
+  optional string phone = 6;                     // e.g., "+(91)80-23456789"
   string cit_tds_address = 7;                   // CIT (TDS) Jurisdiction address
 }
 

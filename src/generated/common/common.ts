@@ -13,7 +13,7 @@ export const protobufPackage = "tax.common";
 export interface DocumentMetadata {
   /** e.g., "2025-26" */
   financialYear: string;
-  /** e.g., "CYXPA6852K202607050242" */
+  /** e.g., "ABJPA1234F202607050242" */
   downloadId?:
     | string
     | undefined;
@@ -28,7 +28,7 @@ export interface DocumentMetadata {
 export interface TaxpayerProfile {
   /** Permanent Account Number */
   pan: string;
-  /** Masked Aadhaar (e.g., "XXXX XXXX 0899") */
+  /** Masked Aadhaar (e.g., "XXXX XXXX 4321") */
   aadhaarMasked?:
     | string
     | undefined;

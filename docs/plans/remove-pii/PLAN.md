@@ -130,7 +130,7 @@ Notes on the mapping:
 
 | Phase | Title | Status | Notes |
 |---|---|---|---|
-| 1 | Fixture transport: PDF → txt, folder renames, rewire tests | in-progress | |
+| 1 | Fixture transport: PDF → txt, folder renames, rewire tests | done | 2026-07-31 |
 | 2 | Anonymize testdata fixtures (txt + textproto) | pending | |
 | 3 | Anonymize tests, source comments, proto/generated files | pending | |
 | 4 | Verify & close: full suite, lint, PII sweep, NOTES | pending | |

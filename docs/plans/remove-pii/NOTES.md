@@ -81,4 +81,20 @@ Suggested entry format:
   `ABCDK1005AMUMF07777A` (AIS parser regex matches TAN format; not asserted).
 - Full suite green: 31 files / 517 tests. `npm run lint` clean.
 
+## 2026-07-31 (phase 4)
+- Verification sweep: repo-wide `rg` (excl. `.git`, `node_modules`, `.next`,
+  `docs/plans/remove-pii/`, and the `parser.test.ts` guard block) of every real
+  token + fuzzy variants → zero hits. Only match was `carina` in
+  `cloudflare-env.d.ts` (a generated speaker-name enum — false positive, kept).
+- Single-word mapping tokens (`JEET`, `SINGH`, `GOSWAMI`) also absent; kept
+  `Phoenix Towers`/`Museum Road` commercial address and `carina` as sanctioned
+  non-personal data.
+- No `*.pdf`, `*_extracted.txt`, or `tmp_*.test.ts` remain under `src/lib/itr/`;
+  folders are `Arjun_Sharma`/`Priya_Patel`; `mock_form16_mapper_input.textproto`
+  untouched.
+- Full suite green: 31 files / 517 tests (+ coverage 88.89% stmts). `npm run
+  lint` clean. Working tree clean before the final docs commit.
+- The `/tmp/opencode/apply_fakes.sh` sed script was the ephemeral mechanism for
+  the phase-2 mapping; it no longer exists after the sandbox temp cleanup.
+
 ---

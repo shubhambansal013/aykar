@@ -136,7 +136,7 @@ Notes on the mapping:
 | 1 | Fixture transport: PDF → txt, folder renames, rewire tests | done | 2026-07-31 |
 | 2 | Anonymize testdata fixtures (txt + textproto) | done | 2026-07-31 — sed-applied canonical mapping to both dirs; integration + full src/lib suite green; sweep clean |
 | 3 | Anonymize tests, source comments, proto/generated files | done | 2026-07-31 — scrubbed Shubham/Google, Optum/Manak, Thomson/Parametric blocks across 11 test files; extended guard `forbiddenPatterns`; `CESPB`→`AROHV` regex hint; proto + generated comment hand-mirror; DetailedForm16Parser comment + `payroll.helpdesk` heuristic; full suite (31 files/517 tests) + lint green |
-| 4 | Verify & close: full suite, lint, PII sweep, NOTES | pending | |
+| 4 | Verify & close: full suite, lint, PII sweep, NOTES | done | 2026-07-31 — repo-wide PII sweep clean (only false positive `carina` speaker enum in generated `cloudflare-env.d.ts`); no PDF/extracted/tmp debris; full suite 31 files/517 tests + coverage green, lint clean; NOTES appended; plan complete |
 
 Status values: `pending`, `in-progress`, `done`.
 

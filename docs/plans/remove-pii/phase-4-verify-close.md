@@ -19,11 +19,9 @@ the plan is marked complete with NOTES recorded for posterity.
 ## Todos
 
 - [ ] `rg` the whole repo (excluding `.git`, `node_modules`, `.next`) for
-      every real token in the PLAN.md mapping table → zero hits. Also sweep
-      fuzzy variants: `thomson|reuters|parametric|optum|google it|we work|
-      wework|bagmane|pareena|carina|subhash chowk|geeta colony|shchoudhary|
-      uhg\.com|payrollhelpdesk|apac-psp|tarusharora77|bodgal|vijeta|umesh|
-      sfolrya|uxbgjya|sutacxa`
+      every real token replaced by the mapping → zero hits. Also sweep fuzzy
+      variants (company short forms, office-address landmarks, email
+      usernames/domains, person-name tokens, certificate codes)
 - [ ] Confirm no `*.pdf`, `*_extracted.txt`, or `tmp_*.test.ts` under
       `src/lib/itr/`; confirm folders are `Arjun_Sharma`/`Priya_Patel`
 - [ ] `npm run test` (full suite + coverage) — green

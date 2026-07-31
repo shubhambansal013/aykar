@@ -384,15 +384,15 @@ describe('parseForm16Text', () => {
   it('should test positional anchoring and tokenized name extraction from block', () => {
     // 1. Test name block extraction directly
     expect(BasicInfoParser.extractNameFromBlock('ROHAN VERMA A-101 Maple Residency')).toBe('ROHAN VERMA');
-    expect(BasicInfoParser.extractNameFromBlock('ALBERT EINSTEIN Flat 12B')).toBe('ALBERT EINSTEIN');
+    expect(BasicInfoParser.extractNameFromBlock('JOHN DOE Flat 12B')).toBe('JOHN DOE');
     expect(BasicInfoParser.extractNameFromBlock('Solo, 123 Lane')).toBe('Solo');
     expect(BasicInfoParser.extractNameFromBlock('John Quincy Adams, 456 Residency Road')).toBe('John Quincy Adams');
 
     // 2. Test Form 12BA declaration name extraction
-    const form12baDeclText = `I, ALBERT EINSTEIN, employee of M/s GOOGLE ...`;
+    const form12baDeclText = `I, JOHN DOE, employee of M/s INNOVENTA ...`;
     const resForm12ba = parseForm16Text(form12baDeclText);
-    expect(resForm12ba.employee.name.firstName).toBe('ALBERT');
-    expect(resForm12ba.employee.name.lastName).toBe('EINSTEIN');
+    expect(resForm12ba.employee.name.firstName).toBe('JOHN');
+    expect(resForm12ba.employee.name.lastName).toBe('DOE');
 
     // 3. Test Chapter VI-A positional boundary column extraction
     const deductionsText = `
@@ -778,24 +778,23 @@ describe('parser code quality - no user-specific hardcoding', () => {
   ];
 
   const forbiddenPatterns: { pattern: RegExp; reason: string }[] = [
-    { pattern: /['"]PARAMETRIC TECHNOLOGY['"]/i, reason: 'company-specific employer data' },
-    { pattern: /['"]THOMSON REUTERS['"]/i, reason: 'company-specific employer data' },
-    { pattern: /['"]sumit jain['"]/i, reason: 'person-specific name' },
-    { pattern: /SHCHOUDHARY\@PTC\.COM/i, reason: 'person-specific email' },
-    { pattern: /Payrollhelpdesk\.[aA]ndia\@thomsonreuters\.com/i, reason: 'employer-specific email' },
-    { pattern: /GOOGLE IT SERVICES/i, reason: 'company-specific employer data' },
-    { pattern: /OPTUM GLOBAL/i, reason: 'company-specific employer data' },
-    { pattern: /TARUSH ARORA/i, reason: 'person-specific name' },
-    { pattern: /MANAK JEET SINGH/i, reason: 'person-specific name' },
-    { pattern: /SHUBHAM BANSAL/i, reason: 'person-specific name' },
-    { pattern: /NIKHIL GOSWAMI/i, reason: 'person-specific name' },
-    { pattern: /CESPB7152N/i, reason: 'person-specific PAN' },
-    { pattern: /BLRG25952D/i, reason: 'person-specific TAN' },
-    { pattern: /AAICG1919K/i, reason: 'person-specific PAN' },
-    { pattern: /AFNPS1912F/i, reason: 'person-specific PAN' },
-    { pattern: /CYXPA6852K/i, reason: 'person-specific PAN' },
-    { pattern: /MUMI04584G/i, reason: 'person-specific TAN' },
-    { pattern: /BLRP15144D/i, reason: 'person-specific TAN' },
+    { pattern: /HORIZON TECH/i, reason: 'fixture-specific employer data' },
+    { pattern: /BRIDGE SOFTWARE/i, reason: 'fixture-specific employer data' },
+    { pattern: /NEXUS HEALTHCARE/i, reason: 'fixture-specific employer data' },
+    { pattern: /INNOVENTA SYSTEMS/i, reason: 'fixture-specific employer data' },
+    { pattern: /ARJUN SHARMA/i, reason: 'fixture-specific employee name' },
+    { pattern: /PRIYA DEVI PATEL/i, reason: 'fixture-specific employee name' },
+    { pattern: /ANITA IYER/i, reason: 'fixture-specific person name' },
+    { pattern: /ROHAN VERMA/i, reason: 'fixture-specific employee name' },
+    { pattern: /VIJAY NAMBIAR/i, reason: 'fixture-specific signatory name' },
+    { pattern: /SANDEEP KULKARNI/i, reason: 'fixture-specific signatory name' },
+    { pattern: /ABJPA1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /AEPPA1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /AROHV1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /DELM12345F/i, reason: 'fixture-specific TAN' },
+    { pattern: /HYDN44556F/i, reason: 'fixture-specific TAN' },
+    { pattern: /BLRM22334F/i, reason: 'fixture-specific TAN' },
+    { pattern: /BLRV56789F/i, reason: 'fixture-specific TAN' },
   ];
 
   for (const filePath of parserFiles) {

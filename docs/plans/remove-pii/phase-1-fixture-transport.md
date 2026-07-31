@@ -22,11 +22,11 @@ No PII replacement happens here; that's Phase 2.
 
 - Create/replace `.txt` fixtures from the `*_extracted.txt` files already in
   the tree (untracked temp copies of the current PDF extraction).
-- `git mv` `Tarush_Arora` → `Arjun_Sharma`, `Manak_Jeet_Singh` →
-  `Priya_Patel`.
+- `git mv` the original person folder → `Arjun_Sharma`, the second original
+  person folder → `Priya_Patel`.
 - Rewrite `integration.test.ts` to read `.txt` (no pdfjs), generalize person
   branching by f16-file count, and drop the now-unneeded polyfills and the
-  `BLRP15144D`→`BLRP151440` normalize block.
+  AIS employer-TAN→OCR-variant normalize block.
 - Rewrite `convert_all.test.ts` to read `.txt` with the new folder names.
 - Delete all `*.pdf`, all `*_extracted.txt`, `src/lib/itr/tmp_dump.test.ts`,
   and `src/lib/itr/tmp_verify.test.ts`.
@@ -34,11 +34,11 @@ No PII replacement happens here; that's Phase 2.
 
 ## Todos
 
-- [ ] `cp` each `Tarush_Arora/{f16_1,f16_2,f16_3,ais,tis,f26as}_extracted.txt`
-      over its `.txt` sibling; `cp`
-      `Manak_Jeet_Singh/f16_1_extracted.txt` → `Manak_Jeet_Singh/f16_1.txt`
-- [ ] `git mv src/lib/itr/testdata/Tarush_Arora src/lib/itr/testdata/Arjun_Sharma`
-- [ ] `git mv src/lib/itr/testdata/Manak_Jeet_Singh src/lib/itr/testdata/Priya_Patel`
+- [ ] `cp` each `{first person dir}/{f16_1,f16_2,f16_3,ais,tis,f26as}_extracted.txt`
+      over its `.txt` sibling; `cp` `{second person dir}/f16_1_extracted.txt`
+      → `{second person dir}/f16_1.txt`
+- [ ] `git mv` the first original person folder → `Arjun_Sharma`, the second
+      original person folder → `Priya_Patel`
 - [ ] Rewrite `integration.test.ts`:
   - [ ] Drop `extractTextFromPDF` import and the `webcrypto`/`DOMMatrix`/
         `Promise.try` polyfills (they existed only for pdfjs)
@@ -47,7 +47,7 @@ No PII replacement happens here; that's Phase 2.
   - [ ] AIS/TIS/26AS: read `ais.txt` / `tis.txt` / `f26as.txt`
   - [ ] Branch on f16 count: `=== 1` → `parseForm16Text(texts[0])`, `> 1` →
         `parseForm16ToDetailedBundle(texts)` (no folder-name checks)
-  - [ ] Remove the `BLRP15144D`→`BLRP151440` normalize loop in the AIS test
+  - [ ] Remove the AIS employer-TAN→OCR-variant normalize loop
   - [ ] Keep the `person.replace(/_/g, ' ')` describe labels and dynamic
         folder discovery as-is
 - [ ] Rewrite `convert_all.test.ts`: read `.txt` files, use

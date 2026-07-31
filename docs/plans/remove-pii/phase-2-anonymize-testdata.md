@@ -29,8 +29,8 @@ the fake expected textprotos exactly like the real ones did.
 - [ ] Run it over every `*.txt` and `*.textproto` under both person dirs
 - [ ] Manually verify a sample: `f16_1.txt` header block, `expected_form16.textproto`
       taxpayer/employer/signatory blocks, `ais.txt` bank-PAN lines
-- [ ] `rg` the two dirs for a spot-check of real tokens (should be zero):
-      `TARUSH|ARORA|MANAK|JEET|SINGH|NIKHIL|GOSWAMI|VIJETA|UMESH|BODGAL|THOMSON|REUTERS|PARAMETRIC|OPTUM|CYXPA6852K|AFNPS|AAACQ2188G|MUMI04584G|BLRP15144|HYDQ00152F|CESPB|BLRG25952D|AAICG1919K|SHCHOUDHARY|UHG.COM|Payrollhelpdesk|tarusharora77|9711174075|8197124546|9063835619|6126833|001526061|0899|SFOLYRA|UXBGJYA|SUTACXA`
+- [ ] `rg` the two dirs for a spot-check of the real tokens replaced by the
+      PLAN.md mapping (should be zero)
 - [ ] Run `npx vitest run src/lib/itr/integration.test.ts` — must pass (fake
       txt → fake expected textproto)
 - [ ] Commit: `test: replace real PII in fixture data with fake identities`

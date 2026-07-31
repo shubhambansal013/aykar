@@ -102,11 +102,11 @@ export class DetailedForm16Parser {
    * Tries two layouts seen across this generator's Form-16 variants, in order:
    *
    *  1. A clean metadata header some certificates include up top:
-   *       "Employee Name:   ARJUN SHARMA"
-   *       "Employee PAN:   ABJPA1234F"
+   *       "Employee Name:   <EMPLOYEE NAME>"
+   *       "Employee PAN:   <EMPLOYEE PAN>"
    *
    *  2. A footer line present on every certificate:
-   *       "Certificate Number: ...   TAN of Employer: ...   PAN of Employee: ABJPA1234F   Assessment Year: ..."
+   *       "Certificate Number: ...   TAN of Employer: ...   PAN of Employee: <EMPLOYEE PAN>   Assessment Year: ..."
    *     which gives the PAN but not the name. When only this is available, the name is
    *     recovered from the two-column "Name and address of the Employer / Name and
    *     address of the Employee" block: the employee's name sits on its own line in
@@ -231,7 +231,7 @@ export class DetailedForm16Parser {
         if (parts.length >= 2) {
           employerBlockLines.push(parts[0]);
         } else if (parts.length === 1) {
-          if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0]) || /payroll\.helpdesk/i.test(parts[0])) {
+          if (/@/i.test(parts[0]) || /\+\d{2}/.test(parts[0])) {
             employerBlockLines.push(parts[0]);
           } else if (employerBlockLines.length === 0) {
             // Likely employee, skip

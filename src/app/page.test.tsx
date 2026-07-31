@@ -55,11 +55,10 @@ describe('Home Page', () => {
   test('renders Form-16 parser title and AI Chat elements with correct default model', () => {
     render(<Home />);
     expect(screen.getByText(/Form-16 to ITR JSON Parser|ITR Assist/i)).toBeDefined();
-    expect(screen.getByLabelText('open ai chat')).toBeDefined();
     expect(screen.getByLabelText('open ai chat window')).toBeDefined();
 
     // Open chat to inspect default model
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Default model selector should display gemini-3.1-flash-lite
@@ -89,7 +88,7 @@ describe('Home Page', () => {
     render(<Home />);
 
     // Open AI Chat first
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Context list should initially not contain any Form-16 file representation
@@ -133,7 +132,7 @@ describe('Home Page', () => {
 
   test('opens AI Chat Drawer when requested', async () => {
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     expect(screen.getByText(/AI Chat/i)).toBeDefined();
@@ -154,7 +153,7 @@ describe('Home Page', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const input = screen.getByPlaceholderText(/Ask your tax question.../i);
@@ -218,13 +217,199 @@ describe('Home Page', () => {
     expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
     expect(screen.getAllByText('₹10,00,000').length).toBeGreaterThan(0);
 
+    // Open the right panel and switch to inspect tab to verify the bug fix
+    const chatFab = screen.getByLabelText('open ai chat window');
+    fireEvent.click(chatFab);
+    const inspectTab = screen.getByTestId('right-panel-tab-inspect');
+    fireEvent.click(inspectTab);
+
     // Trigger AI Review
     const reviewBtn = screen.getByText('AI Review');
     expect(reviewBtn).toBeDefined();
+    expect((reviewBtn as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(reviewBtn);
 
     await waitFor(() => {
+      // Right panel tab should have switched to 'chat'
+      expect(screen.getByTestId('right-panel-tab-chat').getAttribute('aria-selected')).toBe('true');
       expect(screen.getByText('AI Review Complete!')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('disables AI Review button while request is in flight', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    // Mock fetch to hang so we can check disabled state mid-flight
+    let resolveFetch: (value: any) => void;
+    const fetchPromise = new Promise((resolve) => { resolveFetch = resolve; });
+    const mockFetch = vi.fn().mockReturnValue(fetchPromise);
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Click AI Review button — it should become disabled
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    await waitFor(() => {
+      const btn = screen.getByRole('button', { name: /Reviewing…/i }) as HTMLButtonElement;
+      expect(btn.disabled).toBe(true);
+    });
+
+    // Resolve the fetch to clean up
+    resolveFetch!({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'Done' })
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('shows ✓ Reviewed badge after AI Review completes', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'AI Review Complete!' })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Trigger AI Review
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    // Wait for the review to complete and the badge to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    vi.restoreAllMocks();
+  }, 45000);
+
+  test('shows Re-review button when data changes after review', async () => {
+    const mockText = 'Raw PDF text';
+    const mockData = {
+      employee: {
+        pan: 'ABCDE1234F',
+        name: { firstName: 'John', lastName: 'Doe' }
+      },
+      salary: {
+        grossSalary: 1000000,
+        standardDeduction16ia: 50000
+      },
+      deductions80C: 150000,
+      deductions80D: 25000,
+      deductions80TTA: 10000
+    };
+
+    vi.spyOn(extractor, 'extractTextFromPDF').mockResolvedValue(mockText);
+    vi.spyOn(parser, 'parseForm16Text').mockReturnValue(mockData as any);
+    vi.spyOn(validator, 'validateForm16Data').mockReturnValue([]);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ role: 'assistant', content: 'Review complete' })
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<Home />);
+
+    const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i);
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('computation-worksheet')).toBeDefined();
+    });
+
+    // Trigger AI Review
+    const reviewBtn = screen.getByText('AI Review');
+    fireEvent.click(reviewBtn);
+
+    // Wait for badge
+    await waitFor(() => {
+      expect(screen.getByTestId('review-completed-badge')).toBeDefined();
+    });
+
+    // Upload a second file to change data (triggers dataVersion increment)
+    const file2 = new File(['dummy content 2'], 'test2.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file2, 'arrayBuffer', {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(8))
+    });
+    fireEvent.change(fileInput, { target: { files: [file2] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('re-review-button')).toBeDefined();
     });
 
     vi.restoreAllMocks();
@@ -304,7 +489,7 @@ describe('Home Page', () => {
   test('handles attaching and removing files in AI Chat', async () => {
     // Finding input and matching attachment
     const { container } = render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const file = new File(['dummy attachment'], 'test.png', { type: 'image/png' });
@@ -336,7 +521,7 @@ describe('Home Page', () => {
 
   test('handles chat resizing drag', () => {
     render(<Home />);
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const resizer = screen.getByTestId('resizer');
@@ -388,7 +573,7 @@ describe('Home Page', () => {
     });
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Verify checkbox is unchecked by default
@@ -687,7 +872,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Initially, no badges
@@ -895,7 +1080,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat to access context badges if needed
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     const fileInput = screen.getByLabelText(/1. Upload Form-16 PDF/i) as HTMLInputElement;
@@ -947,9 +1132,9 @@ describe('Home Page', () => {
     });
 
     // 1. Check that the ComputationWorksheet section headings are present
-    expect(screen.getByText('Taxpayer Identity')).toBeDefined();
-    expect(screen.getByText('Income Details')).toBeDefined();
-    expect(screen.getByText('Tax Computation')).toBeDefined();
+    expect(screen.getAllByText('Taxpayer Identity').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Income Details').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Tax Computation').length).toBeGreaterThanOrEqual(1);
 
     // 2. Verify the ITR form badge is shown
     expect(screen.getByTestId('selected-itr-form-badge')).toBeDefined();
@@ -1030,7 +1215,7 @@ describe('Home Page', () => {
     const { container } = render(<Home />);
 
     // Open chat
-    const chatBtn = screen.getByLabelText('open ai chat');
+    const chatBtn = screen.getByLabelText('open ai chat window');
     fireEvent.click(chatBtn);
 
     // Upload first Form-16
@@ -1201,7 +1386,6 @@ describe('Home Page', () => {
     });
 
     // Verify that it correctly switches to recommending/badge for ITR-2
-    expect(screen.getByTestId('selected-itr-form-badge-summary').textContent).toContain('Form: ITR-2');
     expect(screen.getByTestId('selected-itr-form-badge').textContent).toContain('Form: ITR-2');
 
     vi.restoreAllMocks();

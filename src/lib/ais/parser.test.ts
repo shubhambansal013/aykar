@@ -11,7 +11,7 @@ Dividend Income: 8,200.00
 
 TDS on Interest/Other details:
 ABCD12345E HDFC BANK LIMITED 194A 4,500.00
-HYDQ00152F OPTUM GLOBAL 192 150,000.00
+HYDN44556F NEXUS HEALTHCARE 192 150,000.00
     `;
 
     const parsed = parseAISText(text);
@@ -26,8 +26,8 @@ HYDQ00152F OPTUM GLOBAL 192 150,000.00
       amount: 4500,
     });
     expect(parsed.tdsDetails[1]).toEqual({
-      tan: 'HYDQ00152F',
-      deductorName: 'OPTUM GLOBAL',
+      tan: 'HYDN44556F',
+      deductorName: 'NEXUS HEALTHCARE',
       section: '192',
       amount: 150000,
     });
@@ -92,8 +92,8 @@ Derived Value: 3,500.00
  Part B1-Information relating to tax deducted or collected at source
  Salary
  SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
- 1   TDS-192    Salary received (Section 192)    THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED  8   9,84,690
-(MUMI04584G)
+ 1   TDS-192    Salary received (Section 192)    HORIZON TECH SOLUTIONS PRIVATE LIMITED  8   9,84,690
+(DELM12345F)
  SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
  1   Q3(Oct-Dec)    30/11/2025     1,066    0    0   Active
  2   Q3(Oct-Dec)    31/10/2025     2,17,346    0    0   Active
@@ -104,7 +104,7 @@ Derived Value: 3,500.00
  7   Q1(Apr-Jun)    31/05/2025     1,27,473    8,512    8,512   Active
  8   Q1(Apr-Jun)    30/04/2025     1,27,473    8,510    8,510   Active
  SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
- 2   TDS-192    Salary received (Section 192)    PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED (BLRP15144D)    6   8,49,032
+ 2   TDS-192    Salary received (Section 192)    BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED (BLRM22334F)    6   8,49,032
  SR. NO.   QUARTER    DATE OF PAYMENT/CREDIT    AMOUNT PAID/CREDITED   TDS DEDUCTED   TDS DEPOSITED   STATUS
  1   Q4(Jan-Mar)    31/03/2026     1,64,500    0    0   Active
  2   Q4(Jan-Mar)    28/02/2026     1,64,500    0    0   Active
@@ -117,19 +117,19 @@ Derived Value: 3,500.00
 
     const parsed = parseAISText(text);
 
-    // The TDS DEDUCTED column values for Thomson Reuters sum to:
+    // The TDS DEDUCTED column values for HORIZON TECH sum to:
     // 0 + 0 + 8,235 + 8,289 + 8,226 + 9,518 + 8,512 + 8,510 = 51,290
     expect(parsed.tdsDetails).toHaveLength(1);
     expect(parsed.tdsDetails[0]).toMatchObject({
-      tan: 'MUMI04584G',
+      tan: 'DELM12345F',
       section: '192',
       amount: 51290,
     });
 
-    // Parametric Technology (BLRP15144D) has zero TDS across all its transaction rows,
+    // Bridge Software (BLRM22334F) has zero TDS across all its transaction rows,
     // so it must NOT appear in tdsDetails — its summary row amount (8,49,032) is salary,
     // not TDS, and must not be extracted as TDS.
-    expect(parsed.tdsDetails.find(t => t.tan === 'BLRP15144D')).toBeUndefined();
+    expect(parsed.tdsDetails.find(t => t.tan === 'BLRM22334F')).toBeUndefined();
   });
 
   it('should handle multiple TDS sections and mixed TAN positions within Part B1', () => {
@@ -163,16 +163,16 @@ Derived Value: 3,500.00
  Sale of securities and units of mutual fund
  SR. NO.   INFORMATION CODE    INFORMATION DESCRIPTION    INFORMATION SOURCE    COUNT   AMOUNT
 6   SFT-17-LES(M)    Sale of listed equity share (Depository)    CENTRAL DEPOSITORY SERVICES(I) LIMITED  3   52,840.00
-(AAACC6233AMUMC09975A)
+(ABCDK1005AMUMF07777A)
 SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
 NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
 VALUE
 1   25/02/2026   WAAREE ENERGIES LIMITED # EQUITY  Listed Market   Market   Long 5.00   3,001.00   15,005   7,515.00   0   0   0   Active
 SHARES(INE377N01017)  Equity Share  term
- Download ID : CYXPA6852K202607050531     IP Address :
+ Download ID : ABJPA1234F202607050531     IP Address :
 Generation Date : 05/07/2026, 05:31:10     Page 1 of 2
  PAN    Name    Financial Year
- CYXPA6852K    TARUSH ARORA    2025-26
+ ABJPA1234F    ARJUN SHARMA    2025-26
 SR. DATE OF SALE/ SECURITY NAME (SECURITY CODE)     SECURITY DEBIT CREDIT ASSET QUANTITY   SALE PRICE SALES COST OF UNIT FAIR INDEXED COST OF STATUS
 NO. TRANSFER  CLASS TYPE TYPE TYPE PER UNIT CONSIDERATION ACQUISITION FMV MARKET ACQUISITION
 VALUE

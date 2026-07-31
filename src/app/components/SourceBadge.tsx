@@ -14,12 +14,12 @@ interface SourceBadgeProps {
   size?: 'small' | 'medium';
 }
 
-const SOURCE_CONFIG: Record<SourceType, { label: string; color: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'default'; icon: React.ReactElement }> = {
-  Form16: { label: 'Form-16', color: 'primary', icon: <DescriptionIcon sx={{ fontSize: 12 }} /> },
-  '26AS': { label: '26AS', color: 'secondary', icon: <AccountBalanceIcon sx={{ fontSize: 12 }} /> },
-  AIS: { label: 'AIS', color: 'success', icon: <AnalyticsIcon sx={{ fontSize: 12 }} /> },
-  TIS: { label: 'TIS', color: 'warning', icon: <AssessmentIcon sx={{ fontSize: 12 }} /> },
-  Derived: { label: 'Derived', color: 'info', icon: <FunctionsIcon sx={{ fontSize: 12 }} /> },
+const SOURCE_CONFIG: Record<SourceType, { label: string; color: 'default'; icon: React.ReactElement }> = {
+  Form16: { label: 'Form-16', color: 'default', icon: <DescriptionIcon sx={{ fontSize: 12 }} /> },
+  '26AS': { label: '26AS', color: 'default', icon: <AccountBalanceIcon sx={{ fontSize: 12 }} /> },
+  AIS: { label: 'AIS', color: 'default', icon: <AnalyticsIcon sx={{ fontSize: 12 }} /> },
+  TIS: { label: 'TIS', color: 'default', icon: <AssessmentIcon sx={{ fontSize: 12 }} /> },
+  Derived: { label: 'Derived', color: 'default', icon: <FunctionsIcon sx={{ fontSize: 12 }} /> },
   Manual: { label: 'Manual', color: 'default', icon: <EditIcon sx={{ fontSize: 12 }} /> },
 };
 

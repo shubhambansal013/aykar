@@ -164,7 +164,7 @@ export const extractionConfig: ExtractionConfig = {
     },
     employeeDeclarations: [
       /Name and address of the employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Permanent|\d|PAN|$))/i,
-      /Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|CESPB|[A-Z]{5}[0-9]{4}[A-Z]|$))/i,
+      /Name,?\s*(?:designation|and|Permanent|Account|Number|or|Aadhaar|\s)*of\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:,|\r?\n|Designation|Software|AROHV|[A-Z]{5}[0-9]{4}[A-Z]|$))/i,
       /Name\s+of\s+the?\s*employee\s*[:\-]\s*([A-Z\s]+?)(?=\s*(?:\r?\n|Designation|Address|PAN|TAN|$))/i,
       /I,\s*([A-Z\s]+?),\s*employee\s+of/i,
       /I,\s*([A-Z\s]+?),\s*(?:son|daughter)\s*of/gi

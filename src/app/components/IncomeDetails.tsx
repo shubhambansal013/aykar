@@ -7,11 +7,9 @@ import {
   Divider,
   Paper,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import { Form16Data, ReconciledTaxData, createForm16Proxy } from '@/lib/proto/compatibilityProxy';
 import { Form16Bundle } from '@/generated/sources/form16';
-import SourceBadge, { SourceType } from './SourceBadge';
+import { LineRow, SectionTitle } from './LineRow';
 
 interface IncomeDetailsProps {
   data: ReconciledTaxData | null;
@@ -21,73 +19,6 @@ interface IncomeDetailsProps {
 
 function inr(amount: number): string {
   return `₹${(amount || 0).toLocaleString('en-IN')}`;
-}
-
-function LineRow({ label, value, operator, isTotal, source, onClick }: {
-  label: string;
-  value: string;
-  operator?: 'add' | 'subtract' | 'equals';
-  isTotal?: boolean;
-  source?: SourceType;
-  onClick?: () => void;
-}) {
-  const Icon = operator === 'add' ? AddIcon : operator === 'subtract' ? RemoveIcon : null;
-  const opColor = operator === 'add' ? 'success.main' : operator === 'subtract' ? 'error.main' : 'text.primary';
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        py: 0.4,
-        px: 1,
-        bgcolor: isTotal ? 'action.selected' : 'transparent',
-        borderRadius: 1,
-        cursor: onClick ? 'pointer' : 'default',
-        '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-        {Icon && <Icon sx={{ fontSize: '1rem', color: opColor }} />}
-        <Typography variant="body2" sx={{ fontWeight: isTotal ? 700 : 400 }}>
-          {label}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: isTotal ? 700 : 500,
-            fontFamily: 'monospace',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {value}
-        </Typography>
-        {source && <SourceBadge source={source} />}
-      </Box>
-    </Box>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography
-      variant="subtitle2"
-      sx={{
-        fontWeight: 'bold',
-        color: 'primary.main',
-        borderBottom: 2,
-        borderColor: 'primary.main',
-        pb: 0.5,
-        mb: 1,
-        mt: 0.5,
-      }}
-    >
-      {children}
-    </Typography>
-  );
 }
 
 function EmployerRow({ employer, salary }: { employer: any; salary: any }) {
@@ -182,6 +113,35 @@ export default function IncomeDetails({ data, form16List, onValueClick }: Income
           <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 0.5 }}>
             No other income reported
           </Typography>
+        )}
+
+        {data.detectedIncomeSources && data.detectedIncomeSources.length > 0 && (
+          <>
+            <Box sx={{ pl: 0.5, mt: 1, mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Supplementary Sources (AIS/TIS)
+              </Typography>
+              {data.detectedIncomeSources.map((item, i) => {
+                let catLabel = 'Other';
+                if (item.category === 'interestSavings') catLabel = 'Savings bank interest';
+                if (item.category === 'interestDeposit') catLabel = 'Interest on deposit';
+                if (item.category === 'dividendIncome') catLabel = 'Dividend';
+                return (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 0.5, py: 0.25 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                      {catLabel}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled', ml: 0.5 }}>
+                        ({item.source})
+                      </Typography>
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      ₹{item.amount.toLocaleString('en-IN')}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          </>
         )}
 
         <Divider sx={{ my: 1 }} />

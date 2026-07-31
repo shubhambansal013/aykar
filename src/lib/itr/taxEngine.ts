@@ -1,4 +1,5 @@
 import { Form16Data, ReconciledTaxData } from '../proto/compatibilityProxy';
+import { computeSurcharge } from './surcharge';
 
 export interface InterestDetails {
   interest234A: number;
@@ -23,6 +24,9 @@ export interface TaxRegimeDetails {
   totalIncome: number;
   taxBeforeRebate: number;
   rebate87A: number;
+  surcharge: number;
+  surchargeRate: number;
+  marginalReliefSurcharge: number;
   cess: number;
   totalTaxPayable: number;
   refundDue: number;
@@ -429,8 +433,22 @@ export function calculateOldRegime(data: Form16Data, filingDate?: string, determ
   }
 
   const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate87A);
-  const cess = taxAfterRebate * 0.04;
-  const totalTaxPayable = Math.round(taxAfterRebate + cess);
+
+  // Surcharge (with marginal relief) applies when total income exceeds ₹50,00,000.
+  const surchargeResult = computeSurcharge({
+    regime: 'OLD',
+    totalIncome,
+    taxAfterRebate,
+    slabRates: OLD_REGIME_SLABS,
+    stcgAt20,
+    ltcg112a,
+    stcgTax,
+    ltcgTax,
+  });
+  const surcharge = surchargeResult.surcharge;
+
+  const cess = (taxAfterRebate + surcharge) * 0.04;
+  const totalTaxPayable = Math.round(taxAfterRebate + surcharge + cess);
 
   // Reconcile with actual tax credits
   const recon = data as ReconciledTaxData;
@@ -463,6 +481,9 @@ export function calculateOldRegime(data: Form16Data, filingDate?: string, determ
     totalIncome: Math.round(totalIncome),
     taxBeforeRebate: Math.round(taxBeforeRebate),
     rebate87A: Math.round(rebate87A),
+    surcharge: Math.round(surcharge),
+    surchargeRate: surchargeResult.rate,
+    marginalReliefSurcharge: Math.round(surchargeResult.marginalRelief),
     cess: Math.round(cess),
     totalTaxPayable,
     refundDue: Math.round(refundDue),
@@ -553,8 +574,23 @@ export function calculateNewRegime(data: Form16Data, filingDate?: string, determ
   }
 
   const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate87A);
-  const cess = taxAfterRebate * 0.04;
-  const totalTaxPayable = Math.round(taxAfterRebate + cess);
+
+  // Surcharge (with marginal relief) applies when total income exceeds ₹50,00,000.
+  // New Regime caps the top surcharge rate at 25% (vs 37% in the Old Regime).
+  const surchargeResult = computeSurcharge({
+    regime: 'NEW',
+    totalIncome,
+    taxAfterRebate,
+    slabRates: NEW_REGIME_SLABS,
+    stcgAt20,
+    ltcg112a,
+    stcgTax,
+    ltcgTax,
+  });
+  const surcharge = surchargeResult.surcharge;
+
+  const cess = (taxAfterRebate + surcharge) * 0.04;
+  const totalTaxPayable = Math.round(taxAfterRebate + surcharge + cess);
 
   // Reconcile with actual tax credits
   const recon = data as ReconciledTaxData;
@@ -587,6 +623,9 @@ export function calculateNewRegime(data: Form16Data, filingDate?: string, determ
     totalIncome: Math.round(totalIncome),
     taxBeforeRebate: Math.round(taxBeforeRebate),
     rebate87A: Math.round(rebate87A),
+    surcharge: Math.round(surcharge),
+    surchargeRate: surchargeResult.rate,
+    marginalReliefSurcharge: Math.round(surchargeResult.marginalRelief),
     cess: Math.round(cess),
     totalTaxPayable,
     refundDue: Math.round(refundDue),

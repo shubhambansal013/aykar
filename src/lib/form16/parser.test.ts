@@ -278,10 +278,10 @@ describe('parseForm16Text', () => {
 
   it('should test and cover all branches for full coverage requirements', () => {
     // 1. Employee Verification / Declaration Matching
-    const textDecl = `I, SHUBHAM BANSAL, son of Suresh Bansal...`;
+    const textDecl = `I, ROHAN VERMA, son of Vijay Verma...`;
     const resDecl = parseForm16Text(textDecl);
-    expect(resDecl.employee.name.firstName).toBe('SHUBHAM');
-    expect(resDecl.employee.name.lastName).toBe('BANSAL');
+    expect(resDecl.employee.name.firstName).toBe('ROHAN');
+    expect(resDecl.employee.name.lastName).toBe('VERMA');
 
     // 2. Single Employee Name
     const textSingle = `Name and address of the Employee: Solo\n123 Street`;
@@ -289,21 +289,21 @@ describe('parseForm16Text', () => {
     expect(resSingle.employee.name.lastName).toBe('Solo');
 
     // 3. Form 12BA Employer matching
-    const textForm12baEmployer = `Name and address of the employer: Google IT Services Pvt Ltd\n11th-12th Floor`;
+    const textForm12baEmployer = `Name and address of the employer: Innoventa Systems Pvt Ltd\n21st Floor`;
     const resForm12baEmployer = parseForm16Text(textForm12baEmployer);
-    expect(resForm12baEmployer.employer.name).toBe('Google IT Services Pvt Ltd');
+    expect(resForm12baEmployer.employer.name).toBe('Innoventa Systems Pvt Ltd');
 
     // 4. Form 12BA Employee matching
-    const textForm12baEmployee = `Name, designation and Permanent Account Number or Aadhaar Number of employee: SHUBHAM BANSAL, Software Engineer, CESPB7152N`;
+    const textForm12baEmployee = `Name, designation and Permanent Account Number or Aadhaar Number of employee: ROHAN VERMA, Software Engineer, AROHV1234F`;
     const resForm12baEmployee = parseForm16Text(textForm12baEmployee);
-    expect(resForm12baEmployee.employee.name.firstName).toBe('SHUBHAM');
-    expect(resForm12baEmployee.employee.name.lastName).toBe('BANSAL');
+    expect(resForm12baEmployee.employee.name.firstName).toBe('ROHAN');
+    expect(resForm12baEmployee.employee.name.lastName).toBe('VERMA');
 
     // 5. Form 12BB Employee matching
-    const textForm12bbEmployee = `Name and address of the employee : SHUBHAM BANSAL\nPermanent Account Number`;
+    const textForm12bbEmployee = `Name and address of the employee : ROHAN VERMA\nPermanent Account Number`;
     const resForm12bbEmployee = parseForm16Text(textForm12bbEmployee);
-    expect(resForm12bbEmployee.employee.name.firstName).toBe('SHUBHAM');
-    expect(resForm12bbEmployee.employee.name.lastName).toBe('BANSAL');
+    expect(resForm12bbEmployee.employee.name.firstName).toBe('ROHAN');
+    expect(resForm12bbEmployee.employee.name.lastName).toBe('VERMA');
 
     // 6. Tax Payable fallbacks
     const textTax1 = `tax payable 25,000.00`;
@@ -347,7 +347,7 @@ describe('parseForm16Text', () => {
 
   it('should parse the user reported incorrect form-16 values with high precision', () => {
     const userReportedText = `
-      Name and address of the Employer/Specified Bank  GOOGLE IT SERVICES INDIA PRIVATE LIMITED 11th-12th Floor, Carina-West tower, Bagmane constellation, Business park, BANGALORE - 560048 Karnataka +(91)91-9063835619 apac-psp-ops@google.com  Name and address of the Employee/Specified senior citizen  SHUBHAM BANSAL T2-703 Pareena Coban, Dhankot Sector 99A, Dhankot(49), Gurgaon - 122505 Haryana  PAN of the Deductor  AAICG1919K  TAN of the Deductor  BLRG25952D  PAN of the Employee/Specified senior citizen  CESPB7152N  Assessment Year  2026-27  CIT (TDS)  The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032  Period with the Employer To  31-Mar-2026  From  01-Apr-2025
+      Name and address of the Employer/Specified Bank  INNOVENTA SYSTEMS INDIA PRIVATE LIMITED 21st Floor, Skyline Tower, Sector 62, NOIDA - 201309 Uttar Pradesh +(91)98-76543210 hr@innoventa.in  Name and address of the Employee/Specified senior citizen  ROHAN VERMA A-101, Maple Residency, Sector 49, Gurugram - 122018 Haryana  PAN of the Deductor  AABBI7890C  TAN of the Deductor  BLRV56789F  PAN of the Employee/Specified senior citizen  AROHV1234F  Assessment Year  2026-27  CIT (TDS)  The Commissioner of Income Tax (TDS) Room No. 59, H.M.T. Bhawan, 4th Floor, Bellary Road, Ganganagar, Bangalore - 560032  Period with the Employer To  31-Mar-2026  From  01-Apr-2025
 
       1. Gross Salary
       Salary as per provisions contained in section 17(1) (a)   4712762.00
@@ -360,15 +360,15 @@ describe('parseForm16Text', () => {
 
     const res = parseForm16Text(userReportedText);
 
-    expect(res.employer.name).toBe('GOOGLE IT SERVICES INDIA PRIVATE LIMITED');
-    expect(res.employer.address).toBe('11th-12th Floor, Carina-West tower, Bagmane constellation, Business park, BANGALORE - 560048 Karnataka +(91)91-9063835619 apac-psp-ops@google.com');
-    expect(res.employer.tan).toBe('BLRG25952D');
-    expect(res.employer.pan).toBe('AAICG1919K');
+    expect(res.employer.name).toBe('INNOVENTA SYSTEMS INDIA PRIVATE LIMITED');
+    expect(res.employer.address).toBe('21st Floor, Skyline Tower, Sector 62, NOIDA - 201309 Uttar Pradesh +(91)98-76543210 hr@innoventa.in');
+    expect(res.employer.tan).toBe('BLRV56789F');
+    expect(res.employer.pan).toBe('AABBI7890C');
 
-    expect(res.employee.pan).toBe('CESPB7152N');
-    expect(res.employee.name.firstName).toBe('SHUBHAM');
-    expect(res.employee.name.lastName).toBe('BANSAL');
-    expect(res.employee.address).toBe('T2-703 Pareena Coban, Dhankot Sector 99A, Dhankot(49), Gurgaon - 122505 Haryana');
+    expect(res.employee.pan).toBe('AROHV1234F');
+    expect(res.employee.name.firstName).toBe('ROHAN');
+    expect(res.employee.name.lastName).toBe('VERMA');
+    expect(res.employee.address).toBe('A-101, Maple Residency, Sector 49, Gurugram - 122018 Haryana');
 
     expect(res.assessmentYear).toBe('2026-27');
     expect(res.period.from).toBe('01-Apr-2025');
@@ -383,16 +383,16 @@ describe('parseForm16Text', () => {
 
   it('should test positional anchoring and tokenized name extraction from block', () => {
     // 1. Test name block extraction directly
-    expect(BasicInfoParser.extractNameFromBlock('SHUBHAM BANSAL T2-703 Pareena Coban')).toBe('SHUBHAM BANSAL');
-    expect(BasicInfoParser.extractNameFromBlock('ALBERT EINSTEIN Flat 12B')).toBe('ALBERT EINSTEIN');
+    expect(BasicInfoParser.extractNameFromBlock('ROHAN VERMA A-101 Maple Residency')).toBe('ROHAN VERMA');
+    expect(BasicInfoParser.extractNameFromBlock('JOHN DOE Flat 12B')).toBe('JOHN DOE');
     expect(BasicInfoParser.extractNameFromBlock('Solo, 123 Lane')).toBe('Solo');
     expect(BasicInfoParser.extractNameFromBlock('John Quincy Adams, 456 Residency Road')).toBe('John Quincy Adams');
 
     // 2. Test Form 12BA declaration name extraction
-    const form12baDeclText = `I, ALBERT EINSTEIN, employee of M/s GOOGLE ...`;
+    const form12baDeclText = `I, JOHN DOE, employee of M/s INNOVENTA ...`;
     const resForm12ba = parseForm16Text(form12baDeclText);
-    expect(resForm12ba.employee.name.firstName).toBe('ALBERT');
-    expect(resForm12ba.employee.name.lastName).toBe('EINSTEIN');
+    expect(resForm12ba.employee.name.firstName).toBe('JOHN');
+    expect(resForm12ba.employee.name.lastName).toBe('DOE');
 
     // 3. Test Chapter VI-A positional boundary column extraction
     const deductionsText = `
@@ -488,13 +488,13 @@ describe('ParserUtils additional coverage tests', () => {
     expect(result.salary.totalExemptAllowances).toBe(40000);
   });
 
-  it('should correctly extract Form-16 data for OPTUM/MANAK JEET SINGH and verify ITR json structure', () => {
-    const optumForm16Text = `
-      Name and address of the Employer/Specified Bank: OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED, 5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana
-      Name and address of the Employee/Specified senior citizen: MANAK JEET SINGH, 1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana
-      PAN of the Deductor: AAACQ2188G
-      TAN of the Deductor: HYDQ00152F
-      PAN of the Employee: AFNPS1912F
+  it('should correctly extract Form-16 data for NEXUS HEALTHCARE/PRIYA DEVI PATEL and verify ITR json structure', () => {
+    const nexusForm16Text = `
+      Name and address of the Employer/Specified Bank: NEXUS HEALTHCARE (INDIA) PRIVATE LIMITED, 4TH 5TH FLOOR, BUSINESS TOWER, INFORMATICS PARK, SECTOR 62, NOIDA - 201309, Uttar Pradesh
+      Name and address of the Employee/Specified senior citizen: PRIYA DEVI PATEL, D-14, GREEN PARK, SECTOR 15, NOIDA - 201301 Uttar Pradesh
+      PAN of the Deductor: AABBN2233C
+      TAN of the Deductor: HYDN44556F
+      PAN of the Employee: AEPPA1234F
       Assessment Year: 2026-27
       Period with the employer: From 01-Apr-2025 To 31-Mar-2026
 
@@ -542,19 +542,19 @@ describe('ParserUtils additional coverage tests', () => {
 
     const expectedJson = {
       "employer": {
-        "name": "OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED",
-        "tan": "HYDQ00152F",
-        "pan": "AAACQ2188G",
-        "address": "5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana"
+        "name": "NEXUS HEALTHCARE (INDIA) PRIVATE LIMITED",
+        "tan": "HYDN44556F",
+        "pan": "AABBN2233C",
+        "address": "4TH 5TH FLOOR, BUSINESS TOWER, INFORMATICS PARK, SECTOR 62, NOIDA - 201309, Uttar Pradesh"
       },
       "employee": {
         "name": {
-          "firstName": "MANAK",
-          "middleName": "JEET",
-          "lastName": "SINGH"
+          "firstName": "PRIYA",
+          "middleName": "DEVI",
+          "lastName": "PATEL"
         },
-        "pan": "AFNPS1912F",
-        "address": "1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana"
+        "pan": "AEPPA1234F",
+        "address": "D-14, GREEN PARK, SECTOR 15, NOIDA - 201301 Uttar Pradesh"
       },
       "assessmentYear": "2026-27",
       "period": {
@@ -600,7 +600,7 @@ describe('ParserUtils additional coverage tests', () => {
       "taxPayable": 1769096
     };
 
-    const parsed = parseForm16Text(optumForm16Text);
+    const parsed = parseForm16Text(nexusForm16Text);
 
     // Deep equality assertions on all blocks to verify perfect alignment
     expect(parsed.employer).toEqual(expectedJson.employer);
@@ -659,15 +659,15 @@ describe('mergeForm16Data', () => {
   it('should merge duplicate/same employer (Part A + Part B) correctly', () => {
     const docA = parseForm16Text(`
       Name and address of the Employer: Acme Corp
-      PAN of the Employee: CESPB7152N
-      TAN of the Deductor: BLRG25952D
+      PAN of the Employee: AROHV1234F
+      TAN of the Deductor: BLRV56789F
       Period with the Employer To 31-Mar-2026 From 01-Apr-2025
       Tax Payable 10,000.00
     `);
     const docB = parseForm16Text(`
       Name and address of the Employer: Acme Corp
-      PAN of the Employee: CESPB7152N
-      TAN of the Deductor: BLRG25952D
+      PAN of the Employee: AROHV1234F
+      TAN of the Deductor: BLRV56789F
       Salary as per section 17(1) 1,000,000.00
       Standard deduction u/s 16(ia) 75,000.00
     `);
@@ -675,8 +675,8 @@ describe('mergeForm16Data', () => {
     const merged = mergeForm16Data([docA, docB]);
 
     expect(merged.employer.name).toBe('Acme Corp');
-    expect(merged.employer.tan).toBe('BLRG25952D');
-    expect(merged.employee.pan).toBe('CESPB7152N');
+    expect(merged.employer.tan).toBe('BLRV56789F');
+    expect(merged.employee.pan).toBe('AROHV1234F');
     expect(merged.salary.salaryAsPer17_1).toBe(1000000);
     expect(merged.salary.grossSalary).toBe(1000000);
     expect(merged.salary.standardDeduction16ia).toBe(75000);
@@ -688,8 +688,8 @@ describe('mergeForm16Data', () => {
   it('should merge multiple different employers (job change) correctly', () => {
     const doc1 = parseForm16Text(`
       Name and address of the Employer: Acme Corp
-      PAN of the Employee: CESPB7152N
-      TAN of the Deductor: BLRG25952D
+      PAN of the Employee: AROHV1234F
+      TAN of the Deductor: BLRV56789F
       Period with the Employer To 31-Aug-2025 From 01-Apr-2025
       Salary as per section 17(1) 500,000.00
       Standard deduction u/s 16(ia) 75,000.00
@@ -697,7 +697,7 @@ describe('mergeForm16Data', () => {
     `);
     const doc2 = parseForm16Text(`
       Name and address of the Employer: Beta Inc
-      PAN of the Employee: CESPB7152N
+      PAN of the Employee: AROHV1234F
       TAN of the Deductor: NEWG12345T
       Period with the Employer To 31-Mar-2026 From 01-Sep-2025
       Salary as per section 17(1) 700,000.00
@@ -711,7 +711,7 @@ describe('mergeForm16Data', () => {
     const merged = mergeForm16Data([doc1, doc2]);
 
     expect(merged.employer.name).toBe('Acme Corp / Beta Inc');
-    expect(merged.employer.tan).toBe('BLRG25952D / NEWG12345T');
+    expect(merged.employer.tan).toBe('BLRV56789F / NEWG12345T');
     expect(merged.salary.salaryAsPer17_1).toBe(1200000);
     expect(merged.salary.grossSalary).toBe(1200000);
     // Standard deduction should be capped/maxed at 75k and not summed to 150k
@@ -725,8 +725,8 @@ describe('mergeForm16Data', () => {
   it('should sum totalTdsDeducted and totalTdsDeposited across multiple employers', () => {
     const doc1 = parseForm16Text(`
       Name and address of the Employer: Acme Corp
-      PAN of the Employee: CESPB7152N
-      TAN of the Deductor: BLRG25952D
+      PAN of the Employee: AROHV1234F
+      TAN of the Deductor: BLRV56789F
       Period with the Employer To 31-Aug-2025 From 01-Apr-2025
       Salary as per section 17(1) 500,000.00
       Standard deduction u/s 16(ia) 75,000.00
@@ -736,7 +736,7 @@ describe('mergeForm16Data', () => {
     `);
     const doc2 = parseForm16Text(`
       Name and address of the Employer: Beta Inc
-      PAN of the Employee: CESPB7152N
+      PAN of the Employee: AROHV1234F
       TAN of the Deductor: NEWG12345T
       Period with the Employer To 31-Mar-2026 From 01-Sep-2025
       Salary as per section 17(1) 700,000.00
@@ -778,11 +778,23 @@ describe('parser code quality - no user-specific hardcoding', () => {
   ];
 
   const forbiddenPatterns: { pattern: RegExp; reason: string }[] = [
-    { pattern: /['"]PARAMETRIC TECHNOLOGY['"]/i, reason: 'company-specific employer data' },
-    { pattern: /['"]THOMSON REUTERS['"]/i, reason: 'company-specific employer data' },
-    { pattern: /['"]sumit jain['"]/i, reason: 'person-specific name' },
-    { pattern: /SHCHOUDHARY\@PTC\.COM/i, reason: 'person-specific email' },
-    { pattern: /Payrollhelpdesk\.[aA]ndia\@thomsonreuters\.com/i, reason: 'employer-specific email' },
+    { pattern: /HORIZON TECH/i, reason: 'fixture-specific employer data' },
+    { pattern: /BRIDGE SOFTWARE/i, reason: 'fixture-specific employer data' },
+    { pattern: /NEXUS HEALTHCARE/i, reason: 'fixture-specific employer data' },
+    { pattern: /INNOVENTA SYSTEMS/i, reason: 'fixture-specific employer data' },
+    { pattern: /ARJUN SHARMA/i, reason: 'fixture-specific employee name' },
+    { pattern: /PRIYA DEVI PATEL/i, reason: 'fixture-specific employee name' },
+    { pattern: /ANITA IYER/i, reason: 'fixture-specific person name' },
+    { pattern: /ROHAN VERMA/i, reason: 'fixture-specific employee name' },
+    { pattern: /VIJAY NAMBIAR/i, reason: 'fixture-specific signatory name' },
+    { pattern: /SANDEEP KULKARNI/i, reason: 'fixture-specific signatory name' },
+    { pattern: /ABJPA1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /AEPPA1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /AROHV1234F/i, reason: 'fixture-specific PAN' },
+    { pattern: /DELM12345F/i, reason: 'fixture-specific TAN' },
+    { pattern: /HYDN44556F/i, reason: 'fixture-specific TAN' },
+    { pattern: /BLRM22334F/i, reason: 'fixture-specific TAN' },
+    { pattern: /BLRV56789F/i, reason: 'fixture-specific TAN' },
   ];
 
   for (const filePath of parserFiles) {

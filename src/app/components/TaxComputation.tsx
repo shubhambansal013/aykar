@@ -7,11 +7,9 @@ import {
   Chip,
   Divider,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import { Form16Data, ReconciledTaxData } from '@/lib/proto/compatibilityProxy';
 import { calculateOldRegime, calculateNewRegime, computeAllInterest, TaxRegimeDetails } from '@/lib/itr/taxEngine';
-import SourceBadge, { SourceType } from './SourceBadge';
+import { LineRow, SectionTitle } from './LineRow';
 
 interface TaxComputationProps {
   data: ReconciledTaxData | null;
@@ -21,75 +19,6 @@ interface TaxComputationProps {
 
 function inr(amount: number): string {
   return `₹${(amount || 0).toLocaleString('en-IN')}`;
-}
-
-function LineRow({ label, value, operator, isTotal, isNegative, source, onClick }: {
-  label: string;
-  value: string;
-  operator?: 'add' | 'subtract' | 'equals';
-  isTotal?: boolean;
-  isNegative?: boolean;
-  source?: SourceType;
-  onClick?: () => void;
-}) {
-  const Icon = operator === 'add' ? AddIcon : operator === 'subtract' ? RemoveIcon : null;
-  const opColor = operator === 'add' ? 'success.main' : operator === 'subtract' ? 'error.main' : 'text.primary';
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        py: 0.4,
-        px: 1,
-        bgcolor: isTotal ? 'action.selected' : 'transparent',
-        borderRadius: 1,
-        cursor: onClick ? 'pointer' : 'default',
-        '&:hover': onClick ? { bgcolor: 'action.hover' } : undefined,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1 }}>
-        {Icon && <Icon sx={{ fontSize: '1rem', color: opColor }} />}
-        <Typography variant="body2" sx={{ fontWeight: isTotal ? 700 : 400 }}>
-          {label}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: isTotal ? 700 : 500,
-            fontFamily: 'monospace',
-            whiteSpace: 'nowrap',
-            color: isNegative ? 'error.main' : 'text.primary',
-          }}
-        >
-          {value}
-        </Typography>
-        {source && <SourceBadge source={source} />}
-      </Box>
-    </Box>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography
-      variant="subtitle2"
-      sx={{
-        fontWeight: 'bold',
-        color: 'primary.main',
-        borderBottom: 2,
-        borderColor: 'primary.main',
-        pb: 0.5,
-        mb: 1,
-        mt: 0.5,
-      }}
-    >
-      {children}
-    </Typography>
-  );
 }
 
 export default function TaxComputation({ data, selectedRegime, onValueClick }: TaxComputationProps) {
@@ -160,6 +89,12 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
         {regimeCalc.rebate87A > 0 && (
           <LineRow label="Less: Rebate u/s 87A" value={inr(regimeCalc.rebate87A)} operator="subtract" source="Derived" onClick={mkClick('Rebate 87A')} />
         )}
+        {regimeCalc.marginalReliefSurcharge > 0 && (
+          <LineRow label={`Less: Marginal Relief (Surcharge)`} value={inr(regimeCalc.marginalReliefSurcharge)} operator="subtract" source="Derived" onClick={mkClick('Marginal Relief Surcharge')} />
+        )}
+        {regimeCalc.surcharge > 0 && (
+          <LineRow label={`Add: Surcharge @ ${(regimeCalc.surchargeRate * 100).toFixed(0)}%`} value={inr(regimeCalc.surcharge)} operator="add" source="Derived" onClick={mkClick('Surcharge')} />
+        )}
         <LineRow label="Add: Health & Education Cess @ 4%" value={inr(regimeCalc.cess)} operator="add" source="Derived" onClick={mkClick('Cess')} />
         <LineRow label="Gross Tax Liability" value={inr(regimeCalc.totalTaxPayable)} operator="equals" isTotal source="Derived" onClick={mkClick('Gross Tax Liability')} />
 
@@ -208,10 +143,12 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            py: 1,
-            px: 1.5,
+            py: 2,
+            px: 2,
             bgcolor: isRefund ? 'success.light' : 'warning.light',
             borderRadius: 1.5,
+            borderTop: 3,
+            borderColor: isRefund ? 'success.main' : 'warning.main',
           }}
         >
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
@@ -222,6 +159,7 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
             sx={{
               fontWeight: 700,
               fontFamily: 'monospace',
+              fontSize: '1.1rem',
               color: isRefund ? 'success.dark' : 'warning.dark',
             }}
           >

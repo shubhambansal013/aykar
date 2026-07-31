@@ -74,6 +74,24 @@ function TaxComputationBreakdown({ regime, interest }: { regime: any; interest?:
           </Box>
         )}
 
+        {regime.marginalReliefSurcharge > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+              Less: Marginal Relief (Surcharge):
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
+              -₹{regime.marginalReliefSurcharge.toLocaleString('en-IN')}
+            </Typography>
+          </Box>
+        )}
+
+        {regime.surcharge > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="caption" color="textSecondary">Add: Surcharge @ {Math.round(regime.surchargeRate * 100)}%:</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{regime.surcharge.toLocaleString('en-IN')}</Typography>
+          </Box>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="caption" color="textSecondary">Add: Education Cess @ 4.00%:</Typography>
           <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{regime.cess.toLocaleString('en-IN')}</Typography>
@@ -153,7 +171,7 @@ export default function TaxRegimeComparisonCard({
     : `Both regimes result in the exact same tax liability. You can choose either.`;
 
   return (
-    <Card variant="outlined" sx={{ mb: 2.5, borderColor: 'primary.main', borderWidth: 2 }} data-testid="tax-comparison-card">
+    <Card variant="outlined" sx={{ mb: 2, borderColor: 'primary.main', borderWidth: 2 }} data-testid="tax-comparison-card">
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', m: 0 }}>
@@ -180,14 +198,14 @@ export default function TaxRegimeComparisonCard({
         {/* Primary Recommendation Banner */}
         <Box sx={{
           p: 2,
-          mb: 2.5,
+          mb: 2,
           borderRadius: 1.5,
           bgcolor: comparison.optimalRegime === 'NEW' ? 'success.dark' : 'success.main',
           color: 'success.contrastText',
           display: 'flex',
           flexDirection: 'column',
           gap: 0.5,
-          boxShadow: 1
+          boxShadow: 0
         }} data-testid="recommendation-banner">
           <Typography variant="subtitle1" sx={{ fontWeight: 'extrabold', letterSpacing: 0.5, m: 0, fontSize: '0.95rem' }}>
             RECOMMENDATION: {comparison.optimalRegime === 'NEW' ? 'NEW REGIME OPTIMAL' : 'OLD REGIME OPTIMAL'} {savings > 0 ? `(Saves ₹${savings.toLocaleString('en-IN')})` : ''}
@@ -203,8 +221,8 @@ export default function TaxRegimeComparisonCard({
             <Paper variant="outlined" sx={{
               p: 2,
               borderRadius: 1.5,
-              borderColor: selectedRegime === 'OLD' ? 'primary.main' : (comparison.optimalRegime === 'OLD' ? 'success.light' : 'divider'),
-              borderWidth: selectedRegime === 'OLD' ? 2 : (comparison.optimalRegime === 'OLD' ? 1.5 : 1),
+              borderColor: selectedRegime === 'OLD' ? 'primary.main' : 'divider',
+              borderWidth: selectedRegime === 'OLD' ? 2 : 1,
               bgcolor: selectedRegime === 'OLD'
                 ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)')
                 : (comparison.optimalRegime === 'OLD'
@@ -223,11 +241,10 @@ export default function TaxRegimeComparisonCard({
                       px: 1,
                       py: 0.1,
                       borderRadius: 1,
-                      bgcolor: 'success.main',
-                      color: 'success.contrastText',
+                      bgcolor: 'action.hover',
+                      color: 'text.secondary',
                       fontWeight: 'bold',
                       fontSize: '0.65rem',
-                      border: 'none',
                     }}>
                       Optimal
                     </Paper>
@@ -249,7 +266,7 @@ export default function TaxRegimeComparisonCard({
                 <Divider sx={{ my: 0.5 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Total Tax Payable:</Typography>
-                  <Typography variant="body1" color={comparison.optimalRegime === 'OLD' ? 'success.main' : 'text.primary'} sx={{ fontWeight: 'bold' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                     ₹{comparison.oldRegime.totalTaxPayable.toLocaleString('en-IN')}
                   </Typography>
                 </Box>
@@ -337,6 +354,10 @@ export default function TaxRegimeComparisonCard({
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.rebate87A.toLocaleString('en-IN')}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="caption" color="textSecondary">Surcharge:</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.surcharge.toLocaleString('en-IN')}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.cess.toLocaleString('en-IN')}</Typography>
                     </Box>
@@ -352,8 +373,8 @@ export default function TaxRegimeComparisonCard({
             <Paper variant="outlined" sx={{
               p: 2,
               borderRadius: 1.5,
-              borderColor: selectedRegime === 'NEW' ? 'primary.main' : (comparison.optimalRegime === 'NEW' ? 'success.light' : 'divider'),
-              borderWidth: selectedRegime === 'NEW' ? 2 : (comparison.optimalRegime === 'NEW' ? 1.5 : 1),
+              borderColor: selectedRegime === 'NEW' ? 'primary.main' : 'divider',
+              borderWidth: selectedRegime === 'NEW' ? 2 : 1,
               bgcolor: selectedRegime === 'NEW'
                 ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.05)' : 'rgba(2, 132, 199, 0.05)')
                 : (comparison.optimalRegime === 'NEW'
@@ -372,11 +393,10 @@ export default function TaxRegimeComparisonCard({
                       px: 1,
                       py: 0.1,
                       borderRadius: 1,
-                      bgcolor: 'success.main',
-                      color: 'success.contrastText',
+                      bgcolor: 'action.hover',
+                      color: 'text.secondary',
                       fontWeight: 'bold',
                       fontSize: '0.65rem',
-                      border: 'none',
                     }}>
                       Optimal
                     </Paper>
@@ -398,7 +418,7 @@ export default function TaxRegimeComparisonCard({
                 <Divider sx={{ my: 0.5 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Total Tax Payable:</Typography>
-                  <Typography variant="body1" color={comparison.optimalRegime === 'NEW' ? 'success.main' : 'text.primary'} sx={{ fontWeight: 'bold' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                     ₹{comparison.newRegime.totalTaxPayable.toLocaleString('en-IN')}
                   </Typography>
                 </Box>
@@ -472,6 +492,10 @@ export default function TaxRegimeComparisonCard({
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Rebate u/s 87A:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.rebate87A.toLocaleString('en-IN')}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="caption" color="textSecondary">Surcharge:</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.surcharge.toLocaleString('en-IN')}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>

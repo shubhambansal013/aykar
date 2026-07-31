@@ -1,10 +1,10 @@
-OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE
+NEXUS HEALTHCARE (INDIA) PRIVATE
 LIMITED
  Form 16    (Digitally Signed Document)
  Assessment Year 2026-27
- Employee Name   MANAK JEET SINGH
-Employee PAN / Aadhaar Number    AFNPS1912F
-Employee Code   001526061
+ Employee Name   PRIYA DEVI PATEL
+Employee PAN / Aadhaar Number    AEPPA1234F
+Employee Code   007890123
 Employee Designation / Career  Dir Real Estate Svs
 level
 Period With The Employer    From : April 1, 2025 To : March 31, 2026
@@ -18,30 +18,30 @@ affixing of hand written signature) has been embedded in this document.To view a
 validate the digital signature details, please click on the digital signature affixed below.
  Signature Details:
 Signature Not Verified
-NIKHIL GOSWAMI
+ANITA IYER
 SECURITY
 HYDERABAD
 25/06/2026
- Digitally Signed by : NIKHIL GOSWAMI
+ Digitally Signed by : ANITA IYER
 
 FORM NO. 16
  [See rule 31(1)(a)]
  PART A
  Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.   SUTACXA    Last updated on   07-Jun-2026
+ Certificate No.   TPDMVF    Last updated on   07-Jun-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED
-5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC
-LAYOUT,SURVEY NO.64,   MANAK JEET SINGH
-HITECH CITY, MADHAPUR, HYDERABAD - 500081  1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47
-Telangana  SUBHASH CHOWK, GURGAON - 122002 Haryana
-+(91)40-69991898
-NIKHIL_GOSWAMI@UHG.COM
+ NEXUS HEALTHCARE (INDIA) PRIVATE LIMITED
+4TH 5TH FLOOR, BUSINESS TOWER, INFORMATICS PARK
+SECTOR 62,   PRIYA DEVI PATEL
+NOIDA - 201309  D-14, GREEN PARK, SECTOR 15, NOIDA - 201301
+Uttar Pradesh  Uttar Pradesh
++(91)40-23456789
+ANITA.IYER@NEXUSHEALTH.IN
  PAN of the  Employee Reference No. provided by the
  PAN of the Deductor   TAN of the Deductor  Employee/Specified senior Employer/Pension Payment order no. provided
 citizen by the Employer (If available)
- AAACQ2188G   HYDQ00152F   AFNPS1912F
+ AABBN2233C   HYDN44556F   AEPPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -81,7 +81,7 @@ Branch  (dd/mm/yyyy)  OLTAS*
 4   95731.00   6390009    06-08-2025   32931   F
  Page 1 of 2
 
-Certificate Number: SUTACXA   TAN of Employer: HYDQ00152F    PAN of Employee: AFNPS1912F   Assessment Year: 2026-27
+Certificate Number: TPDMVF   TAN of Employer: HYDN44556F    PAN of Employee: AEPPA1234F   Assessment Year: 2026-27
 Challan Identification Number (CIN)
 Tax Deposited in respect of the
  Sl. No. deductee
@@ -97,13 +97,13 @@ Branch  (dd/mm/yyyy)  OLTAS*
 12   673131.00   6390009    28-04-2026   59917   F
  Total (Rs.)   1769096.00
  Verification
- I,   NIKHIL GOSWAMI, son / daughter of RAMESH CHANDRA working in the capacity of ASSC DIR PAYROLL OPS (designation) do hereby certify that a sum of
+ I,   ANITA IYER, son / daughter of KARTHIK RAO working in the capacity of ASSC DIR PAYROLL OPS (designation) do hereby certify that a sum of
 Rs. 1769096.00 [Rs. Seventeen Lakh Sixty Nine Thousand and Ninety Six Only (in words)] has been deducted and a sum of Rs. 1769096.00 [Rs. Seventeen Lakh
 Sixty Nine Thousand and Ninety Six Only] has been deposited to the credit of the Central Government. I further certify that the information given above is true,
 complete and correct and is based on the books of account, documents, TDS statements, TDS deposited and other available records.
 Place   HYDERABAD
 Date    25-Jun-2026  (Signature of person responsible for deduction of Tax)
-Designation:   ASSC DIR PAYROLL OPS  Full Name: NIKHIL GOSWAMI
+Designation:   ASSC DIR PAYROLL OPS  Full Name: ANITA IYER
  Notes:
  1. Part B (Annexure) of the certificate in Form No.16 shall be issued by the employer.
 2. If an assessee is employed under one employer during the year, Part 'A' of the certificate in Form No.16 issued for the quarter ending on 31st March of the financial year shall contain the details
@@ -132,17 +132,17 @@ FORM NO. 16
  PART B
  Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.    SUTACXA  Last updated on   07-Jun-2026
+ Certificate No.    TPDMVF  Last updated on   07-Jun-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED
-5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC
-LAYOUT,SURVEY NO.64,   MANAK JEET SINGH
-HITECH CITY, MADHAPUR, HYDERABAD - 500081  1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47
-Telangana  SUBHASH CHOWK, GURGAON - 122002 Haryana
-+(91)40-69991898
-NIKHIL_GOSWAMI@UHG.COM
+ NEXUS HEALTHCARE (INDIA) PRIVATE LIMITED
+4TH 5TH FLOOR, BUSINESS TOWER, INFORMATICS PARK
+SECTOR 62,   PRIYA DEVI PATEL
+NOIDA - 201309  D-14, GREEN PARK, SECTOR 15, NOIDA - 201301
+Uttar Pradesh  Uttar Pradesh
++(91)40-23456789
+ANITA.IYER@NEXUSHEALTH.IN
  PAN of the Deductor   TAN of the Deductor   PAN of the Employee/Specified senior citizen
- AAACQ2188G   HYDQ00152F   AFNPS1912F
+ AABBN2233C   HYDN44556F   AEPPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -172,7 +172,7 @@ Cash equivalent of leave salary encashment under section 10
 (f)   Other special allowances under section 10(14)     0.00
  Page 1 of 4
 
-Certificate Number: SUTACXA   TAN of Employer: HYDQ00152F    PAN of Employee: AFNPS1912F   Assessment Year: 2026-27
+Certificate Number: TPDMVF   TAN of Employer: HYDN44556F    PAN of Employee: AEPPA1234F   Assessment Year: 2026-27
 A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
 (g)  [Note: Break-up to be filled and signed    by employer in the table
 provide at the bottom of this form]
@@ -220,7 +220,7 @@ Deduction in respect of health insurance premia under section
 80D
  Page 2 of 4
 
-Certificate Number: SUTACXA   TAN of Employer: HYDQ00152F    PAN of Employee: AFNPS1912F   Assessment Year: 2026-27
+Certificate Number: TPDMVF   TAN of Employer: HYDN44556F    PAN of Employee: AEPPA1234F   Assessment Year: 2026-27
 Deduction in respect of interest on loan taken for higher
 (h)    0.00 0.00
 education under section 80E
@@ -263,16 +263,16 @@ Less: Tax collected at source as per Form No. 12BAA submitted
 under provisions of section 192(2B)
 21.    Net tax payable (17-18-19-20)  1769096.00
  Verification
- I, NIKHIL GOSWAMI, son/daughter of RAMESH CHANDRA .Working in the capacity of ASSC DIR PAYROLL OPS
+ I, ANITA IYER, son/daughter of KARTHIK RAO .Working in the capacity of ASSC DIR PAYROLL OPS
 (Designation) do hereby certify that the information given above is true, complete and correct and is based on the books of account,
 documents, TDS statements, and other available records.
  Place  HYDERABAD  (Signature of person responsible for deduction of tax)
  Full
-Date   25-Jun-2026   NIKHIL GOSWAMI
+Date   25-Jun-2026   ANITA IYER
 Name:
  Page 3 of 4
 
-Certificate Number: SUTACXA   TAN of Employer: HYDQ00152F    PAN of Employee: AFNPS1912F   Assessment Year: 2026-27
+Certificate Number: TPDMVF   TAN of Employer: HYDN44556F    PAN of Employee: AEPPA1234F   Assessment Year: 2026-27
 2. (f) Break up for ‘Amount of any other exemption under section 10’ to be filled in the table below
 Particular's of Amount for any other
 Sl.
@@ -300,24 +300,24 @@ Rs.    Rs. Rs.   Rs.
  Place
 tax)
  Full
-Date    25-Jun-2026    NIKHIL GOSWAMI
+Date    25-Jun-2026    ANITA IYER
 Name:
  Page 4 of 4
 
 FORM No.12BA
  {See Rule 26A(2)(b)}
  Statement showing particulars of perquisites, other fringe benefits or amenities and profits in lieu of salary with value thereof
-1) Name and Address of the Employer:     OPTUM GLOBAL SOLUTIONS (INDIA)
+1) Name and Address of the Employer:     NEXUS HEALTHCARE (INDIA)
 PRIVATE LIMITED
-5TH 6TH 7TH OFFICE LEVEL, SUNDEW
-PROPERTIES SEZ, APIIC LAYOUT SURVEY
-NO.64, HITECH CITY, MADHAPUR,
-HYDERABAD, TELANGANA-500081
-2) TAN:    HYDQ00152F
+4TH 5TH FLOOR, BUSINESS TOWER
+PROPERTIES SEZ, INFORMATICS PARK SECTOR 62
+NO.64, NOIDA - 201309,
+NOIDA - 201309, Uttar Pradesh
+2) TAN:    HYDN44556F
 3) TDS Assessment Range of the Employer :     The Commissioner of Income Tax (TDS)
-4) Name of Employee:    MANAK JEET SINGH
+4) Name of Employee:    PRIYA DEVI PATEL
 Designation / Career Level:    Dir Real Estate Svs
-PAN / Aadhaar Number:    AFNPS1912F
+PAN / Aadhaar Number:    AEPPA1234F
 5) Is the employee a director or a person with substantial interest in the company  No
 (where the employer is a company) :
 6) Income under the Head "Salaries" of the Employee:  72,75,532.00
@@ -362,36 +362,36 @@ section 17(2)(vii.a)
 (c) Total tax paid    17,69,096.00
 (d) Date of payment into Government treasury     Refer Form 16
  DECLARATION BY EMPLOYER
- I, NIKHIL GOSWAMI, son of RAMESH CHANDRA working in the capacity of ASSC DIR PAYROLL OPS, do hereby declare on
-behalf of OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE LIMITED, that the information given above is based on the books of
+ I, ANITA IYER, son of KARTHIK RAO working in the capacity of ASSC DIR PAYROLL OPS, do hereby declare on
+behalf of NEXUS HEALTHCARE (INDIA) PRIVATE LIMITED, that the information given above is based on the books of
 account, documents and other relevant records or information available with us and the details of value of each such
 perquisite are in accordance with section 17 and rules framed thereunder and that such information is true and correct.
- For OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE
+ For NEXUS HEALTHCARE (INDIA) PRIVATE
 LIMITED
  Signature of the person responsible for deduction of tax
  (Digitally Signed Document)
- Place : HYDERABAD    Full Name   :   NIKHIL GOSWAMI
+ Place : HYDERABAD    Full Name   :   ANITA IYER
  Date : 25-Jun-2026    Designation :   ASSC DIR PAYROLL OPS
- MANAK JEET SINGH/001526061/1
+ PRIYA DEVI PATEL/007890123/1
 
 ANNEXURE TO FORM NO. 16
  Breakup for 10(a) and 10(k) - Chapter VI A deduction details
- 1) Name and Address of the Employer:     OPTUM GLOBAL SOLUTIONS (INDIA) PRIVATE
+ 1) Name and Address of the Employer:     NEXUS HEALTHCARE (INDIA) PRIVATE
 LIMITED
-5TH 6TH 7TH OFFICE LEVEL, SUNDEW
-PROPERTIES SEZ, APIIC LAYOUT SURVEY
-NO.64, HITECH CITY, MADHAPUR, HYDERABAD,
-TELANGANA-500081
- 2) Name of Employee:    MANAK JEET SINGH
+4TH 5TH FLOOR, BUSINESS TOWER
+PROPERTIES SEZ, INFORMATICS PARK SECTOR 62
+NO.64, NOIDA - 201309, HYDERABAD,
+NOIDA - 201309
+ 2) Name of Employee:    PRIYA DEVI PATEL
 Designation / Career Level:    Dir Real Estate Svs
-PAN / Aadhaar Number:    AFNPS1912F
+PAN / Aadhaar Number:    AEPPA1234F
  1. Breakup for 10(a) - Section 80C     Gross Amount   Deductible Amount
  Employee Provident Fund    2,94,372.00   2,94,372.00
 Total    1,50,000.00
- For OPTUM GLOBAL SOLUTIONS (INDIA)
+ For NEXUS HEALTHCARE (INDIA)
 PRIVATE LIMITED
  Signature of the person responsible for deduction of tax
  (Digitally Signed Document)
-Place : HYDERABAD    Full Name   :   NIKHIL GOSWAMI
+Place : HYDERABAD    Full Name   :   ANITA IYER
  Date : 25-Jun-2026    Designation :   ASSC DIR PAYROLL OPS
- MANAK JEET SINGH/001526061/2
+ PRIYA DEVI PATEL/007890123/2

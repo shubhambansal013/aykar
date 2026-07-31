@@ -2,18 +2,18 @@ FORM NO. 16
  PART B
  Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.    UXBGJYA  Last updated on   17-May-2026
+ Certificate No.    XZQWBN  Last updated on   17-May-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED
+ BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED
 16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD,
- TARUSH ARORA
+ ARJUN SHARMA
 BANGALORE - 560025
-7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
+11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI - 110096 Delhi
 Karnataka
-+(91)80-8197124546
-SHCHOUDHARY@PTC.COM
++(91)80-9910112233
+HR@BRIDGESOFT.COM
  PAN of the Deductor   TAN of the Deductor   PAN of the Employee/Specified senior citizen
- AABCP2629J   BLRP15144D   CYXPA6852K
+ AABCB4567C   BLRM22334F   ABJPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -43,7 +43,7 @@ Cash equivalent of leave salary encashment under section 10
 (f)   Other special allowances under section 10(14)     0.00
  Page 1 of 3
 
-Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: XZQWBN   TAN of Employer: BLRM22334F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
  [Note: Break-up to be prepared by employer and issued to the
 (g)
@@ -93,7 +93,7 @@ Deduction in respect of health insurance premia under section
 80D
  Page 2 of 3
 
-Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: XZQWBN   TAN of Employer: BLRM22334F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 Deduction in respect of interest on loan taken for higher
 (h)    0.00 0.00
 education under section 80E
@@ -138,11 +138,11 @@ Less: Tax collected at source as per Form No. 12BAA submitted
 under provisions of section 192(2B)
 21.    Net tax payable (17-18-19-20)  0.00
  Verification
- I, ARVIND LAXMAN BODGAL, son/daughter of LAXMAN RAMCHANDRA BODGAL .Working in the capacity of GROUP
+ I, SANDEEP KULKARNI, son/daughter of GOPAL KULKARNI .Working in the capacity of GROUP
 LEAD ACCOUNTING (Designation) do hereby certify that the information given above is true, complete and correct and is based on
 the books of account, documents, TDS statements, and other available records.
  Place  BANGALORE  (Signature of person responsible for deduction of tax)
  Full
-Date   03-Jun-2026   ARVIND LAXMAN BODGAL
+Date   03-Jun-2026   SANDEEP KULKARNI
 Name:
  Page 3 of 3

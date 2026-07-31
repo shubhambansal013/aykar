@@ -3,20 +3,20 @@ FORM NO. 16
  PART A
  Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.   UXBGJYA    Last updated on   17-May-2026
+ Certificate No.   XZQWBN    Last updated on   17-May-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED
+ BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED
 16 & 16/14 TH FLOOR, PHOENIX TOWERS, MUSEUM ROAD,
- TARUSH ARORA
+ ARJUN SHARMA
 BANGALORE - 560025
-7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
+11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI - 110096 Delhi
 Karnataka
-+(91)80-8197124546
-SHCHOUDHARY@PTC.COM
++(91)80-9910112233
+HR@BRIDGESOFT.COM
  PAN of the  Employee Reference No. provided by the
  PAN of the Deductor   TAN of the Deductor  Employee/Specified senior Employer/Pension Payment order no. provided
 citizen by the Employer (If available)
- AABCP2629J   BLRP15144D   CYXPA6852K
+ AABCB4567C   BLRM22334F   ABJPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -56,16 +56,16 @@ Branch  (dd/mm/yyyy)  OLTAS*
 6    0.00   -    21-04-2026   -   F
  Page 1 of 2
 
-Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: XZQWBN   TAN of Employer: BLRM22334F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
  Total (Rs.)   0.00
  Verification
- I,   ARVIND LAXMAN BODGAL, son / daughter of LAXMAN RAMCHANDRA BODGAL working in the capacity of GROUP LEAD ACCOUNTING (designation) do hereby
+ I,   SANDEEP KULKARNI, son / daughter of GOPAL KULKARNI working in the capacity of GROUP LEAD ACCOUNTING (designation) do hereby
 certify that a sum of Rs. 0.00 [Rs. Zero Only (in words)] has been deducted and a sum of Rs. 0.00 [Rs. Zero Only] has been deposited to the credit of the Central
 Government. I further certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, TDS
 deposited and other available records.
 Place   BANGALORE
 Date    03-Jun-2026  (Signature of person responsible for deduction of Tax)
-Designation:   GROUP LEAD ACCOUNTING  Full Name: ARVIND LAXMAN BODGAL
+Designation:   GROUP LEAD ACCOUNTING  Full Name: SANDEEP KULKARNI
  Notes:
  1. Part B (Annexure) of the certificate in Form No.16 shall be issued by the employer.
 2. If an assessee is employed under one employer during the year, Part 'A' of the certificate in Form No.16 issued for the quarter ending on 31st March of the financial year shall contain the details

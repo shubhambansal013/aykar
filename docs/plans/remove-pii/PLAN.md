@@ -80,6 +80,7 @@ the person folders to fake identities, and strengthens the existing
 | AABCI0605H (PAN) | AABCH1234F |
 | Payrollhelpdesk.India@thomsonreuters.com | payroll.helpdesk@horizontech.in |
 | 8197124546 (phone, PTC) | 9910112233 |
+| +(91)40-69991898 (phone, Optum) | +(91)40-23456789 |
 | Office No. B101, Level 15, WeWork Enam Sambhav, G Block C-20, Bandra Kurla Complex, MUMBAI - 400051 Maharashtra | Level 8, Tower B, Cyber Park, Sector 62, NOIDA - 201309 Uttar Pradesh |
 | PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED | BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED |
 | PARAMETRIC TECHNOLOGY | BRIDGE SOFTWARE |
@@ -98,8 +99,10 @@ the person folders to fake identities, and strengthens the existing
 | HYDQ00152F | HYDN44556F |
 | AAACQ2188G | AABBN2233C |
 | NIKHIL GOSWAMI (NIKHIL, GOSWAMI) | ANITA IYER (ANITA, IYER) |
+| RAMESH CHANDRA (parent of NIKHIL GOSWAMI) | KARTHIK RAO |
 | NIKHIL_GOSWAMI@UHG.COM | ANITA.IYER@NEXUSHEALTH.IN |
 | 1101, GURGAON CITIZEN CGHS, PLOT NO 4, SECTOR 47, SUBHASH CHOWK, GURGAON - 122002 Haryana | D-14, GREEN PARK, SECTOR 15, NOIDA - 201301 Uttar Pradesh |
+| 7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi (employee home) | 11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI - 110096 Delhi |
 | 5TH 6TH 7TH OFFICE LEVEL, SUNDEW PROPERTIES SEZ, APIIC LAYOUT,SURVEY NO.64, HITECH CITY, MADHAPUR, HYDERABAD - 500081, Telangana | 4TH 5TH FLOOR, BUSINESS TOWER, INFORMATICS PARK, SECTOR 62, NOIDA - 201309, Uttar Pradesh |
 | SHUBHAM BANSAL (SHUBHAM, BANSAL) / Suresh Bansal | ROHAN VERMA (ROHAN, VERMA) / Vijay Verma |
 | CESPB7152N | AROHV1234F |
@@ -131,7 +134,7 @@ Notes on the mapping:
 | Phase | Title | Status | Notes |
 |---|---|---|---|
 | 1 | Fixture transport: PDF → txt, folder renames, rewire tests | done | 2026-07-31 |
-| 2 | Anonymize testdata fixtures (txt + textproto) | pending | |
+| 2 | Anonymize testdata fixtures (txt + textproto) | done | 2026-07-31 — sed-applied canonical mapping to both dirs; integration + full src/lib suite green; sweep clean |
 | 3 | Anonymize tests, source comments, proto/generated files | pending | |
 | 4 | Verify & close: full suite, lint, PII sweep, NOTES | pending | |
 

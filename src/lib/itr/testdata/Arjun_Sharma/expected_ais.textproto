@@ -2,9 +2,9 @@ metadata {
   financial_year: "2025-26"
 }
 profile {
-  pan: "CYXPA6852K"
-  name: "TARUSH ARORA"
-  address: "7/90, GEETA COLONY, DELHI, 110031, DELHI"
+  pan: "ABJPA1234F"
+  name: "ARJUN SHARMA"
+  address: "11/22, GREEN VIEW COLONY, DELHI, 110096, DELHI"
 }
 tds_tcs_info {
 }

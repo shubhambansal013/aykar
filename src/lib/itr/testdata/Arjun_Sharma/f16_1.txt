@@ -1,42 +1,42 @@
-THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+HORIZON TECH SOLUTIONS PRIVATE LIMITED
  Digitally Signed
  Form 16
  Form16 Details:
- Employee Name:   TARUSH ARORA
-Employee PAN:   CYXPA6852K
-Employee Serial Number:   6126833
+ Employee Name:   ARJUN SHARMA
+Employee PAN:   ABJPA1234F
+Employee Serial Number:   1009876
 Employee Designation:   MARKETING AUTOMATION SPECIALIST
-Form16 Control Number:   6126833/CYXPA6852K
+Form16 Control Number:   1009876/ABJPA1234F
 Assessment Year:   2026-27
  Signature Details:
  This form has been signed and certified using a Digital Signature Certificate as specified under section 119 of the Income-Tax
 Act, 1961. (Please refer Circular No.2/2007.dated 21-5-2007).
 The Digital Signature of the signatory has been affixed in the box provided below. To see the details and validate the signature,
 you should click on the box
- Digitally Signed by   :   KUMAR VIJETA
+ Digitally Signed by   :   VIJAY NAMBIAR
 Digitally Signature Certificate issued by    :   mtnlTrustLine Class 2 Individual Subscriber Sub CA G1
 Serial Number of DSC   :
 Number of Pages   :   9 (including this page)
- TARUSH ARORA 6126833
+ ARJUN SHARMA 1009876
 
 FORM NO. 16
  [See rule 31(1)(a)]
  PART A
  Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.   SFOLYRA    Last updated on   04-Jun-2026
+ Certificate No.   LVKMPR    Last updated on   04-Jun-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE
+ HORIZON TECH INTERNATIONAL SERVICES PRIVATE
 LIMITED
-Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,   TARUSH ARORA
-Bandra Kurla Complex, MUMBAI - 400051  7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
-Maharashtra
+Level 8, Tower B, Cyber Park,, G Block C-20,   ARJUN SHARMA
+Sector 62, NOIDA - 201309  11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI - 110096 Delhi
+Uttar Pradesh
 +(91)80-
-Payrollhelpdesk.India@thomsonreuters.com
+payroll.helpdesk@horizontech.in
  PAN of the  Employee Reference No. provided by the
  PAN of the Deductor   TAN of the Deductor  Employee/Specified senior Employer/Pension Payment order no. provided
 citizen by the Employer (If available)
- AABCI0605H   MUMI04584G   CYXPA6852K
+ AABCH1234F   DELM12345F   ABJPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -77,7 +77,7 @@ Branch  (dd/mm/yyyy)  OLTAS*
 5   8289.00   6910013    03-09-2025   06380   F
  Page 1 of 2
 
-Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: LVKMPR   TAN of Employer: DELM12345F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 Challan Identification Number (CIN)
 Tax Deposited in respect of the
  Sl. No. deductee
@@ -88,13 +88,13 @@ Branch  (dd/mm/yyyy)  OLTAS*
 8    0.00   -    05-12-2025   -   F
  Total (Rs.)   51290.00
  Verification
- I,   KUMAR VIJETA, son / daughter of UMESH PRASAD working in the capacity of DIRECTOR PAYROLL OPERATIONS APAC UK (designation) do hereby certify that
+ I,   VIJAY NAMBIAR, son / daughter of RAMESH KRISHNAN working in the capacity of DIRECTOR PAYROLL OPERATIONS APAC UK (designation) do hereby certify that
 a sum of Rs. 51290.00 [Rs. Fifty One Thousand Two Hundred and Ninety Only (in words)] has been deducted and a sum of Rs. 51290.00 [Rs. Fifty One Thousand
 Two Hundred and Ninety Only] has been deposited to the credit of the Central Government. I further certify that the information given above is true, complete and
 correct and is based on the books of account, documents, TDS statements, TDS deposited and other available records.
 Place  MUMBAI SUBURBAN
 Date    05-Jun-2026  (Signature of person responsible for deduction of Tax)
-Designation:   DIRECTOR PAYROLL OPERATIONS APAC UK  Full Name: KUMAR VIJETA
+Designation:   DIRECTOR PAYROLL OPERATIONS APAC UK  Full Name: VIJAY NAMBIAR
  Notes:
  1. Part B (Annexure) of the certificate in Form No.16 shall be issued by the employer.
 2. If an assessee is employed under one employer during the year, Part 'A' of the certificate in Form No.16 issued for the quarter ending on 31st March of the financial year shall contain the details
@@ -123,18 +123,18 @@ FORM NO. 16
  PART B
  Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
 of specified senior citizen under section 194P
- Certificate No.    SFOLYRA  Last updated on   04-Jun-2026
+ Certificate No.    LVKMPR  Last updated on   04-Jun-2026
 Name and address of the Employer/Specified Bank   Name and address of the Employee/Specified senior citizen
- THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
-Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20,
- TARUSH ARORA
-Bandra Kurla Complex, MUMBAI - 400051
-7/90 HOUSE NO.90, GEETA COLONY, EAST DELHI - 110031 Delhi
-Maharashtra
+ HORIZON TECH SOLUTIONS PRIVATE LIMITED
+Level 8, Tower B, Cyber Park,, G Block C-20,
+ ARJUN SHARMA
+Sector 62, NOIDA - 201309
+11/22 HOUSE NO.22, GREEN VIEW COLONY, EAST DELHI - 110096 Delhi
+Uttar Pradesh
 +(91)80-
-Payrollhelpdesk.India@thomsonreuters.com
+payroll.helpdesk@horizontech.in
  PAN of the Deductor   TAN of the Deductor   PAN of the Employee/Specified senior citizen
- AABCI0605H   MUMI04584G   CYXPA6852K
+ AABCH1234F   DELM12345F   ABJPA1234F
  CIT (TDS)   Assessment Year   Period with the Employer
  From To
  The Commissioner of Income Tax (TDS)
@@ -164,7 +164,7 @@ Cash equivalent of leave salary encashment under section 10
 (f)   Other special allowances under section 10(14)     0.00
  Page 1 of 4
 
-Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: LVKMPR   TAN of Employer: DELM12345F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
 (g)  [Note: Break-up to be filled and signed    by employer in the table
 provide at the bottom of this form]
@@ -212,7 +212,7 @@ Deduction in respect of health insurance premia under section
 80D
  Page 2 of 4
 
-Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: LVKMPR   TAN of Employer: DELM12345F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 Deduction in respect of interest on loan taken for higher
 (h)    0.00 0.00
 education under section 80E
@@ -255,16 +255,16 @@ Less: Tax collected at source as per Form No. 12BAA submitted
 under provisions of section 192(2B)
 21.    Net tax payable (17-18-19-20)  0.00
  Verification
- I, KUMAR VIJETA, son/daughter of UMESH PRASAD .Working in the capacity of DIRECTOR PAYROLL OPERATIONS
+ I, VIJAY NAMBIAR, son/daughter of RAMESH KRISHNAN .Working in the capacity of DIRECTOR PAYROLL OPERATIONS
 APAC UK (Designation) do hereby certify that the information given above is true, complete and correct and is based on the books of
 account, documents, TDS statements, and other available records.
  Place  MUMBAI SUBURBAN  (Signature of person responsible for deduction of tax)
  Full
-Date   05-Jun-2026   KUMAR VIJETA
+Date   05-Jun-2026   VIJAY NAMBIAR
 Name:
  Page 3 of 4
 
-Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
+Certificate Number: LVKMPR   TAN of Employer: DELM12345F    PAN of Employee: ABJPA1234F   Assessment Year: 2026-27
 2. (f) Break up for ‘Amount of any other exemption under section 10’ to be filled in the table below
 Particular's of Amount for any other
 Sl.
@@ -292,18 +292,18 @@ Rs.    Rs. Rs.   Rs.
  Place
 tax)
  Full
-Date    05-Jun-2026    KUMAR VIJETA
+Date    05-Jun-2026    VIJAY NAMBIAR
 Name:
  Page 4 of 4
 
 Annexure to FORM NO.16
  [Breakups for item no 2(f) and 10(k)]
  Name and address of the Employer    Name and address of the Employee
- THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
-Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20, Bandra Kurla  TARUSH ARORA
-Complex MUMBAI-400051 MAHARASHTRA
+ HORIZON TECH SOLUTIONS PRIVATE LIMITED
+Level 8, Tower B, Cyber Park,, G Block C-20, Sector 62  ARJUN SHARMA
+Complex NOIDA - 201309 UTTAR PRADESH
  PAN of the Deductor   TAN of the Deductor    PAN of the Employee   Employee Reference No. Provided by the Employer (If available)
- AABCI0605H   MUMI04584G    CYXPA6852K   6126833
+ AABCH1234F   DELM12345F    ABJPA1234F   1009876
  CIT(TDS)    Assessment Year   Period
  The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G Mittal  From   To
 Ayurvedic Hospital Building, Charni Road,     2026-27  
@@ -332,21 +332,21 @@ Rs. Rs. Rs.
 10   80 U Deduction in case of physical diability     0.00   0.00   0.00
 Place   MUMBAI
  Signature of the person responsible for deduction of tax
-Date   05-Jun-2026    FULL NAME :   KUMAR VIJETA
+Date   05-Jun-2026    FULL NAME :   VIJAY NAMBIAR
 
 FORM NO. 12BA
  {See rule 26A(2)(b)}
  Statement showing particulars of perquisites, other fringe benefits or
 amenities and profits in lieu of salary with value thereof
- 1. Name and Address of the Employer   :   THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
-Office No. B101, Level 15, WeWork Enam Sambhav,, G Block C-20, Bandra Kurla Complex
-MUMBAI-400051 MAHARASHTRA
-2. TAN    :   MUMI04584G
+ 1. Name and Address of the Employer   :   HORIZON TECH SOLUTIONS PRIVATE LIMITED
+Level 8, Tower B, Cyber Park,, G Block C-20, Sector 62, NOIDA - 201309
+NOIDA - 201309 UTTAR PRADESH
+2. TAN    :   DELM12345F
 3. TDS Assessment Range of the Employer    :   The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G Mittal Ayurvedic
 Hospital Building, Charni Road, Mumbai 400002
-4.Name of Employee    :   TARUSH ARORA
+4.Name of Employee    :   ARJUN SHARMA
 Designation    :   MARKETING AUTOMATION SPECIALIST
-PAN or Aadhaar Number   :   CYXPA6852K
+PAN or Aadhaar Number   :   ABJPA1234F
 5. Is the Employee a Director or a person with substantial
 interest in the company (Where the employer is a company)    :   No
 6. Income under the Head 'Salaries' of the Employee
@@ -387,14 +387,14 @@ b) Tax Paid by Employer on behalf of Employee u/s 192(1A)     :   0.00
 c) Total Tax Paid    :   51290.00
 d) Date of Payment into Government Treasury     :   ref form 16
 DECLARATION BY EMPLOYER
-I,   KUMAR VIJETA   son / daughter of   UMESH OJHA PRASAD   working in the capacity of    DIRECTOR PAYROLL OPERATIONS APAC UK    do hereby declare on behalf of
- THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED    that the information given above is based on the books of account, documents and other
+I,   VIJAY NAMBIAR   son / daughter of   RAMESH KRISHNAN   working in the capacity of    DIRECTOR PAYROLL OPERATIONS APAC UK    do hereby declare on behalf of
+ HORIZON TECH SOLUTIONS PRIVATE LIMITED    that the information given above is based on the books of account, documents and other
 relevant records or information available with us and the details of value of each such perquisite are in accordance with section 17 and rules framed thereunder and that
 such information is true and correct.
-For THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED
+For HORIZON TECH SOLUTIONS PRIVATE LIMITED
 Place : MUMBAI
 Date : 05-Jun-2026
  Signature of the person responsible for deduction of tax
 This Form 16 is signed using Digital Signature.
-FULL NAME : KUMAR VIJETA
+FULL NAME : VIJAY NAMBIAR
 Designation : DIRECTOR PAYROLL OPERATIONS APAC UK

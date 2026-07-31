@@ -1,17 +1,17 @@
 Data updated till 15-Jul-2026
  Annual Tax Statement
- Permanent Account Number (PAN)   CYXPA6852K   Current Status of PAN    Active and  Financial Year   2025-26   Assessment Year   2026-27
+ Permanent Account Number (PAN)   ABJPA1234F   Current Status of PAN    Active and  Financial Year   2025-26   Assessment Year   2026-27
 Operative
- Name of Assessee   TARUSH ARORA
- Address of Assessee   7/90 HOUSE NO.90, GEETA COLONY,
-EAST DELHI, DELHI, 110031
+ Name of Assessee   ARJUN SHARMA
+ Address of Assessee   11/22 HOUSE NO.22, GREEN VIEW COLONY,
+EAST DELHI, DELHI, 110096
  Above data / Status of PAN is as per PAN details. For any changes in data as mentioned above, you may submit request for corrections
 Refer www.tin-nsdl.com / www.utiitsl.com for more details. In case of discrepancy in status of PAN please contact your Assessing Officer   
 (All amount values are in INR)
  PART-I - Details of Tax Deducted at Source
 Sr. No.   Name of Deductor    TAN of Deductor   Total Amount Paid/ Total Tax Deducted   #   Total TDS
 Credited  Deposited
- 1   PARAMETRIC TECHNOLOGY (INDIA) PRIVATE LIMITED     BLRP15144D   849032.00   0.00   0.00
+ 1   BRIDGE SOFTWARE (INDIA) PRIVATE LIMITED     BLRM22334F   849032.00   0.00   0.00
  Sr. No.   Section   1   Transaction Date   Status of Booking*   Date of Booking    Remarks**   Amount Paid / Tax Deducted   ##   TDS Deposited
 Credited
  1   192   31-Mar-2026   F   17-May-2026    -   164500.00   0.00   0.00
@@ -22,7 +22,7 @@ Credited
 6   192   31-Oct-2025   F   23-Jan-2026    -   26532.00   0.00   0.00
  Sr. No.   Name of Deductor    TAN of Deductor   Total Amount Paid/ Total Tax Deducted   #   Total TDS
 Credited  Deposited
- 2   THOMSON REUTERS INTERNATIONAL SERVICES PRIVATE LIMITED    MUMI04584G   984690.00   51290.00   51290.00
+ 2   HORIZON TECH SOLUTIONS PRIVATE LIMITED    DELM12345F   984690.00   51290.00   51290.00
  Sr. No.   Section   1   Transaction Date   Status of Booking*   Date of Booking    Remarks**   Amount Paid / Tax Deducted   ##   TDS Deposited
 Credited
  1   192   30-Nov-2025   F   02-Feb-2026    -   1066.00   0.00   0.00
@@ -53,7 +53,7 @@ Gross Total Across Deductor(s)
 Sr. No.   Acknowledgement Number   Name of Buyer    PAN of Buyer   Transaction Date   Total Transaction Amount
  Sr. No    Challan Details mentioned in the Statement     Status of Booking*
 
-Assessee PAN: CYXPA6852K    Assessee Name: TARUSH ARORA     Assessment Year: 2026-27
+Assessee PAN: ABJPA1234F    Assessee Name: ARJUN SHARMA     Assessment Year: 2026-27
 BSR Code   Date of Deposit   Challan Serial Number    Total Tax Amount
 Gross Total Across Buyer(s)
  No Transactions Present
@@ -117,7 +117,7 @@ X   Deductor
  Legend   Description    Definition
  U   Unmatched   Deductors have not deposited taxes or have furnished incorrect particulars of tax payment. Final credit will be reflected only
 
-Assessee PAN: CYXPA6852K    Assessee Name: TARUSH ARORA     Assessment Year: 2026-27
+Assessee PAN: ABJPA1234F    Assessee Name: ARJUN SHARMA     Assessment Year: 2026-27
 when payment details in bank match with details of deposit in TDS / TCS statement
 M   Matched   Particulars of challan details provided in TDS statement have matched with the challan details available in OLTAS
 P   Provisional   Provisional tax credit is effected only for TDS / TCS Statements filed by Government deductors."P" status will be changed to
@@ -198,7 +198,7 @@ fund or of the units of the Unit Trust of India
 194LBB   Income in respect of units of investment fund  program package
 194LBC   Income in respect of investment in securitization trust  206CP   Collection at source on remittance under LRS for educational loan taken from
 
-Assessee PAN: CYXPA6852K    Assessee Name: TARUSH ARORA     Assessment Year: 2026-27
+Assessee PAN: ABJPA1234F    Assessee Name: ARJUN SHARMA     Assessment Year: 2026-27
 194R   Benefits or perquisites of business or profession  financial institution mentioned in section 80E
 194S   Payment of consideration for transfer of virtual digital asset by persons other  206CQ   Collection at source on remittance under LRS for purpose other than for
 than specified persons  purchase of overseas tour package or for educational loan taken from financial

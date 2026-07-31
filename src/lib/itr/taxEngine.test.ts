@@ -590,7 +590,7 @@ describe('taxEngine', () => {
       expect(interest.lateFilingFee234F).toBe(0);
     });
 
-    it('computes Section 234B interest matching Tarush Arora scenario at ₹9,858 (determinationDate only)', () => {
+    it('computes Section 234B interest matching Arjun Sharma scenario at ₹9,858 (determinationDate only)', () => {
       const interest = computeAllInterest(
         160825,
         1775000,
@@ -643,8 +643,8 @@ describe('taxEngine', () => {
       expect(result.totalTaxPlusInterest).toBe(0);
     });
 
-    it('Full Tarush Arora scenario: calculateNewRegime with determinationDate returns correct interest', () => {
-      const tarushData: Form16Data = {
+    it('Full Arjun Sharma scenario: calculateNewRegime with determinationDate returns correct interest', () => {
+      const arjunData: Form16Data = {
         ...baseMockData,
         assessmentYear: '2026',
         salary: {
@@ -674,7 +674,7 @@ describe('taxEngine', () => {
         taxCredits: { tdsSalary: 51290, tdsOther: 0, tcs: 0, advanceTax: 0, selfAssessmentTax: 0 },
       };
 
-      const result = calculateNewRegime(tarushData, undefined, '2026-12-31');
+      const result = calculateNewRegime(arjunData, undefined, '2026-12-31');
 
       // calculateNewRegime should now compute interest internally via computeAllInterest
       // With determinationDate='2026-12-31', 234B interest is non-zero (9 months from Apr 1)

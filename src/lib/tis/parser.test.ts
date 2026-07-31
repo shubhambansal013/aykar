@@ -20,7 +20,7 @@ Dividend Income: 12,000.00
 
   it('should trigger fallback positional branches correctly', () => {
     const text = `
-Salary from Optum 1,300,000.00
+Salary from Nexus 1,300,000.00
 Interest from Savings Bank of amount 11,000.00
 Interest from deposits of amount 41,000.00
 Dividend of amount 7,100.00

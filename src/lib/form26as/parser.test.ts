@@ -6,7 +6,7 @@ describe('Form 26AS Parser', () => {
     const text = `
 Form 26AS Annual Tax Statement
 PART A - Details of Tax Deducted at Source
-HYDQ00152F OPTUM GLOBAL 192 1,769,096.00
+HYDN44556F NEXUS HEALTHCARE 192 1,769,096.00
 ABCD12345E HDFC BANK LIMITED 194A 4,500.00
 
 PART B - Details of Tax Collected at Source
@@ -22,8 +22,8 @@ Self Assessment Tax details:
     const parsed = parseForm26ASText(text);
     expect(parsed.tdsSalary).toHaveLength(1);
     expect(parsed.tdsSalary[0]).toEqual({
-      tan: 'HYDQ00152F',
-      deductorName: 'OPTUM GLOBAL',
+      tan: 'HYDN44556F',
+      deductorName: 'NEXUS HEALTHCARE',
       amount: 1769096,
     });
     expect(parsed.tdsOther).toHaveLength(1);
@@ -57,8 +57,8 @@ Self Assessment Tax details:
   it('should parse realistic multi-line Form 26AS with separate TAN/Name lines and multiple transactions', () => {
     const text = `
 PART A - Details of Tax Deducted at Source
-Name of the Deductor : OPTUM GLOBAL SOLUTIONS INDIA PRIVATE LIMITED
-TAN of the Deductor : HYDQ00152F
+Name of the Deductor : NEXUS HEALTHCARE INDIA PRIVATE LIMITED
+TAN of the Deductor : HYDN44556F
 S.No. Section Date of Transaction Status of Booking Amount Paid (Rs.) Tax Deducted (Rs.) TDS Deposited (Rs.)
 1 192 15/05/2023 F 1,00,000.00 10,000.00 10,000.00
 2 192 15/06/2023 F 1,00,000.00 10,000.00 10,000.00
@@ -86,8 +86,8 @@ S.No. Minor Head BSR Code Date of Deposit Challan Serial No Tax (Rs.)
     const parsed = parseForm26ASText(text);
     expect(parsed.tdsSalary).toHaveLength(1);
     expect(parsed.tdsSalary[0]).toEqual({
-      tan: 'HYDQ00152F',
-      deductorName: 'OPTUM GLOBAL SOLUTIONS INDIA PRIVATE LIMITED',
+      tan: 'HYDN44556F',
+      deductorName: 'NEXUS HEALTHCARE INDIA PRIVATE LIMITED',
       amount: 20000, // 10,000 + 10,000. Total line is skipped.
     });
     expect(parsed.tdsOther).toHaveLength(1);

@@ -4,8 +4,8 @@ import { reconcileAllDocuments } from './reconciliation';
 
 describe('Reconciliation Module', () => {
   const mockForm16: Form16Data = {
-    employer: { name: 'OPTUM GLOBAL', tan: 'HYDQ00152F', pan: 'AAACQ2188G', address: 'HYD' },
-    employee: { name: { firstName: 'MANAK', middleName: 'JEET', lastName: 'SINGH' }, pan: 'AFNPS1912F', address: 'GGN' },
+    employer: { name: 'NEXUS HEALTHCARE', tan: 'HYDN44556F', pan: 'AABBN2233C', address: 'HYD' },
+    employee: { name: { firstName: 'PRIYA', middleName: 'DEVI', lastName: 'PATEL' }, pan: 'AEPPA1234F', address: 'GGN' },
     assessmentYear: '2026-27',
     period: { from: '2025-04-01', to: '2026-03-31' },
     salary: {
@@ -58,7 +58,7 @@ describe('Reconciliation Module', () => {
 
     const mock26AS: Form26ASData = {
       tdsSalary: [
-        { tan: 'HYDQ00152F', deductorName: 'OPTUM GLOBAL', amount: 145000 }, // Discrepancy (145k vs 150k in Form-16)
+        { tan: 'HYDN44556F', deductorName: 'NEXUS HEALTHCARE', amount: 145000 }, // Discrepancy (145k vs 150k in Form-16)
       ],
       tdsOther: [
         { tan: 'ABCD12345E', deductorName: 'HDFC BANK', section: '194A', amount: 3500 },
@@ -99,7 +99,7 @@ describe('Reconciliation Module', () => {
     // Discrepancies computed
     expect(reconciled.discrepancies).toHaveLength(1);
     expect(reconciled.discrepancies?.[0]).toContain('TDS Discrepancy');
-    expect(reconciled.discrepancies?.[0]).toContain('HYDQ00152F');
+    expect(reconciled.discrepancies?.[0]).toContain('HYDN44556F');
   });
 
   it('should handle pre-existing matching other sources, additional AIS TDS, and fallback default scenarios safely', () => {
@@ -207,14 +207,14 @@ describe('Reconciliation Module', () => {
       interestDeposit: 0,
       dividendIncome: 0,
       tdsDetails: [
-        { tan: 'HYDQ00152F', deductorName: 'OPTUM GLOBAL', section: '192', amount: 75000 },
+        { tan: 'HYDN44556F', deductorName: 'NEXUS HEALTHCARE', section: '192', amount: 75000 },
         { tan: 'OTHERTAN1', deductorName: 'OTHER CO', section: '192', amount: 25000 },
       ],
     };
 
     const reconciled = reconcileAllDocuments(form16NoTds, aisWithTds, undefined, undefined);
 
-    // Should pick up AIS TDS u/s 192 matching employer TAN (HYDQ00152F = 75000)
+    // Should pick up AIS TDS u/s 192 matching employer TAN (HYDN44556F = 75000)
     // plus supplement other AIS section 192 entries not already counted (OTHERTAN1 = 25000)
     expect(reconciled.taxCredits?.tdsSalary).toBe(100000);
   });

@@ -58,4 +58,27 @@ Suggested entry format:
   (`7/90`, `HOUSE NO.90`, `GEETA COLONY`, `110031`) instead of full-line
   strings.
 
+## 2026-07-31 (phase 3)
+- Applied canonical mapping to all PII outside `testdata/`: parser tests
+  (form16/ais/tis/form26as/itr), source comments, proto + `src/generated/`
+  (hand-mirrored; `protoc` not installed so regeneration check skipped).
+- Guard test `forbiddenPatterns` extended with the newly found real tokens
+  (names, PANs, TANs, employer strings). The guard patterns are the ONE
+  sanctioned place real tokens remain in `src/` — the phase-4 repo-wide sweep
+  must exclude `parser.test.ts` guard block (else it self-contradicts).
+- `parser.test.ts` also carried the OPTUM/MANAK block (not listed in the
+  phase-3 todo, but required for the zero-hit sweep) — replaced consistently;
+  renamed var `optumForm16Text` → `nexusForm16Text` (fuzzy `optum` hit).
+- `extractionConfig.ts:167` regex lookahead `CESPB` → `AROHV` (first 5 chars
+  of fake employee PAN).
+- Minimal non-comment change beyond CESPB: `DetailedForm16Parser.ts:234`
+  heuristic `/Payrollhelpdesk/i` → `/payroll\.helpdesk/i`. It's a redundant
+  email fallback (`/@/` already catches it) and was required to clear the
+  phase-4 fuzzy `payrollhelpdesk` sweep; behavior identical for new fixtures.
+- `form26as/parser.test.ts:61` `TAN of the Deductor : HYDQ00152F` (input text)
+  was initially missed — caught by sweep, fixed to `HYDN44556F`.
+- Replaced concatenated SFT deductor PANs `AAACC6233AMUMC09975A` →
+  `ABCDK1005AMUMF07777A` (AIS parser regex matches TAN format; not asserted).
+- Full suite green: 31 files / 517 tests. `npm run lint` clean.
+
 ---

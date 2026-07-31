@@ -11,6 +11,20 @@ Suggested entry format:
 - Finding/decision/gotcha, one or two lines.
 ```
 
+## 2026-07-31 (phase 1)
+- Transport done: `.txt` fixtures now byte-exact pdfjs extraction (only diffs
+  were trailing spaces/blank lines from extraction). Folders renamed to
+  `Arjun_Sharma`/`Priya_Patel`, all PDFs + `*_extracted.txt` + `tmp_*.test.ts`
+  deleted.
+- `integration.test.ts` rewritten: no pdfjs/polyfills, f16 discovered via
+  `*.txt` glob, branched on f16 count (1 → `parseForm16Text`, >1 →
+  `parseForm16ToDetailedBundle`). Dropped async/aitimeouts (now sync reads).
+- Removed the AIS `BLRP15144D`→`BLRP151440` normalize loop: `expected_ais.textproto`
+  has empty `tds_tcs_info`, so the loop was a no-op on both sides.
+- `convert_all.test.ts` rewritten to read `.txt`; regenerated
+  `expected_*.textproto` are byte-identical (no diff).
+- Full suite green: 31 files / 322 tests.
+
 ## 2026-07-31 (planning)
 - Plan originally created under `.opencode/plans/remove-pii/` because the
   sandbox's edit permission allow-list only permitted `.opencode/plans/*.md`

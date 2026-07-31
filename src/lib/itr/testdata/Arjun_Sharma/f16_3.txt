@@ -29,7 +29,7 @@ Value of perquisites under section 17(2) (as per Form No. 12BA,
 wherever applicable)
 Profits in lieu of salary under section 17(3) (as per Form No.
 (c)    0.00
-12BA, wherever applicable)
+12BA, wherever applicable)  
 (d)   Total    849032.00
 (e)   Reported total amount of salary received from other employer(s)     0.00
 2.   Less: Allowances to the extent exempt under section 10
@@ -42,6 +42,7 @@ Cash equivalent of leave salary encashment under section 10
 (e)   House rent allowance under section 10(13A)  0.00
 (f)   Other special allowances under section 10(14)     0.00
  Page 1 of 3
+
 Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
  [Note: Break-up to be prepared by employer and issued to the
@@ -68,7 +69,7 @@ employee offered for TDS
 (b) Income under the head Other Sources offered for TDS  0.00
 Total amount of other income reported by the employee
 8.  0.00
-[7(a)+7(b)]
+[7(a)+7(b)]  
 9. Gross total income (6+8)   774032.00
 10. Deductions under Chapter VI-A  Gross Amount   Deductible Amount
 Deduction in respect of life insurance premia, contributions to
@@ -91,6 +92,7 @@ Deduction in respect of health insurance premia under section
 (g)  0.00 0.00
 80D
  Page 2 of 3
+
 Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 Deduction in respect of interest on loan taken for higher
 (h)    0.00 0.00

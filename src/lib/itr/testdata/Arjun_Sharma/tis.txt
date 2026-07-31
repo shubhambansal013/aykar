@@ -28,6 +28,7 @@ taxpayer which are not presently displayed in Taxpayer Information Summary (TIS)
 and accurate information in the Income Tax Return.
  Download ID : CYXPA6852K202607050242    IP Address :
 Generation Date : 05/07/2026, 02:42:26     Page 1 of 3
+
 PAN    Name    Financial Year
  CYXPA6852K    TARUSH ARORA     2025-26
 ----------------------------------------------------------- Annexure to Taxpayer Information Summary (TIS) -----------------------------------------------------------
@@ -81,6 +82,7 @@ BY SOURCE
 Deposit
  Download ID : CYXPA6852K202607050242    IP Address :
 Generation Date : 05/07/2026, 02:42:26     Page 2 of 3
+
 PAN    Name    Financial Year
  CYXPA6852K    TARUSH ARORA     2025-26
 SR. NO.   INFORMATION CATEGORY    PROCESSED BY ACCEPTED BY

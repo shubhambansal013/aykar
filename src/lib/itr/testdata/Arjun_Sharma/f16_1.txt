@@ -18,6 +18,7 @@ Digitally Signature Certificate issued by    :   mtnlTrustLine Class 2 Individua
 Serial Number of DSC   :
 Number of Pages   :   9 (including this page)
  TARUSH ARORA 6126833
+
 FORM NO. 16
  [See rule 31(1)(a)]
  PART A
@@ -75,6 +76,7 @@ Branch  (dd/mm/yyyy)  OLTAS*
 4   8226.00   6910013    05-08-2025   10058   F
 5   8289.00   6910013    03-09-2025   06380   F
  Page 1 of 2
+
 Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 Challan Identification Number (CIN)
 Tax Deposited in respect of the
@@ -104,10 +106,10 @@ Legend used in Form 16
 * Status of matching with OLTAS
  Legend   Description    Definition
 Deductors have not deposited taxes or have furnished incorrect particulars of tax payment. Final credit will be reflected only when payment
-U   Unmatched
+U   Unmatched  
 details in bank match with details of deposit in TDS / TCS statement
 Provisional tax credit is effected only for TDS / TCS Statements filed by Government deductors."P" status will be changed to Final (F) on
- P   Provisional
+ P   Provisional  
 verification of payment details submitted by Pay and Accounts Officer (PAO)
 In case of non-government deductors, payment details of TDS / TCS deposited in bank by deductor have matched with the payment details
  F   Final mentioned in the TDS / TCS statement filed by the deductors. In case of government deductors, details of TDS / TCS booked in Government
@@ -116,6 +118,7 @@ Payment details of TDS / TCS deposited in bank by deductor have matched with det
  O   Overbooked amount is over claimed in the statement. Final (F) credit will be reflected only when deductor reduces claimed amount in the statement or
 makes new payment for excess amount claimed in the statement
 Page 2 of 2
+
 FORM NO. 16
  PART B
  Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income
@@ -147,7 +150,7 @@ Value of perquisites under section 17(2) (as per Form No. 12BA,
 wherever applicable)
 Profits in lieu of salary under section 17(3) (as per Form No.
 (c)    0.00
-12BA, wherever applicable)
+12BA, wherever applicable)  
 (d)   Total    984690.00
 (e)   Reported total amount of salary received from other employer(s)     0.00
 2.   Less: Allowances to the extent exempt under section 10
@@ -160,6 +163,7 @@ Cash equivalent of leave salary encashment under section 10
 (e)   House rent allowance under section 10(13A)  0.00
 (f)   Other special allowances under section 10(14)     0.00
  Page 1 of 4
+
 Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 A m o u n t   o f   a n y   o t h e r   e x e m p t i o n   u n d e r    s e c t i o n   1 0
 (g)  [Note: Break-up to be filled and signed    by employer in the table
@@ -184,7 +188,7 @@ employee offered for TDS
 (b) Income under the head Other Sources offered for TDS  0.00
 Total amount of other income reported by the employee
 8.  0.00
-[7(a)+7(b)]
+[7(a)+7(b)]  
 9. Gross total income (6+8)   909690.00
 10. Deductions under Chapter VI-A  Gross Amount   Deductible Amount
 Deduction in respect of life insurance premia, contributions to
@@ -207,6 +211,7 @@ Deduction in respect of health insurance premia under section
 (g)  0.00 0.00
 80D
  Page 2 of 4
+
 Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 Deduction in respect of interest on loan taken for higher
 (h)    0.00 0.00
@@ -258,6 +263,7 @@ account, documents, TDS statements, and other available records.
 Date   05-Jun-2026   KUMAR VIJETA
 Name:
  Page 3 of 4
+
 Certificate Number: SFOLYRA   TAN of Employer: MUMI04584G    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
 2. (f) Break up for ‘Amount of any other exemption under section 10’ to be filled in the table below
 Particular's of Amount for any other
@@ -289,6 +295,7 @@ tax)
 Date    05-Jun-2026    KUMAR VIJETA
 Name:
  Page 4 of 4
+
 Annexure to FORM NO.16
  [Breakups for item no 2(f) and 10(k)]
  Name and address of the Employer    Name and address of the Employee
@@ -299,7 +306,7 @@ Complex MUMBAI-400051 MAHARASHTRA
  AABCI0605H   MUMI04584G    CYXPA6852K   6126833
  CIT(TDS)    Assessment Year   Period
  The Commissioner of Income Tax (TDS) Room No. 900A, 9th Floor, K.G Mittal  From   To
-Ayurvedic Hospital Building, Charni Road,     2026-27
+Ayurvedic Hospital Building, Charni Road,     2026-27  
  Mumbai 400002    01- Apr-2025   24-Oct-2025
 2. (f) Break up for ' Amount of any other exemption under section 10' to be filled in the table below
 Sl No   Particulars of any other exemption under section 10     Gross Amount Qualifying Amount Deductible Amount
@@ -326,6 +333,7 @@ Rs. Rs. Rs.
 Place   MUMBAI
  Signature of the person responsible for deduction of tax
 Date   05-Jun-2026    FULL NAME :   KUMAR VIJETA
+
 FORM NO. 12BA
  {See rule 26A(2)(b)}
  Statement showing particulars of perquisites, other fringe benefits or
@@ -365,7 +373,7 @@ Value of Amount,if any, Amount of perquisite
 (14)   Transfer of assets to employees    0.00   0.00   0.00
 (15)   Value of any other benefit/amenity/service/privilege     0.00   0.00   0.00
 (16)   Stock options allotted or transferred by employer being an eligible start-up referred to in  0.00   0.00   0.00
-section 80-IAC.
+section 80-IAC.  
 (17)   Stock options (non-qualified options) other than ESOP in col 16 above.    0.00   0.00   0.00
 (18)   Contribution by employer to fund and scheme taxable under section 17(2)(vii).    0.00   0.00   0.00
 (19)   Annual accretion by way of interest, dividend etc. to the balance at the credit of fund and

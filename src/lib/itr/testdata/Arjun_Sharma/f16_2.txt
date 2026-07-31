@@ -55,6 +55,7 @@ Branch  (dd/mm/yyyy)  OLTAS*
 5    0.00   -    05-03-2026   -   F
 6    0.00   -    21-04-2026   -   F
  Page 1 of 2
+
 Certificate Number: UXBGJYA   TAN of Employer: BLRP15144D    PAN of Employee: CYXPA6852K   Assessment Year: 2026-27
  Total (Rs.)   0.00
  Verification
@@ -76,10 +77,10 @@ Legend used in Form 16
 * Status of matching with OLTAS
  Legend   Description    Definition
 Deductors have not deposited taxes or have furnished incorrect particulars of tax payment. Final credit will be reflected only when payment
-U   Unmatched
+U   Unmatched  
 details in bank match with details of deposit in TDS / TCS statement
 Provisional tax credit is effected only for TDS / TCS Statements filed by Government deductors."P" status will be changed to Final (F) on
- P   Provisional
+ P   Provisional  
 verification of payment details submitted by Pay and Accounts Officer (PAO)
 In case of non-government deductors, payment details of TDS / TCS deposited in bank by deductor have matched with the payment details
  F   Final mentioned in the TDS / TCS statement filed by the deductors. In case of government deductors, details of TDS / TCS booked in Government

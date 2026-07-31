@@ -287,6 +287,106 @@ describe('taxEngine', () => {
     expect(result.totalTaxPayable).toBe(0);
   });
 
+  describe('Surcharge', () => {
+    const highIncomeBase = (grossSalary: number, standardDeduction16ia: number) => ({
+      ...baseMockData,
+      salary: {
+        ...baseMockData.salary,
+        grossSalary,
+        totalExemptAllowances: 0,
+        netSalary: grossSalary,
+        standardDeduction16ia,
+        entertainmentAllowance16ii: 0,
+        professionalTax16iii: 0,
+        totalDeductionsUs16: standardDeduction16ia,
+        incomeChargeableUnderHeadSalaries: grossSalary - standardDeduction16ia,
+      },
+      otherIncome: { houseProperty: 0, otherSources: [], totalOtherSources: 0 },
+      deductions80C: 0,
+      deductions80CCC: 0,
+      deductions80CCD1: 0,
+      deductions80CCD1B: 0,
+      deductions80CCD2: 0,
+      deductions80D: 0,
+      deductions80E: 0,
+      deductions80G: 0,
+      deductions80TTA: 0,
+      totalChapterVIADeductions: 0,
+    });
+
+    it('applies 10% surcharge and cess on (tax + surcharge) under Old Regime at ₹62.5 lakh', () => {
+      const result = calculateOldRegime(highIncomeBase(6_300_000, 50_000) as any);
+      // Total income = 6,300,000 - 50,000 = 6,250,000
+      // Slab tax (old): 12,500 + 100,000 + 52,50,000*30% = 1,687,500
+      // Surcharge @ 10% = 168,750 (no marginal relief)
+      // Cess = (1,687,500 + 168,750) * 4% = 74,250
+      // Total = 1,856,250 + 74,250 = 1,930,500
+      expect(result.totalIncome).toBe(6_250_000);
+      expect(result.taxBeforeRebate).toBe(1_687_500);
+      expect(result.surcharge).toBe(168_750);
+      expect(result.surchargeRate).toBe(0.10);
+      expect(result.marginalReliefSurcharge).toBe(0);
+      expect(result.cess).toBe(74_250);
+      expect(result.totalTaxPayable).toBe(1_930_500);
+    });
+
+    it('grants marginal relief on surcharge just above the ₹50 lakh threshold', () => {
+      const result = calculateOldRegime(highIncomeBase(5_100_000, 50_000) as any);
+      // Total income = 5,100,000 - 50,000 = 5,050,000
+      // Slab tax (old) = 13,27,500; raw surcharge @ 10% = 132,750
+      // Marginal relief caps surcharge at 13,12,500 + 50,000 - 13,27,500 = 35,000
+      // Cess = (13,27,500 + 35,000) * 4% = 54,500; Total = 1,417,000
+      expect(result.totalIncome).toBe(5_050_000);
+      expect(result.surcharge).toBe(35_000);
+      expect(result.surchargeRate).toBe(0.10);
+      expect(result.marginalReliefSurcharge).toBe(97_750);
+      expect(result.cess).toBe(54_500);
+      expect(result.totalTaxPayable).toBe(1_417_000);
+    });
+
+    it('applies 15% surcharge under New Regime at ₹1.5 crore', () => {
+      const result = calculateNewRegime(highIncomeBase(15_075_000, 75_000) as any);
+      // Total income = 15,075,000 - 75,000 = 15,000,000 (₹1.5 Cr, 15% band)
+      // New regime slab tax on 1,50,00,000:
+      // 20,000 + 40,000 + 60,000 + 80,000 + 100,000 + 1,26,00,000*30% = 4,080,000
+      // Surcharge @ 15% = 612,000; Cess = (4,080,000 + 612,000) * 4% = 187,680
+      // Total = 4,692,000 + 187,680 = 4,879,680
+      expect(result.totalIncome).toBe(15_000_000);
+      expect(result.surcharge).toBe(612_000);
+      expect(result.surchargeRate).toBe(0.15);
+      expect(result.marginalReliefSurcharge).toBe(0);
+      expect(result.cess).toBe(187_680);
+      expect(result.totalTaxPayable).toBe(4_879_680);
+    });
+
+    it('caps New Regime surcharge at 25% (vs 37% in Old Regime) above ₹5 crore', () => {
+      const oldResult = calculateOldRegime(highIncomeBase(600_050_000, 50_000) as any);
+      const newResult = calculateNewRegime(highIncomeBase(600_075_000, 75_000) as any);
+
+      // Both regimes produce a total income of exactly ₹6 crore.
+      expect(oldResult.totalIncome).toBe(600_000_000);
+      expect(newResult.totalIncome).toBe(600_000_000);
+
+      // Old regime slab tax = 1,79,81,250; surcharge @ 37% = 66,530,625
+      expect(oldResult.surchargeRate).toBe(0.37);
+      expect(oldResult.surcharge).toBe(66_530_625);
+
+      // New regime slab tax = 1,79,58,000; surcharge capped @ 25% = 44,895,000
+      expect(newResult.surchargeRate).toBe(0.25);
+      expect(newResult.surcharge).toBe(44_895_000);
+    });
+
+    it('leaves surcharge at zero and cess unchanged for income at or below ₹50 lakh', () => {
+      const result = calculateOldRegime(baseMockData);
+      expect(result.totalIncome).toBe(802_500);
+      expect(result.surcharge).toBe(0);
+      expect(result.surchargeRate).toBe(0);
+      expect(result.marginalReliefSurcharge).toBe(0);
+      expect(result.cess).toBe(2_920);
+      expect(result.totalTaxPayable).toBe(75_920);
+    });
+  });
+
   describe('recalculateAllFormFields', () => {
     it('correctly recalculates fields under OLD regime when individual components change', () => {
       const data: Form16Data = {

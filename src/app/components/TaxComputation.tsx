@@ -89,6 +89,12 @@ export default function TaxComputation({ data, selectedRegime, onValueClick }: T
         {regimeCalc.rebate87A > 0 && (
           <LineRow label="Less: Rebate u/s 87A" value={inr(regimeCalc.rebate87A)} operator="subtract" source="Derived" onClick={mkClick('Rebate 87A')} />
         )}
+        {regimeCalc.marginalReliefSurcharge > 0 && (
+          <LineRow label={`Less: Marginal Relief (Surcharge)`} value={inr(regimeCalc.marginalReliefSurcharge)} operator="subtract" source="Derived" onClick={mkClick('Marginal Relief Surcharge')} />
+        )}
+        {regimeCalc.surcharge > 0 && (
+          <LineRow label={`Add: Surcharge @ ${(regimeCalc.surchargeRate * 100).toFixed(0)}%`} value={inr(regimeCalc.surcharge)} operator="add" source="Derived" onClick={mkClick('Surcharge')} />
+        )}
         <LineRow label="Add: Health & Education Cess @ 4%" value={inr(regimeCalc.cess)} operator="add" source="Derived" onClick={mkClick('Cess')} />
         <LineRow label="Gross Tax Liability" value={inr(regimeCalc.totalTaxPayable)} operator="equals" isTotal source="Derived" onClick={mkClick('Gross Tax Liability')} />
 

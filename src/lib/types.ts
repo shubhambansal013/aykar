@@ -72,6 +72,7 @@ export interface ITR1_JSON {
         TotalTaxPayable: number;
         Rebate87A: number;
         TaxPayableOnRebate: number;
+        Surcharge: number;
         EducationCess: number;
         GrossTaxLiability: number;
         Section89: number;
@@ -198,6 +199,7 @@ export interface ITR2_JSON {
         TotalTaxPayable: number;
         Rebate87A: number;
         TaxPayableOnRebate: number;
+        Surcharge: number;
         EducationCess: number;
         GrossTaxLiability: number;
         Section89: number;

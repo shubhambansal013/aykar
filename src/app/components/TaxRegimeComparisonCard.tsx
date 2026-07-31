@@ -74,6 +74,24 @@ function TaxComputationBreakdown({ regime, interest }: { regime: any; interest?:
           </Box>
         )}
 
+        {regime.marginalReliefSurcharge > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 500 }}>
+              Less: Marginal Relief (Surcharge):
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600 }}>
+              -₹{regime.marginalReliefSurcharge.toLocaleString('en-IN')}
+            </Typography>
+          </Box>
+        )}
+
+        {regime.surcharge > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="caption" color="textSecondary">Add: Surcharge @ {Math.round(regime.surchargeRate * 100)}%:</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{regime.surcharge.toLocaleString('en-IN')}</Typography>
+          </Box>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="caption" color="textSecondary">Add: Education Cess @ 4.00%:</Typography>
           <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{regime.cess.toLocaleString('en-IN')}</Typography>
@@ -336,6 +354,10 @@ export default function TaxRegimeComparisonCard({
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.rebate87A.toLocaleString('en-IN')}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="caption" color="textSecondary">Surcharge:</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.surcharge.toLocaleString('en-IN')}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.oldRegime.cess.toLocaleString('en-IN')}</Typography>
                     </Box>
@@ -470,6 +492,10 @@ export default function TaxRegimeComparisonCard({
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Rebate u/s 87A:</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.rebate87A.toLocaleString('en-IN')}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="caption" color="textSecondary">Surcharge:</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>₹{comparison.newRegime.surcharge.toLocaleString('en-IN')}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="caption" color="textSecondary">Cess:</Typography>
